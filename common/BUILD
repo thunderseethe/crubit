@@ -357,10 +357,10 @@ rust_library(
     srcs = ["kythe_metadata.rs"],
     deps = [
         ":token_stream_printer",
-        "@crate_index//:anyhow",  # v1
-        "@crate_index//:base64",  # v0_22
-        "@crate_index//:serde",  # v1
-        "@crate_index//:serde_json",  # v1
+        "@crates//:anyhow",  # v1
+        "@crates//:base64",  # v0_22
+        "@crates//:serde",  # v1
+        "@crates//:serde_json",  # v1
     ],
 )
 

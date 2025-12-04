@@ -52,14 +52,9 @@ crubit_rust_test(
     tags = ["not_run:mac"],
     deps = [
         ":run_compiler_test_support",
-<<<<<<< HEAD
         "//common:external_binaries",
-        "@crate_index//:regex",  # v1
-        "@crate_index//:tempfile",  # v3
-=======
         "@crates//:regex",  # v1
         "@crates//:tempfile",  # v3
->>>>>>> origin/bazel
     ],
 )
 
