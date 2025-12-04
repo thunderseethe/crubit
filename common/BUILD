@@ -24,7 +24,7 @@ rust_library(
     name = "arc_anyhow",
     srcs = ["arc_anyhow.rs"],
     deps = [
-        "@crate_index//:anyhow",  # v1
+        "@crates//:anyhow",  # v1
     ],
 )
 
@@ -64,7 +64,7 @@ crubit_rust_test(
     name = "arc_anyhow_test",
     crate = ":arc_anyhow",
     deps = [
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
 
@@ -74,12 +74,12 @@ rust_library(
     deps = [
         ":arc_anyhow",
         "//common:dyn_format",
-        "@crate_index//:heck",  # v0_5
-        "@crate_index//:phf",  # v0_11
-        "@crate_index//:proc-macro2",
-        "@crate_index//:quote",  # v1
-        "@crate_index//:syn",  # v1
-        "@crate_index//:unicode-ident",
+        "@crates//:heck",  # v0_5
+        "@crates//:phf",  # v0_11
+        "@crates//:proc-macro2",
+        "@crates//:quote",  # v1
+        "@crates//:syn",  # v1
+        "@crates//:unicode-ident",
     ],
 )
 
@@ -93,8 +93,8 @@ crubit_rust_test(
     deps = [
         ":token_stream_matchers",
         ":token_stream_printer",
-        "@crate_index//:googletest",
-        "@crate_index//:itertools",  # v0_13
+        "@crates//:googletest",
+        "@crates//:itertools",  # v0_13
     ],
 )
 
@@ -102,8 +102,8 @@ rust_library(
     name = "crubit_feature",
     srcs = ["crubit_feature.rs"],
     deps = [
-        "@crate_index//:flagset",  # v0_4
-        "@crate_index//:serde",  # v1
+        "@crates//:flagset",  # v0_4
+        "@crates//:serde",  # v1
     ],
 )
 
@@ -111,7 +111,7 @@ rust_library(
     name = "dyn_format",
     srcs = ["dyn_format.rs"],
     deps = [
-        "@crate_index//:anyhow",  # v1
+        "@crates//:anyhow",  # v1
     ],
 )
 
@@ -120,7 +120,7 @@ rust_test(
     srcs = ["dyn_format_test.rs"],
     deps = [
         ":dyn_format",
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
 
@@ -128,8 +128,8 @@ crubit_rust_test(
     name = "crubit_feature_test",
     crate = ":crubit_feature",
     deps = [
-        "@crate_index//:googletest",
-        "@crate_index//:serde_json",  # v1
+        "@crates//:googletest",
+        "@crates//:serde_json",  # v1
     ],
 )
 
@@ -161,7 +161,7 @@ rust_library(
     name = "interner",
     srcs = ["interner.rs"],
     deps = [
-        "@crate_index//:bumpalo",  # v3
+        "@crates//:bumpalo",  # v3
     ],
 )
 
@@ -170,8 +170,8 @@ rust_test(
     srcs = ["interner_test.rs"],
     deps = [
         ":interner",
-        "@crate_index//:bumpalo",  # v3
-        "@crate_index//:googletest",
+        "@crates//:bumpalo",  # v3
+        "@crates//:googletest",
     ],
 )
 
@@ -184,7 +184,7 @@ rust_test(
     name = "memoized_test",
     crate = ":memoized",
     deps = [
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
 
@@ -215,7 +215,7 @@ crubit_rust_test(
     name = "ffi_types_test",
     crate = ":ffi_types",
     deps = [
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
 
@@ -227,9 +227,9 @@ rust_proc_macro(
         "//:__subpackages__",
     ],
     deps = [
-        "@crate_index//:proc-macro2",
-        "@crate_index//:quote",  # v1
-        "@crate_index//:syn",  # v1
+        "@crates//:proc-macro2",
+        "@crates//:quote",  # v1
+        "@crates//:syn",  # v1
     ],
 )
 
@@ -240,7 +240,7 @@ crubit_rust_test(
         ":item_exists",
     ],
     deps = [
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
 
@@ -279,9 +279,9 @@ rust_library(
     deps = [
         ":token_stream_matchers_fastpath",
         ":token_stream_printer",
-        "@crate_index//:anyhow",  # v1
-        "@crate_index//:indenter",  # v0_3
-        "@crate_index//:proc-macro2",
+        "@crates//:anyhow",  # v1
+        "@crates//:indenter",  # v0_3
+        "@crates//:proc-macro2",
     ],
 )
 
@@ -294,8 +294,8 @@ crubit_rust_test(
         "not_run:mac",
     ],
     deps = [
-        "@crate_index//:googletest",
-        "@crate_index//:quote",  # v1
+        "@crates//:googletest",
+        "@crates//:quote",  # v1
     ],
 )
 
@@ -306,8 +306,8 @@ rust_library(
     visibility = ["//visibility:private"],
     deps = [
         ":token_stream_printer",
-        "@crate_index//:anyhow",  # v1
-        "@crate_index//:proc-macro2",
+        "@crates//:anyhow",  # v1
+        "@crates//:proc-macro2",
     ],
 )
 
@@ -318,8 +318,8 @@ rust_library(
     ],
     deps = [
         "//common:ffi_types",
-        "@crate_index//:anyhow",  # v1
-        "@crate_index//:proc-macro2",
+        "@crates//:anyhow",  # v1
+        "@crates//:proc-macro2",
     ],
 )
 
@@ -331,9 +331,9 @@ crubit_rust_test(
         "not_run:mac",
     ],
     deps = [
-        "@crate_index//:googletest",
-        "@crate_index//:quote",  # v1
-        "@crate_index//:tempfile",  # v3
+        "@crates//:googletest",
+        "@crates//:quote",  # v1
+        "@crates//:tempfile",  # v3
     ],
 )
 
@@ -384,7 +384,7 @@ rust_library(
     deps = [
         ":arc_anyhow",
         ":error_report",
-        "@crate_index//:anyhow",  # v1
+        "@crates//:anyhow",  # v1
     ],
 )
 
@@ -395,8 +395,8 @@ crubit_rust_test(
         ":arc_anyhow",
         ":error_report",
         ":errors",
-        "@crate_index//:googletest",
-        "@crate_index//:serde_json",  # v1
+        "@crates//:googletest",
+        "@crates//:serde_json",  # v1
     ],
 )
 
@@ -406,10 +406,10 @@ rust_library(
     visibility = ["//:__subpackages__"],
     deps = [
         ":arc_anyhow",
-        "@crate_index//:anyhow",  # v1
-        "@crate_index//:regex",  # v1
-        "@crate_index//:serde",  # v1
-        "@crate_index//:serde_json",  # v1
+        "@crates//:anyhow",  # v1
+        "@crates//:regex",  # v1
+        "@crates//:serde",  # v1
+        "@crates//:serde_json",  # v1
     ],
 )
 
@@ -417,8 +417,8 @@ crubit_rust_test(
     name = "error_report_test",
     crate = ":error_report",
     deps = [
-        "@crate_index//:googletest",
-        "@crate_index//:serde_json",  # v1
+        "@crates//:googletest",
+        "@crates//:serde_json",  # v1
     ],
 )
 
@@ -429,8 +429,8 @@ rust_library(
         "//:__subpackages__",
     ],
     deps = [
-        "@crate_index//:proc-macro2",
-        "@crate_index//:quote",  # v1
+        "@crates//:proc-macro2",
+        "@crates//:quote",  # v1
     ],
 )
 
@@ -438,6 +438,6 @@ crubit_rust_test(
     name = "crubit_abi_type_test",
     crate = ":crubit_abi_type",
     deps = [
-        "@crate_index//:googletest",
+        "@crates//:googletest",
     ],
 )
