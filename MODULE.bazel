@@ -5,6 +5,12 @@
 # TODO: this needs to be paired with a refreshed patch
 # (see WORKSPACE.bzlmod)
 bazel_dep(name = "rules_rust", version = "0.63.0")
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    dev_components = True,
+    versions = [ "nightly/2025-11-20" ],
+)
 
 bazel_dep(name = "rules_cc", version = "0.2.0")
 bazel_dep(name = "rules_shell", version = "0.5.1")
@@ -21,12 +27,44 @@ bazel_dep(name = "fuzztest", version = "20250214.0")
 bazel_dep(name = "google_benchmark", version = "1.9.1")
 bazel_dep(name = "googletest", version = "1.17.0")
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "protobuf", version = "31.1")
+bazel_dep(name = "protobuf", version = "33.1")
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_python", version = "1.5.3")
+bazel_dep(name = "rules_python", version = "1.6.0")
 # We don't directly use rules_foreign_cc, but *something* does, and depends on an
 # out of date version that doesn't work with newer Bazel releases. So here we force
 # it to be a newer version.
 bazel_dep(name = "rules_foreign_cc", version = "0.15.0")
+
+register_toolchains(
+	"//common/bazel_support/toolchains:cc_bindings_from_rs_on_demand_linux",
+	"//common/bazel_support/toolchains:cc_bindings_from_rs_on_demand_macos",
+	"//common/bazel_support/toolchains:cc_bindings_from_rs_on_demand_ios",
+	#"//common/bazel_support/toolchains:rs_bindings_from_cc_on_demand_linux",
+	#"//common/bazel_support/toolchains:rs_bindings_from_cc_on_demand_macos",
+	#"//common/bazel_support/toolchains:rs_bindings_from_cc_on_demand_ios",
+)
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+crate.spec(package = "anyhow", version = "1")
+crate.spec(package = "clap", version = "4", features = [ "derive" ])
+crate.spec(package = "either", version = "1")
+crate.spec(package = "flagset", version = "0.4")
+crate.spec(package = "heck", version = "0.5")
+crate.spec(package = "itertools", version = "0.13")
+crate.spec(package = "phf", version = "0.11", features = [ "macros" ])
+crate.spec(package = "proc-macro2", version = "1")
+crate.spec(package = "quote", version = "1")
+crate.spec(package = "regex", version = "1")
+crate.spec(package = "rustversion", version = "1")
+crate.spec(package = "serde", version = "1", features = [ "derive", "rc" ])
+crate.spec(package = "serde_json", version = "1")
+crate.spec(package = "syn", version = "2", features = [ "extra-traits" ])
+crate.spec(package = "tracing", version = "0.1")
+crate.spec(package = "unicode-ident", version = "1")
+
+crate.from_specs()
+use_repo(crate, "crates")
+

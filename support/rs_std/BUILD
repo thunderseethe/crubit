@@ -70,16 +70,16 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-rust_library(
-    name = "dyn_future",
-    srcs = ["dyn_future.rs"],
-    aspect_hints = ["//features:supported"],
-    cc_deps = [
-        ":cpp_waker",
-    ],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = ["//visibility:public"],
-)
+#rust_library(
+#    name = "dyn_future",
+#    srcs = ["dyn_future.rs"],
+#    aspect_hints = ["//features:supported"],
+#    cc_deps = [
+#        ":cpp_waker",
+#    ],
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    visibility = ["//visibility:public"],
+#)
 
 cc_bindings_from_rust(
     name = "dyn_future_cc",

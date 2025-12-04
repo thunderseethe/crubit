@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "crubit/support/annotations_internal.h"
+#include "support/annotations_internal.h"
 #include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
