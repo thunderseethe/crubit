@@ -168,8 +168,7 @@ def _generate_bindings(ctx, target, basename, inputs, args, rustc_env, proto_cra
         crubit_args.add("--crate-rename", mapping.crate_name + "=" + mapping.old_crate_name)
     for flag in collect_cc_bindings_from_rust_cli_flags(target, ctx):
         crubit_args.add(flag)
-    for file in ctx.toolchains["@rules_rust//rust:toolchain_type"].rustc_lib.to_list():
-      print(file)
+    rust_toolchain = ctx.toolchains["@rules_rust//rust:toolchain_type"]
     toolchain = ctx.toolchains["//cc_bindings_from_rs/bazel_support:toolchain_type"]
     if toolchain == None:
         ctx.actions.run_shell(
@@ -182,6 +181,7 @@ def _generate_bindings(ctx, target, basename, inputs, args, rustc_env, proto_cra
             mnemonic = "CcBindingsFromRustUnsupported",
         )
     else:
+        print(ctx.attr._rustfmt[DefaultInfo])
         toolchain = toolchain.cc_bindings_from_rs_toolchain_info
         ctx.actions.run(
             outputs = outputs,
@@ -189,8 +189,11 @@ def _generate_bindings(ctx, target, basename, inputs, args, rustc_env, proto_cra
                 [ctx.file._rustfmt, ctx.file._rustfmt_cfg],
                 transitive = [inputs],
             ),
-            env = rustc_env | verbose_log_env,
-            tools = [toolchain.binary],
+            env = rustc_env | verbose_log_env | {
+	      # TODO: Do this more robustly.
+	      "LD_LIBRARY_PATH": rust_toolchain.rustc_lib.to_list()[0].dirname,
+	    },
+            tools = [toolchain.binary, ctx.executable._rustfmt],
             executable = ctx.executable._process_wrapper,
             mnemonic = "CcBindingsFromRust",
             progress_message = "Generating C++ bindings from Rust: %s" % h_out_file,
@@ -443,7 +446,7 @@ cc_bindings_from_rust_aspect = aspect(
             ],
         ),
         "_rustfmt": attr.label(
-	    default = "@rules_rust//:rustfmt",
+	    default = "@rules_rust//tools/upstream_wrapper:rustfmt",
             executable = True,
             allow_single_file = True,
             cfg = "exec",

@@ -10,10 +10,11 @@ load(
 )
 
 def _cc_bindings_from_rs_toolchain_impl(ctx):
+    print(ctx.executable.binary)
     return [
         platform_common.ToolchainInfo(
             cc_bindings_from_rs_toolchain_info = CcBindingsFromRustToolchainInfo(
-                binary = ctx.file.binary,
+                binary = ctx.executable.binary,
             ),
         ),
     ]
@@ -23,7 +24,7 @@ cc_bindings_from_rs_toolchain = rule(
     attrs = {
         "binary": attr.label(
             executable = True,
-            allow_single_file = True,
+            allow_files = True,
             cfg = "exec",
         ),
     },

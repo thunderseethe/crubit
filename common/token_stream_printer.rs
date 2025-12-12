@@ -521,12 +521,14 @@ fn pipe_string_through_process<'a>(
         .spawn()
         .unwrap_or_else(|e| panic!("Failed to spawn {exe_name} at {exe_path:?}: {e}"));
 
-    let mut stdin = child.stdin.take().expect("Failed to open {exe_name} stdin");
+    let mut stdin = child.stdin.take().unwrap_or_else(|| panic!("Failed to open {exe_name} stdin"));
+    let exe_name_own = exe_name.to_string();
     let handle = std::thread::spawn(move || {
-        stdin.write_all(input.as_bytes()).expect("Failed to write to {exe_name} stdin");
+        stdin.write_all(input.as_bytes()).unwrap_or_else(|_| panic!("Failed to write to {exe_name_own} stdin"));
     });
-    let output = child.wait_with_output().expect("Failed to read {exe_name} stdout");
+    let output = child.wait_with_output().unwrap_or_else(|_| panic!("Failed to read {exe_name} stdout"));
 
+    println!("{output:?}");
     handle.join().unwrap();
 
     if !output.status.success() {

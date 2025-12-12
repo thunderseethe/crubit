@@ -34,9 +34,9 @@ rust_library(
         "//common:dyn_format",
         "//common:error_report",
         "//common:memoized",
-        "@crates//:flagset",  # v0_4
-        "@crates//:itertools",  # v0_13
-        "@crates//:proc-macro2",
-        "@crates//:quote",  # v1
+        "@crate_index//:flagset",  # v0_4
+        "@crate_index//:itertools",  # v0_13
+        "@crate_index//:proc-macro2",
+        "@crate_index//:quote",  # v1
     ],
 )

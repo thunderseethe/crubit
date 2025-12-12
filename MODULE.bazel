@@ -13,7 +13,7 @@ rust.toolchain(
 )
 
 bazel_dep(name = "rules_cc", version = "0.2.0")
-bazel_dep(name = "rules_shell", version = "0.5.1")
+bazel_dep(name = "rules_shell", version = "0.6.1")
 
 bazel_dep(name = "abseil-cpp", version = "20250127.1")
 git_override(  # with nullability support
@@ -48,24 +48,15 @@ register_toolchains(
 
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
 
-crate.spec(package = "anyhow", version = "1")
-crate.spec(package = "base64", version = "0.22")
-crate.spec(package = "clap", version = "4", features = [ "derive" ])
-crate.spec(package = "either", version = "1")
-crate.spec(package = "flagset", version = "0.4")
-crate.spec(package = "heck", version = "0.5")
-crate.spec(package = "itertools", version = "0.13")
-crate.spec(package = "phf", version = "0.11", features = [ "macros" ])
-crate.spec(package = "proc-macro2", version = "1")
-crate.spec(package = "quote", version = "1")
-crate.spec(package = "regex", version = "1")
-crate.spec(package = "rustversion", version = "1")
-crate.spec(package = "serde", version = "1", features = [ "derive", "rc" ])
-crate.spec(package = "serde_json", version = "1")
-crate.spec(package = "syn", version = "2", features = [ "extra-traits" ])
-crate.spec(package = "tracing", version = "0.1")
-crate.spec(package = "unicode-ident", version = "1")
+crate.from_cargo(
+  name = "crate_index",
+  manifests = [
+   "//:Cargo.toml",
+   "//:cargo/cc_bindings_from_rs/cc_bindings_from_rs/Cargo.toml",
+   "//:cargo/rs_bindings_from_cc/rs_bindings_from_cc/Cargo.toml",
+   "//support/ffi_11:Cargo.toml",
+  ],
+)
 
-crate.from_specs()
-use_repo(crate, "crates")
+use_repo(crate, "crate_index")
 
