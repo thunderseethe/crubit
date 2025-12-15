@@ -80,13 +80,13 @@ cc_library(
 #    compatible_with = ["//buildenv/target:non_prod"],
 #    visibility = ["//visibility:public"],
 #)
-
-cc_bindings_from_rust(
-    name = "dyn_future_cc",
-    compatible_with = ["//buildenv/target:non_prod"],
-    crate = ":dyn_future",
-    visibility = ["//visibility:public"],
-)
+#
+#cc_bindings_from_rust(
+#    name = "dyn_future_cc",
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    crate = ":dyn_future",
+#    visibility = ["//visibility:public"],
+#)
 
 cc_library(
     name = "slice_ref",
