@@ -10,7 +10,6 @@ load(
 )
 
 def _cc_bindings_from_rs_toolchain_impl(ctx):
-    print(ctx.executable.binary)
     return [
         platform_common.ToolchainInfo(
             cc_bindings_from_rs_toolchain_info = CcBindingsFromRustToolchainInfo(

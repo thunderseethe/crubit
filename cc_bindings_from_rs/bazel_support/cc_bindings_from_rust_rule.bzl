@@ -181,7 +181,6 @@ def _generate_bindings(ctx, target, basename, inputs, args, rustc_env, proto_cra
             mnemonic = "CcBindingsFromRustUnsupported",
         )
     else:
-        print(ctx.attr._rustfmt[DefaultInfo])
         toolchain = toolchain.cc_bindings_from_rs_toolchain_info
         ctx.actions.run(
             outputs = outputs,

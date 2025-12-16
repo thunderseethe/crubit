@@ -2,7 +2,7 @@
 build --enable_bzlmod --enable_workspace
 
 # generic_clang from @llvm-raw//utils/bazel, but c++20 to match Google
-build:generic_clang --repo_env=CC=clang
+build:generic_clang --repo_env=CC=/usr/local/google/home/ethansmith/crubit/tutorial/llvm/bin/clang
 build:generic_clang --cxxopt=-std=c++20 --host_cxxopt=-std=c++20 --repo_env=BAZEL_CXXOPTS=-std=c++20
 build:generic_clang --copt=-Wall --host_copt=-Wall # not -Werror due to spurious warnings differences in Clang <16
 build:generic_clang --cxxopt=-Wno-range-loop-analysis --host_cxxopt=-Wno-range-loop-analysis
@@ -18,3 +18,4 @@ build --@rules_rust//rust/toolchain/channel=nightly
 
 # Directly invoke the Crubit aspects by name when running `build`, and get the generated files.
 build:crubit-genfiles --aspects=//rs_bindings_from_cc/bazel_support:rust_bindings_from_cc_aspect.bzl%rust_bindings_from_cc_aspect,//cc_bindings_from_rs/bazel_support:cc_bindings_from_rust_rule.bzl%cc_bindings_from_rust_aspect --output_groups=out
+

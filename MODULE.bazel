@@ -43,6 +43,7 @@ register_toolchains(
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2021",
+    allocator_library = "@rules_rust//ffi/rs:empty",
     dev_components = True,
     versions = [ "nightly/2025-11-20" ],
 )
