@@ -1,6 +1,5 @@
 """Generates C++ bindings from Rust APIs."""
 
-load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load(
     "@rules_rust//rust:defs.bzl",
     "rust_library",
@@ -16,16 +15,6 @@ load(
 package(
     default_applicable_licenses = ["//:license"],
     default_visibility = ["//:__subpackages__"],
-)
-
-sh_binary(
-  name = "cc_bindings_from_rs_kludge",
-  srcs = ["cc_bindings_from_rs.sh"],
-  data = [
-    ":cc_bindings_from_rs",
-    "@rules_rust//rust/toolchain:current_rustc_lib_files",
-  ],
-  use_bash_launcher = True,
 )
 
 crubit_rust_binary(

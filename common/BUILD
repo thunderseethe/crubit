@@ -331,8 +331,8 @@ rust_library(
     data = [
     ],
     deps = [
-        "//common:external_binaries",
-        "//common:ffi_types",
+        ":external_binaries",
+        ":ffi_types",
         "@crate_index//:anyhow",  # v1
         "@crate_index//:proc-macro2",
     ],

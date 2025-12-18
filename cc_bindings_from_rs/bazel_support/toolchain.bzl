@@ -23,7 +23,7 @@ cc_bindings_from_rs_toolchain = rule(
     attrs = {
         "binary": attr.label(
             executable = True,
-            allow_files = True,
+            allow_single_file = True,
             cfg = "exec",
         ),
     },

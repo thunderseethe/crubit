@@ -4,7 +4,6 @@ load(
     "//cc_bindings_from_rs/bazel_support:cc_bindings_from_rust_rule.bzl",
     "cc_bindings_from_rust",
 )
-load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
 cc_binary(
     name = "hello-world",
