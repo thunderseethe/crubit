@@ -36,31 +36,6 @@ namespace [[deprecated]] deprecated_module {
 
 }  // namespace deprecated_module
 
-namespace outer {
-
-namespace [[deprecated]] inner_deprecated {
-
-// Error generating bindings for `outer::inner_deprecated::SomeType` defined at
-// cc_bindings_from_rs/test/modules/modules.rs;l=26:
-// Zero-sized types (ZSTs) are not supported (b/258259459)
-
-}
-
-}  // namespace outer
-
-namespace outer::middle {
-
-namespace [[deprecated]] innermost_deprecated {
-
-// Error generating bindings for `outer::middle::innermost_deprecated::SomeType`
-// defined at
-// cc_bindings_from_rs/test/modules/modules.rs;l=32:
-// Zero-sized types (ZSTs) are not supported (b/258259459)
-
-}
-
-}  // namespace outer::middle
-
 namespace impl_in_separate_private_module {
 
 // Generated from:
@@ -110,6 +85,31 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
 
 }  // namespace impl_in_separate_private_module
 
+namespace outer {
+
+namespace [[deprecated]] inner_deprecated {
+
+// Error generating bindings for `outer::inner_deprecated::SomeType` defined at
+// cc_bindings_from_rs/test/modules/modules.rs;l=26:
+// Zero-sized types (ZSTs) are not supported (b/258259459)
+
+}
+
+}  // namespace outer
+
+namespace outer::middle {
+
+namespace [[deprecated]] innermost_deprecated {
+
+// Error generating bindings for `outer::middle::innermost_deprecated::SomeType`
+// defined at
+// cc_bindings_from_rs/test/modules/modules.rs;l=32:
+// Zero-sized types (ZSTs) are not supported (b/258259459)
+
+}
+
+}  // namespace outer::middle
+
 namespace basic_module {
 
 namespace __crubit_internal {
@@ -131,18 +131,6 @@ inline std::int32_t add_i32(std::int32_t x, std::int32_t y) {
 }
 
 }  // namespace deprecated_module
-
-namespace outer {
-
-namespace [[deprecated]] inner_deprecated {}
-
-}  // namespace outer
-
-namespace outer::middle {
-
-namespace [[deprecated]] innermost_deprecated {}
-
-}  // namespace outer::middle
 
 namespace impl_in_separate_private_module {
 
@@ -180,6 +168,18 @@ inline void Foo::__crubit_field_offset_assertions() {
   static_assert(0 == offsetof(Foo, __field0));
 }
 }  // namespace impl_in_separate_private_module
+
+namespace outer {
+
+namespace [[deprecated]] inner_deprecated {}
+
+}  // namespace outer
+
+namespace outer::middle {
+
+namespace [[deprecated]] innermost_deprecated {}
+
+}  // namespace outer::middle
 
 }  // namespace modules
 #endif  // THIRD_PARTY_CRUBIT_CC_BINDINGS_FROM_RS_TEST_MODULES_MODULES_GOLDEN

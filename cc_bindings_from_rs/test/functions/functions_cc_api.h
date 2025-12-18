@@ -21,18 +21,6 @@ namespace functions {
 
 namespace fn_abi_tests {
 
-//  Testing one of simpler function bindings:
-//
-//  - `extern "C"` means that no thunk is required
-//
-//  - `#[unsafe(no_mangle)]` means that the function is already exposed with
-//
-//    the desired, public name (and just needs to be redeclared in C++).
-//
-// Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=20
-extern "C" double get_42_as_f64_via_no_mangle_extern_c();
-
 //  Testing `#[unsafe(export_name = ...)]` - the generated bindings need to
 //
 //  forward/proxy the call into a function with a different name.
@@ -72,7 +60,40 @@ std::int32_t add_i32_via_extern_c_with_mangling(std::int32_t x, std::int32_t y);
 // cc_bindings_from_rs/test/functions/functions.rs;l=46
 std::int32_t add_i32_via_rust_abi(std::int32_t x, std::int32_t y);
 
+//  Testing one of simpler function bindings:
+//
+//  - `extern "C"` means that no thunk is required
+//
+//  - `#[unsafe(no_mangle)]` means that the function is already exposed with
+//
+//    the desired, public name (and just needs to be redeclared in C++).
+//
+// Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=20
+extern "C" double get_42_as_f64_via_no_mangle_extern_c();
+
 }  // namespace fn_abi_tests
+
+namespace fn_attribute_tests {
+
+// Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=128
+[[deprecated("★ Deprecated note for add_i32 ★")]] std::int32_t add_i32(
+    std::int32_t x, std::int32_t y);
+
+}  // namespace fn_attribute_tests
+
+namespace fn_must_use_tests {
+
+// Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=151
+[[nodiscard("woohoo")]] std::int32_t msg_add(std::int32_t x, std::int32_t y);
+
+// Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=146
+[[nodiscard]] std::int32_t no_msg_add(std::int32_t x, std::int32_t y);
+
+}  // namespace fn_must_use_tests
 
 namespace fn_param_ty_tests {
 
@@ -98,24 +119,14 @@ void add_i32_via_ptr(std::int32_t const* x, std::int32_t const* y,
                      std::int32_t* sum);
 
 // Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=72
-rs_std::char_ char_to_ascii_lowercase(rs_std::char_ c);
-
-// Generated from:
 // cc_bindings_from_rs/test/functions/functions.rs;l=80
 std::int32_t apply_binary_i32_op(
     std::int32_t x, std::int32_t y,
     crubit::type_identity_t<std::int32_t(std::int32_t, std::int32_t)>& f);
 
 // Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=84
-std::int32_t const& [[clang::annotate_type(
-    "lifetime",
-    "a")]] get_ref_to_smaller_int(std::
-                                      int32_t const* [[clang::annotate_type(
-                                          "lifetime", "a")]] crubit_nonnull x,
-                                  std::int32_t const* [[clang::annotate_type(
-                                      "lifetime", "a")]] crubit_nonnull y);
+// cc_bindings_from_rs/test/functions/functions.rs;l=72
+rs_std::char_ char_to_ascii_lowercase(rs_std::char_ c);
 
 // Generated from:
 // cc_bindings_from_rs/test/functions/functions.rs;l=92
@@ -130,23 +141,21 @@ std::int32_t const& [[clang::annotate_type(
                                                                   x CRUBIT_LIFETIME_BOUND);
 
 // Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=84
+std::int32_t const& [[clang::annotate_type(
+    "lifetime",
+    "a")]] get_ref_to_smaller_int(std::
+                                      int32_t const* [[clang::annotate_type(
+                                          "lifetime", "a")]] crubit_nonnull x,
+                                  std::int32_t const* [[clang::annotate_type(
+                                      "lifetime", "a")]] crubit_nonnull y);
+
+// Generated from:
 // cc_bindings_from_rs/test/functions/functions.rs;l=96
 void set_mut_ref_to_sum_of_ints(std::int32_t& sum, std::int32_t x,
                                 std::int32_t y);
 
 }  // namespace fn_param_ty_tests
-
-namespace unit_ret_ty_tests {
-
-// Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=110
-void set_global_i32_via_extern_c_with_export_name(std::int32_t x);
-
-// Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=115
-extern "C" std::int32_t get_global_i32_via_extern_c_with_export_name();
-
-}  // namespace unit_ret_ty_tests
 
 namespace other_fn_param_tests {
 
@@ -158,14 +167,17 @@ std::int32_t add_i32_via_rust_abi_with_duplicated_param_names(
 
 }  // namespace other_fn_param_tests
 
-namespace fn_attribute_tests {
+namespace unit_ret_ty_tests {
 
 // Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=128
-[[deprecated("★ Deprecated note for add_i32 ★")]] std::int32_t add_i32(
-    std::int32_t x, std::int32_t y);
+// cc_bindings_from_rs/test/functions/functions.rs;l=115
+extern "C" std::int32_t get_global_i32_via_extern_c_with_export_name();
 
-}  // namespace fn_attribute_tests
+// Generated from:
+// cc_bindings_from_rs/test/functions/functions.rs;l=110
+void set_global_i32_via_extern_c_with_export_name(std::int32_t x);
+
+}  // namespace unit_ret_ty_tests
 
 namespace unsafe_fn_tests {
 
@@ -182,18 +194,6 @@ namespace unsafe_fn_tests {
 std::int32_t unsafe_add(std::int32_t x, std::int32_t y);
 
 }  // namespace unsafe_fn_tests
-
-namespace fn_must_use_tests {
-
-// Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=146
-[[nodiscard]] std::int32_t no_msg_add(std::int32_t x, std::int32_t y);
-
-// Generated from:
-// cc_bindings_from_rs/test/functions/functions.rs;l=151
-[[nodiscard("woohoo")]] std::int32_t msg_add(std::int32_t x, std::int32_t y);
-
-}  // namespace fn_must_use_tests
 
 namespace fn_abi_tests {
 
@@ -226,6 +226,35 @@ inline std::int32_t add_i32_via_rust_abi(std::int32_t x, std::int32_t y) {
 
 }  // namespace fn_abi_tests
 
+namespace fn_attribute_tests {
+
+namespace __crubit_internal {
+extern "C" std::int32_t __crubit_thunk_add_ui32(std::int32_t, std::int32_t);
+}
+inline std::int32_t add_i32(std::int32_t x, std::int32_t y) {
+  return __crubit_internal::__crubit_thunk_add_ui32(x, y);
+}
+
+}  // namespace fn_attribute_tests
+
+namespace fn_must_use_tests {
+
+namespace __crubit_internal {
+extern "C" std::int32_t __crubit_thunk_msg_uadd(std::int32_t, std::int32_t);
+}
+inline std::int32_t msg_add(std::int32_t x, std::int32_t y) {
+  return __crubit_internal::__crubit_thunk_msg_uadd(x, y);
+}
+
+namespace __crubit_internal {
+extern "C" std::int32_t __crubit_thunk_no_umsg_uadd(std::int32_t, std::int32_t);
+}
+inline std::int32_t no_msg_add(std::int32_t x, std::int32_t y) {
+  return __crubit_internal::__crubit_thunk_no_umsg_uadd(x, y);
+}
+
+}  // namespace fn_must_use_tests
+
 namespace fn_param_ty_tests {
 
 namespace __crubit_internal {
@@ -253,14 +282,6 @@ inline void add_i32_via_ptr(std::int32_t const* x, std::int32_t const* y,
 }
 
 namespace __crubit_internal {
-extern "C" rs_std::char_ __crubit_thunk_char_uto_uascii_ulowercase(
-    rs_std::char_);
-}
-inline rs_std::char_ char_to_ascii_lowercase(rs_std::char_ c) {
-  return __crubit_internal::__crubit_thunk_char_uto_uascii_ulowercase(c);
-}
-
-namespace __crubit_internal {
 extern "C" std::int32_t __crubit_thunk_apply_ubinary_ui32_uop(
     std::int32_t, std::int32_t,
     crubit::type_identity_t<std::int32_t(std::int32_t, std::int32_t)>&);
@@ -272,24 +293,11 @@ inline std::int32_t apply_binary_i32_op(
 }
 
 namespace __crubit_internal {
-extern "C" std::int32_t const& [[clang::annotate_type(
-    "lifetime",
-    "a")]] __crubit_thunk_get_uref_uto_usmaller_uint(std::
-                                                         int32_t const* [[clang::annotate_type(
-                                                             "lifetime",
-                                                             "a")]] crubit_nonnull,
-                                                     std::int32_t const* [[clang::annotate_type(
-                                                         "lifetime",
-                                                         "a")]] crubit_nonnull);
+extern "C" rs_std::char_ __crubit_thunk_char_uto_uascii_ulowercase(
+    rs_std::char_);
 }
-inline std::int32_t const& [[clang::annotate_type(
-    "lifetime",
-    "a")]] get_ref_to_smaller_int(std::
-                                      int32_t const* [[clang::annotate_type(
-                                          "lifetime", "a")]] crubit_nonnull x,
-                                  std::int32_t const* [[clang::annotate_type(
-                                      "lifetime", "a")]] crubit_nonnull y) {
-  return __crubit_internal::__crubit_thunk_get_uref_uto_usmaller_uint(x, y);
+inline rs_std::char_ char_to_ascii_lowercase(rs_std::char_ c) {
+  return __crubit_internal::__crubit_thunk_char_uto_uascii_ulowercase(c);
 }
 
 namespace __crubit_internal {
@@ -314,6 +322,27 @@ inline std::int32_t const& [[clang::annotate_type(
 }
 
 namespace __crubit_internal {
+extern "C" std::int32_t const& [[clang::annotate_type(
+    "lifetime",
+    "a")]] __crubit_thunk_get_uref_uto_usmaller_uint(std::
+                                                         int32_t const* [[clang::annotate_type(
+                                                             "lifetime",
+                                                             "a")]] crubit_nonnull,
+                                                     std::int32_t const* [[clang::annotate_type(
+                                                         "lifetime",
+                                                         "a")]] crubit_nonnull);
+}
+inline std::int32_t const& [[clang::annotate_type(
+    "lifetime",
+    "a")]] get_ref_to_smaller_int(std::
+                                      int32_t const* [[clang::annotate_type(
+                                          "lifetime", "a")]] crubit_nonnull x,
+                                  std::int32_t const* [[clang::annotate_type(
+                                      "lifetime", "a")]] crubit_nonnull y) {
+  return __crubit_internal::__crubit_thunk_get_uref_uto_usmaller_uint(x, y);
+}
+
+namespace __crubit_internal {
 extern "C" void __crubit_thunk_set_umut_uref_uto_usum_uof_uints(std::int32_t&,
                                                                 std::int32_t,
                                                                 std::int32_t);
@@ -325,17 +354,6 @@ inline void set_mut_ref_to_sum_of_ints(std::int32_t& sum, std::int32_t x,
 }
 
 }  // namespace fn_param_ty_tests
-
-namespace unit_ret_ty_tests {
-
-namespace __crubit_internal {
-extern "C" void custom_export_name_for_get_global_i32(std::int32_t);
-}
-inline void set_global_i32_via_extern_c_with_export_name(std::int32_t x) {
-  return __crubit_internal::custom_export_name_for_get_global_i32(x);
-}
-
-}  // namespace unit_ret_ty_tests
 
 namespace other_fn_param_tests {
 
@@ -354,16 +372,16 @@ inline std::int32_t add_i32_via_rust_abi_with_duplicated_param_names(
 
 }  // namespace other_fn_param_tests
 
-namespace fn_attribute_tests {
+namespace unit_ret_ty_tests {
 
 namespace __crubit_internal {
-extern "C" std::int32_t __crubit_thunk_add_ui32(std::int32_t, std::int32_t);
+extern "C" void custom_export_name_for_get_global_i32(std::int32_t);
 }
-inline std::int32_t add_i32(std::int32_t x, std::int32_t y) {
-  return __crubit_internal::__crubit_thunk_add_ui32(x, y);
+inline void set_global_i32_via_extern_c_with_export_name(std::int32_t x) {
+  return __crubit_internal::custom_export_name_for_get_global_i32(x);
 }
 
-}  // namespace fn_attribute_tests
+}  // namespace unit_ret_ty_tests
 
 namespace unsafe_fn_tests {
 
@@ -375,24 +393,6 @@ inline std::int32_t unsafe_add(std::int32_t x, std::int32_t y) {
 }
 
 }  // namespace unsafe_fn_tests
-
-namespace fn_must_use_tests {
-
-namespace __crubit_internal {
-extern "C" std::int32_t __crubit_thunk_no_umsg_uadd(std::int32_t, std::int32_t);
-}
-inline std::int32_t no_msg_add(std::int32_t x, std::int32_t y) {
-  return __crubit_internal::__crubit_thunk_no_umsg_uadd(x, y);
-}
-
-namespace __crubit_internal {
-extern "C" std::int32_t __crubit_thunk_msg_uadd(std::int32_t, std::int32_t);
-}
-inline std::int32_t msg_add(std::int32_t x, std::int32_t y) {
-  return __crubit_internal::__crubit_thunk_msg_uadd(x, y);
-}
-
-}  // namespace fn_must_use_tests
 
 }  // namespace functions
 #endif  // THIRD_PARTY_CRUBIT_CC_BINDINGS_FROM_RS_TEST_FUNCTIONS_FUNCTIONS_GOLDEN

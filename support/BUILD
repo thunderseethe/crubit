@@ -10,7 +10,6 @@ exports_files(
     srcs = glob(["*"]),
     visibility = [
         ":__subpackages__",
-        #"//google_internal/release:crubit_support_lib_visibility",
     ],
 )
 
@@ -94,9 +93,27 @@ crubit_rust_test(
     ],
 )
 
+crubit_rust_test(
+    name = "ctor_rename_test",
+    srcs = ["ctor_rename_test.rs"],
+    # Despite the name "aliases", the name `ctor` is actually not available in the test body.
+    # This is important for the purpose of the test.
+    aliases = {
+        "ctor": "renamed_ctor",
+    },
+    # LINT.IfChange
+    rustc_flags = ["-Zallow-features=negative_impls"],
+    # LINT.ThenChange(//docs/overview/unstable_features.md)
+    deps = [
+        ":ctor",
+        "@crate_index//:googletest",
+    ],
+)
+
 rust_test(
     name = "ctor_test",
     srcs = ["ctor_test.rs"],
+    rustc_flags = ["-Zallow-features=negative_impls"],
     deps = [
         ":ctor",
         "@crate_index//:googletest",
@@ -144,7 +161,6 @@ rust_proc_macro(
     compatible_with = ["//buildenv/target:non_prod"],
     visibility = [
         ":__subpackages__",
-        #"//google_internal/release:crubit_support_lib_visibility",
     ],
     deps = [
         "@crate_index//:proc-macro2",
@@ -190,8 +206,7 @@ rust_test(
     # LINT.ThenChange(//docs/overview/unstable_features.md)
     deps = [
         "@crate_index//:googletest",
-    ],
-)
+    ],)
 
 rust_library(
     name = "bridge_rust",

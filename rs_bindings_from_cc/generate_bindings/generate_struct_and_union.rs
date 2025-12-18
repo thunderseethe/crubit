@@ -13,7 +13,7 @@ use database::code_snippet::{
     UpcastImpl, UpcastImplBody, Visibility,
 };
 use database::db;
-use database::rs_snippet::{should_derive_clone, should_derive_copy, RsTypeKind};
+use database::rs_snippet::{should_derive_clone, RsTypeKind};
 use database::BindingsGenerator;
 use error_report::{bail, ensure};
 use flagset::FlagSet;
@@ -618,6 +618,7 @@ pub fn generate_record(db: &dyn BindingsGenerator, record: Rc<Record>) -> Result
     };
 
     let owned_type_name = record.owned_ptr_type.as_ref().map(|opt| make_rs_ident(opt.as_ref()));
+    let member_methods = api_snippets.member_functions.remove(&record.id).unwrap_or_default();
 
     let record_tokens = database::code_snippet::Record {
         doc_comment_attr: generate_doc_comment(
@@ -658,6 +659,7 @@ pub fn generate_record(db: &dyn BindingsGenerator, record: Rc<Record>) -> Result
         nested_items,
         indirect_functions,
         owned_type_name,
+        member_methods,
     };
 
     api_snippets.features |= Feature::negative_impls;
@@ -670,7 +672,7 @@ pub fn generate_record(db: &dyn BindingsGenerator, record: Rc<Record>) -> Result
             // Can't `assert_not_impl_any!` here, because `Clone` may be
             // implemented rather than derived.
         }
-        if should_derive_copy(&record) {
+        if record.should_derive_copy() {
             assert_impls |= AssertableTrait::Copy;
         } else {
             assert_not_impls |= AssertableTrait::Copy;
@@ -733,7 +735,7 @@ pub fn generate_derives(record: &Record) -> DeriveAttr {
     if should_derive_clone(record) {
         derives.push(quote! { Clone });
     }
-    if should_derive_copy(record) {
+    if record.should_derive_copy() {
         derives.push(quote! { Copy });
         derives.push(quote! { ::ctor::MoveAndAssignViaCopy });
     }

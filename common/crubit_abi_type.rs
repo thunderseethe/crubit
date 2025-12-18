@@ -204,15 +204,40 @@ impl ToTokens for CrubitAbiTypeToRustTokens<'_> {
 impl ToTokens for CrubitAbiTypeToRustExprTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self.0 {
-            CrubitAbiType::SignedChar
-            | CrubitAbiType::UnsignedChar
-            | CrubitAbiType::UnsignedShort
-            | CrubitAbiType::UnsignedInt
-            | CrubitAbiType::UnsignedLong
-            | CrubitAbiType::LongLong
-            | CrubitAbiType::UnsignedLongLong
-            | CrubitAbiType::Ptr { .. } => {
-                quote! { ::bridge_rust::transmute_abi() }.to_tokens(tokens);
+            CrubitAbiType::SignedChar => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_schar>() }.to_tokens(tokens)
+            }
+            CrubitAbiType::UnsignedChar => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_uchar>() }.to_tokens(tokens)
+            }
+            CrubitAbiType::UnsignedShort => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_ushort>() }.to_tokens(tokens)
+            }
+            CrubitAbiType::UnsignedInt => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_uint>() }.to_tokens(tokens)
+            }
+            CrubitAbiType::UnsignedLong => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_ulong>() }.to_tokens(tokens)
+            }
+            CrubitAbiType::LongLong => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_longlong>() }
+                    .to_tokens(tokens)
+            }
+            CrubitAbiType::UnsignedLongLong => {
+                quote! { ::bridge_rust::transmute_abi::<::core::ffi::c_ulonglong>() }
+                    .to_tokens(tokens)
+            }
+            CrubitAbiType::Ptr { is_const, is_rust_slice, rust_type, .. } => {
+                let mut ty = rust_type.clone();
+                if *is_rust_slice {
+                    ty = quote! { [#ty] };
+                }
+                if *is_const {
+                    ty = quote! { *const #ty };
+                } else {
+                    ty = quote! { *mut #ty };
+                }
+                quote! { ::bridge_rust::transmute_abi::<#ty>() }.to_tokens(tokens);
             }
             CrubitAbiType::Pair(first, second) => {
                 let first_tokens = Self(first);
@@ -227,8 +252,8 @@ impl ToTokens for CrubitAbiTypeToRustExprTokens<'_> {
                 };
                 quote! { #root::std::BoxedCppStringAbi }.to_tokens(tokens)
             }
-            CrubitAbiType::Transmute { .. } => {
-                quote! { ::bridge_rust::transmute_abi() }.to_tokens(tokens);
+            CrubitAbiType::Transmute { rust_type, .. } => {
+                quote! { ::bridge_rust::transmute_abi::<#rust_type>() }.to_tokens(tokens);
             }
             CrubitAbiType::ProtoMessage { proto_message_rust_bridge, .. } => {
                 quote! { #proto_message_rust_bridge(::core::marker::PhantomData) }
@@ -283,9 +308,12 @@ impl ToTokens for CrubitAbiTypeToCppTokens<'_> {
                 quote! { ::crubit::TransmuteAbi<#ty> }.to_tokens(tokens);
             }
             CrubitAbiType::Pair(first, second) => {
-                let first_tokens = Self(first);
-                let second_tokens = Self(second);
-                quote! { ::crubit::PairAbi<#first_tokens, #second_tokens> }.to_tokens(tokens);
+                let first_crubit_abi_type = Self(first);
+                let second_crubit_abi_type = Self(second);
+                quote! {
+                    ::crubit::PairAbi<#first_crubit_abi_type, #second_crubit_abi_type>
+                }
+                .to_tokens(tokens);
             }
             CrubitAbiType::StdString { .. } => {
                 quote! { ::crubit::BoxedAbi<std::string> }.to_tokens(tokens)
@@ -344,9 +372,17 @@ impl ToTokens for CrubitAbiTypeToCppExprTokens<'_> {
                 quote! { ::crubit::TransmuteAbi<#ty>() }.to_tokens(tokens);
             }
             CrubitAbiType::Pair(first, second) => {
-                let first_tokens = Self(first);
-                let second_tokens = Self(second);
-                quote! { ::crubit::PairAbi(#first_tokens, #second_tokens) }.to_tokens(tokens);
+                let first_crubit_abi_type = CrubitAbiTypeToCppTokens(first);
+                let first_crubit_abi_type_expr = Self(first);
+                let second_crubit_abi_type = CrubitAbiTypeToCppTokens(second);
+                let second_crubit_abi_type_expr = Self(second);
+                quote! {
+                    ::crubit::PairAbi<#first_crubit_abi_type, #second_crubit_abi_type>(
+                        #first_crubit_abi_type_expr,
+                        #second_crubit_abi_type_expr
+                    )
+                }
+                .to_tokens(tokens);
             }
             CrubitAbiType::StdString { .. } => {
                 quote! { ::crubit::BoxedAbi<std::string>() }.to_tokens(tokens)
@@ -358,9 +394,19 @@ impl ToTokens for CrubitAbiTypeToCppExprTokens<'_> {
                 quote! { ::crubit::BoxedAbi<#cpp_proto_path>() }.to_tokens(tokens);
             }
             CrubitAbiType::Type { cpp_abi_path, type_args, .. } => {
-                cpp_abi_path.to_tokens(tokens);
-                let type_args_tokens = type_args.iter().map(Self);
-                quote! { ( #(#type_args_tokens),* ) }.to_tokens(tokens);
+                if type_args.is_empty() {
+                    // Special empty case since `Foo<>()` is invalid syntax.
+                    quote! { #cpp_abi_path() }.to_tokens(tokens);
+                } else {
+                    let type_args_crubit_abi_types = type_args.iter().map(CrubitAbiTypeToCppTokens);
+                    let type_args_crubit_abi_type_exprs = type_args.iter().map(Self);
+                    quote! {
+                        #cpp_abi_path<#(#type_args_crubit_abi_types),*>(
+                            #(#type_args_crubit_abi_type_exprs),*
+                        )
+                    }
+                    .to_tokens(tokens);
+                }
             }
         }
     }

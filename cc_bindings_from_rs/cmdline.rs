@@ -50,7 +50,7 @@ pub struct Cmdline {
     /// This is only used for real files on disk. Virtual files have a hardcoded format.
     ///
     /// If None, uses the default format used for virtual files.
-    #[clap(long, value_parser = validate_crubit_debug_path_format, value_name = "STRING", required=false, default_value = DEFAULT_CRUBIT_DEBUG_PATH_FORMAT)]
+    #[clap(long, value_parser = validate_crubit_debug_path_format, value_name = "STRING", required=false)]
     pub crubit_debug_path_format: Option<Format<2>>,
 
     /// Path to a clang-format executable that will be used to format the
@@ -155,6 +155,30 @@ pub struct Cmdline {
     /// Default corpus to use for Kythe vnames.
     #[clap(long, value_parser, value_name = "STRING", default_value = "corpus")]
     pub kythe_default_corpus: Option<String>,
+
+    /// The target triple for our compilation. This must match the target triple originally used to
+    /// compile the Rust crate we're generating bindings for.
+    #[clap(long = "target", value_parser, value_name = "STRING")]
+    pub target: Option<String>,
+
+    /// The sysroot for our compilation.
+    #[clap(long = "sysroot", value_parser, value_name = "STRING")]
+    pub sysroot: Option<String>,
+
+    /// Explicitly specified dependencies of binding generation. This should include the crate to be
+    /// generated alongside it's dependencies.
+    #[clap(long = "extern", value_parser = parse_key_value_pair, value_name = "CRATE_NAME=FILE")]
+    pub r#extern: Vec<(String, String)>,
+
+    /// List of directories to search for dependencies.
+    // We pass this to rustc under the hood and rely on it to parse it correctly, so we only take a
+    // string here.
+    #[clap(short = 'L', value_parser, value_name = "[<KIND>=]<PATH>")]
+    pub library_dirs: Vec<String>,
+
+    /// Enables new command line interface that uses .rmeta files to generate bindings.
+    #[clap(long = "enable-rmeta-interface", value_parser, value_name = "BOOL")]
+    pub enable_rmeta_interface: bool,
 }
 
 impl Cmdline {
@@ -191,10 +215,6 @@ impl Cmdline {
 fn validate_crubit_support_path_format(s: &str) -> Result<Format<1>> {
     Format::parse_with_metavars(s, &["header"])
 }
-
-/// Migration constant while we move from using copybara to using command line flags to control the
-/// debug path format.
-const DEFAULT_CRUBIT_DEBUG_PATH_FORMAT: Option<&str> = None;
 
 fn validate_crubit_debug_path_format(s: &str) -> Result<Format<2>> {
     Format::parse_with_metavars(s, &["path", "line"])

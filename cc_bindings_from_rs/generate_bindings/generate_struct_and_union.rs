@@ -56,7 +56,7 @@ pub(crate) fn adt_core_bindings_needs_drop<'tcx>(
 }
 
 /// Returns the Rust underlying type of the `cpp_enum` struct specified by the given def id.
-fn cpp_enum_rust_underlying_type(tcx: TyCtxt, def_id: DefId) -> Result<Ty> {
+pub fn cpp_enum_rust_underlying_type(tcx: TyCtxt, def_id: DefId) -> Result<Ty> {
     let fields = tcx.adt_def(def_id).all_fields().collect::<Vec<_>>();
     if fields.len() != 1 {
         return Err(anyhow!(
@@ -72,7 +72,10 @@ fn cpp_enum_rust_underlying_type(tcx: TyCtxt, def_id: DefId) -> Result<Ty> {
 }
 
 /// Returns the C++ underlying type of the `cpp_enum` struct specified by the given def id.
-fn cpp_enum_cpp_underlying_type(db: &dyn BindingsGenerator, def_id: DefId) -> Result<CcSnippet> {
+pub(crate) fn cpp_enum_cpp_underlying_type(
+    db: &dyn BindingsGenerator,
+    def_id: DefId,
+) -> Result<CcSnippet> {
     let tcx = db.tcx();
 
     let field_middle_ty = cpp_enum_rust_underlying_type(tcx, def_id)?;
@@ -158,6 +161,20 @@ pub fn scalar_value_to_string(tcx: TyCtxt, scalar: Scalar, kind: TyKind) -> Resu
                 "INT64_MIN".to_string()
             } else {
                 format!("INT64_C({value})")
+            }
+        }
+        // Handle ffi_11 wrapper types.
+        TyKind::Adt(adt, _) if tcx.crate_name(adt.did().krate).as_str() == "ffi_11" => {
+            let name = tcx.item_name(adt.did());
+            match name.as_str() {
+                "c_char" => scalar.to_u8().to_string(),
+                // If ffi_11::c_long is a wrapper type (and not a type alias) it will be 32 bit,
+                // same for c_ulong.
+                "c_long" => format!("INT32_C({})", scalar.to_i32()),
+                "c_ulong" => format!("UINT32_C({})", scalar.to_u32()),
+                "c_longlong" => format!("INT64_C({})", scalar.to_i64()),
+                "c_ulonglong" => format!("UINT64_C({})", scalar.to_u64()),
+                _ => bail!("Unsupported ffi_11 type: {:?}", kind),
             }
         }
         _ => bail!("Unsupported constant type: {:?}", kind),

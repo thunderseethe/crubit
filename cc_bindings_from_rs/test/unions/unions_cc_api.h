@@ -59,6 +59,116 @@ union CRUBIT_INTERNAL_RUST_TYPE(":: unions_golden :: repr_c :: U") alignas(4)
 
 }  // namespace repr_c
 
+namespace repr_c_clone {
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=77
+union CRUBIT_INTERNAL_RUST_TYPE(
+    ":: unions_golden :: repr_c_clone :: U") alignas(4) [[clang::trivial_abi]]
+U final {
+ public:
+  // `unions_golden::repr_c_clone::U` doesn't implement the `Default` trait
+  U() = delete;
+
+  // No custom `Drop` impl and no custom "drop glue" required
+  ~U() = default;
+  U(U&&) = default;
+  U& operator=(U&&) = default;
+
+  // Clone::clone
+  U(const U&);
+
+  // Clone::clone_from
+  U& operator=(const U&);
+
+  U(::crubit::UnsafeRelocateTag, U&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=78
+  std::uint32_t x;
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=87
+::unions::repr_c_clone::U create();
+
+}  // namespace repr_c_clone
+
+namespace repr_c_drop {
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=122
+union CRUBIT_INTERNAL_RUST_TYPE(":: unions_golden :: repr_c_drop :: U") alignas(
+    8) [[clang::trivial_abi]] U final {
+ public:
+  // Default::default
+  U();
+
+  // Drop::drop
+  ~U();
+
+  U(U&&);
+  U& operator=(U&&);
+
+  // `unions_golden::repr_c_drop::U` doesn't implement the `Clone` trait
+  U(const U&) = delete;
+  U& operator=(const U&) = delete;
+  U(::crubit::UnsafeRelocateTag, U&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=123
+  std::int32_t* x;
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
+
+}  // namespace repr_c_drop
+
+namespace repr_c_packed {
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=51
+union CRUBIT_INTERNAL_RUST_TYPE(
+    ":: unions_golden :: repr_c_packed :: U") alignas(1) [[clang::trivial_abi]]
+__attribute__((packed)) U final {
+ public:
+  // `unions_golden::repr_c_packed::U` doesn't implement the `Default` trait
+  U() = delete;
+
+  // No custom `Drop` impl and no custom "drop glue" required
+  ~U() = default;
+  U(U&&) = default;
+  U& operator=(U&&) = default;
+
+  // `unions_golden::repr_c_packed::U` doesn't implement the `Clone` trait
+  U(const U&) = delete;
+  U& operator=(const U&) = delete;
+  U(::crubit::UnsafeRelocateTag, U&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=52
+  std::uint32_t x;
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=53
+  std::uint32_t y;
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=56
+::unions::repr_c_packed::U create();
+
+}  // namespace repr_c_packed
+
 namespace repr_rust {
 
 // Generated from:
@@ -118,127 +228,6 @@ union CRUBIT_INTERNAL_RUST_TYPE(":: unions_golden :: repr_rust :: U") alignas(4)
 
 }  // namespace repr_rust
 
-namespace repr_c_packed {
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=51
-union CRUBIT_INTERNAL_RUST_TYPE(
-    ":: unions_golden :: repr_c_packed :: U") alignas(1) [[clang::trivial_abi]]
-__attribute__((packed)) U final {
- public:
-  // `unions_golden::repr_c_packed::U` doesn't implement the `Default` trait
-  U() = delete;
-
-  // No custom `Drop` impl and no custom "drop glue" required
-  ~U() = default;
-  U(U&&) = default;
-  U& operator=(U&&) = default;
-
-  // `unions_golden::repr_c_packed::U` doesn't implement the `Clone` trait
-  U(const U&) = delete;
-  U& operator=(const U&) = delete;
-  U(::crubit::UnsafeRelocateTag, U&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=52
-  std::uint32_t x;
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=53
-  std::uint32_t y;
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=56
-::unions::repr_c_packed::U create();
-
-}  // namespace repr_c_packed
-
-namespace repr_rust_packed {
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=64
-union CRUBIT_INTERNAL_RUST_TYPE(
-    ":: unions_golden :: repr_rust_packed :: U") alignas(1)
-    [[clang::trivial_abi]] __attribute__((packed)) U final {
- public:
-  // `unions_golden::repr_rust_packed::U` doesn't implement the `Default` trait
-  U() = delete;
-
-  // No custom `Drop` impl and no custom "drop glue" required
-  ~U() = default;
-  U(U&&) = default;
-  U& operator=(U&&) = default;
-
-  // `unions_golden::repr_rust_packed::U` doesn't implement the `Clone` trait
-  U(const U&) = delete;
-  U& operator=(const U&) = delete;
-  U(::crubit::UnsafeRelocateTag, U&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=65
-  struct {
-    std::uint32_t value;
-  } x;
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=66
-  struct {
-    std::uint32_t value;
-  } y;
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=69
-::unions::repr_rust_packed::U create();
-
-}  // namespace repr_rust_packed
-
-namespace repr_c_clone {
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=77
-union CRUBIT_INTERNAL_RUST_TYPE(
-    ":: unions_golden :: repr_c_clone :: U") alignas(4) [[clang::trivial_abi]]
-U final {
- public:
-  // `unions_golden::repr_c_clone::U` doesn't implement the `Default` trait
-  U() = delete;
-
-  // No custom `Drop` impl and no custom "drop glue" required
-  ~U() = default;
-  U(U&&) = default;
-  U& operator=(U&&) = default;
-
-  // Clone::clone
-  U(const U&);
-
-  // Clone::clone_from
-  U& operator=(const U&);
-
-  U(::crubit::UnsafeRelocateTag, U&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=78
-  std::uint32_t x;
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=87
-::unions::repr_c_clone::U create();
-
-}  // namespace repr_c_clone
-
 namespace repr_rust_clone {
 
 // Generated from:
@@ -289,38 +278,6 @@ union CRUBIT_INTERNAL_RUST_TYPE(
 
 }  // namespace repr_rust_clone
 
-namespace repr_c_drop {
-
-// Generated from:
-// cc_bindings_from_rs/test/unions/unions.rs;l=122
-union CRUBIT_INTERNAL_RUST_TYPE(":: unions_golden :: repr_c_drop :: U") alignas(
-    8) [[clang::trivial_abi]] U final {
- public:
-  // Default::default
-  U();
-
-  // Drop::drop
-  ~U();
-
-  U(U&&);
-  U& operator=(U&&);
-
-  // `unions_golden::repr_c_drop::U` doesn't implement the `Clone` trait
-  U(const U&) = delete;
-  U& operator=(const U&) = delete;
-  U(::crubit::UnsafeRelocateTag, U&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-  // Generated from:
-  // cc_bindings_from_rs/test/unions/unions.rs;l=123
-  std::int32_t* x;
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
-}  // namespace repr_c_drop
-
 namespace repr_rust_drop {
 
 // Generated from:
@@ -365,6 +322,49 @@ U final {
 
 }  // namespace repr_rust_drop
 
+namespace repr_rust_packed {
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=64
+union CRUBIT_INTERNAL_RUST_TYPE(
+    ":: unions_golden :: repr_rust_packed :: U") alignas(1)
+    [[clang::trivial_abi]] __attribute__((packed)) U final {
+ public:
+  // `unions_golden::repr_rust_packed::U` doesn't implement the `Default` trait
+  U() = delete;
+
+  // No custom `Drop` impl and no custom "drop glue" required
+  ~U() = default;
+  U(U&&) = default;
+  U& operator=(U&&) = default;
+
+  // `unions_golden::repr_rust_packed::U` doesn't implement the `Clone` trait
+  U(const U&) = delete;
+  U& operator=(const U&) = delete;
+  U(::crubit::UnsafeRelocateTag, U&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=65
+  struct {
+    std::uint32_t value;
+  } x;
+  // Generated from:
+  // cc_bindings_from_rs/test/unions/unions.rs;l=66
+  struct {
+    std::uint32_t value;
+  } y;
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
+
+// Generated from:
+// cc_bindings_from_rs/test/unions/unions.rs;l=69
+::unions::repr_rust_packed::U create();
+
+}  // namespace repr_rust_packed
+
 namespace repr_c {
 
 static_assert(
@@ -391,6 +391,102 @@ inline ::unions::repr_c::U create() {
 }
 
 }  // namespace repr_c
+
+namespace repr_c_clone {
+
+static_assert(
+    sizeof(U) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(U) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(std::is_trivially_destructible_v<U>);
+static_assert(std::is_trivially_move_constructible_v<U>);
+static_assert(std::is_trivially_move_assignable_v<U>);
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_clone(::unions::repr_c_clone::U const&,
+                                     ::unions::repr_c_clone::U* __ret_ptr);
+}
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_clone_ufrom(::unions::repr_c_clone::U&,
+                                           ::unions::repr_c_clone::U const&);
+}
+inline U::U(const U& other) {
+  __crubit_internal::__crubit_thunk_clone(other, this);
+}
+inline U& U::operator=(const U& other) {
+  if (this != &other) {
+    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
+  }
+  return *this;
+}
+inline void U::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(U, x));
+}
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_create(::unions::repr_c_clone::U* __ret_ptr);
+}
+inline ::unions::repr_c_clone::U create() {
+  crubit::Slot<::unions::repr_c_clone::U> __return_value_ret_val_holder;
+  auto* __return_value_storage = __return_value_ret_val_holder.Get();
+  __crubit_internal::__crubit_thunk_create(__return_value_storage);
+  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
+}
+
+}  // namespace repr_c_clone
+
+namespace repr_c_drop {
+
+static_assert(
+    sizeof(U) == 8,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(U) == 8,
+    "Verify that ADT layout didn't change since this header got generated");
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_default(::unions::repr_c_drop::U* __ret_ptr);
+}
+inline U::U() { __crubit_internal::__crubit_thunk_default(this); }
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_drop(::unions::repr_c_drop::U&);
+}
+inline U::~U() { __crubit_internal::__crubit_thunk_drop(*this); }
+inline U::U(U&& other) : U() { *this = std::move(other); }
+inline U& U::operator=(U&& other) {
+  crubit::MemSwap(*this, other);
+  return *this;
+}
+inline void U::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(U, x));
+}
+}  // namespace repr_c_drop
+
+namespace repr_c_packed {
+
+static_assert(
+    sizeof(U) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(U) == 1,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(std::is_trivially_destructible_v<U>);
+static_assert(std::is_trivially_move_constructible_v<U>);
+static_assert(std::is_trivially_move_assignable_v<U>);
+inline void U::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(U, x));
+  static_assert(0 == offsetof(U, y));
+}
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_create(::unions::repr_c_packed::U* __ret_ptr);
+}
+inline ::unions::repr_c_packed::U create() {
+  crubit::Slot<::unions::repr_c_packed::U> __return_value_ret_val_holder;
+  auto* __return_value_storage = __return_value_ret_val_holder.Get();
+  __crubit_internal::__crubit_thunk_create(__return_value_storage);
+  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
+}
+
+}  // namespace repr_c_packed
 
 namespace repr_rust {
 
@@ -449,103 +545,6 @@ inline ::unions::repr_rust::U create() {
 }
 
 }  // namespace repr_rust
-
-namespace repr_c_packed {
-
-static_assert(
-    sizeof(U) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(U) == 1,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(std::is_trivially_destructible_v<U>);
-static_assert(std::is_trivially_move_constructible_v<U>);
-static_assert(std::is_trivially_move_assignable_v<U>);
-inline void U::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(U, x));
-  static_assert(0 == offsetof(U, y));
-}
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_create(::unions::repr_c_packed::U* __ret_ptr);
-}
-inline ::unions::repr_c_packed::U create() {
-  crubit::Slot<::unions::repr_c_packed::U> __return_value_ret_val_holder;
-  auto* __return_value_storage = __return_value_ret_val_holder.Get();
-  __crubit_internal::__crubit_thunk_create(__return_value_storage);
-  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
-}
-
-}  // namespace repr_c_packed
-
-namespace repr_rust_packed {
-
-static_assert(
-    sizeof(U) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(U) == 1,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(std::is_trivially_destructible_v<U>);
-static_assert(std::is_trivially_move_constructible_v<U>);
-static_assert(std::is_trivially_move_assignable_v<U>);
-inline void U::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(U, x));
-  static_assert(0 == offsetof(U, y));
-}
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_create(::unions::repr_rust_packed::U* __ret_ptr);
-}
-inline ::unions::repr_rust_packed::U create() {
-  crubit::Slot<::unions::repr_rust_packed::U> __return_value_ret_val_holder;
-  auto* __return_value_storage = __return_value_ret_val_holder.Get();
-  __crubit_internal::__crubit_thunk_create(__return_value_storage);
-  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
-}
-
-}  // namespace repr_rust_packed
-
-namespace repr_c_clone {
-
-static_assert(
-    sizeof(U) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(U) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(std::is_trivially_destructible_v<U>);
-static_assert(std::is_trivially_move_constructible_v<U>);
-static_assert(std::is_trivially_move_assignable_v<U>);
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone(::unions::repr_c_clone::U const&,
-                                     ::unions::repr_c_clone::U* __ret_ptr);
-}
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone_ufrom(::unions::repr_c_clone::U&,
-                                           ::unions::repr_c_clone::U const&);
-}
-inline U::U(const U& other) {
-  __crubit_internal::__crubit_thunk_clone(other, this);
-}
-inline U& U::operator=(const U& other) {
-  if (this != &other) {
-    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
-  }
-  return *this;
-}
-inline void U::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(U, x));
-}
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_create(::unions::repr_c_clone::U* __ret_ptr);
-}
-inline ::unions::repr_c_clone::U create() {
-  crubit::Slot<::unions::repr_c_clone::U> __return_value_ret_val_holder;
-  auto* __return_value_storage = __return_value_ret_val_holder.Get();
-  __crubit_internal::__crubit_thunk_create(__return_value_storage);
-  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
-}
-
-}  // namespace repr_c_clone
 
 namespace repr_rust_clone {
 
@@ -607,32 +606,6 @@ inline ::unions::repr_rust_clone::U create() {
 
 }  // namespace repr_rust_clone
 
-namespace repr_c_drop {
-
-static_assert(
-    sizeof(U) == 8,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(U) == 8,
-    "Verify that ADT layout didn't change since this header got generated");
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_default(::unions::repr_c_drop::U* __ret_ptr);
-}
-inline U::U() { __crubit_internal::__crubit_thunk_default(this); }
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::unions::repr_c_drop::U&);
-}
-inline U::~U() { __crubit_internal::__crubit_thunk_drop(*this); }
-inline U::U(U&& other) : U() { *this = std::move(other); }
-inline U& U::operator=(U&& other) {
-  crubit::MemSwap(*this, other);
-  return *this;
-}
-inline void U::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(U, x));
-}
-}  // namespace repr_c_drop
-
 namespace repr_rust_drop {
 
 static_assert(
@@ -675,6 +648,33 @@ inline void U::__crubit_field_offset_assertions() {
   static_assert(0 == offsetof(U, x));
 }
 }  // namespace repr_rust_drop
+
+namespace repr_rust_packed {
+
+static_assert(
+    sizeof(U) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(U) == 1,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(std::is_trivially_destructible_v<U>);
+static_assert(std::is_trivially_move_constructible_v<U>);
+static_assert(std::is_trivially_move_assignable_v<U>);
+inline void U::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(U, x));
+  static_assert(0 == offsetof(U, y));
+}
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_create(::unions::repr_rust_packed::U* __ret_ptr);
+}
+inline ::unions::repr_rust_packed::U create() {
+  crubit::Slot<::unions::repr_rust_packed::U> __return_value_ret_val_holder;
+  auto* __return_value_storage = __return_value_ret_val_holder.Get();
+  __crubit_internal::__crubit_thunk_create(__return_value_storage);
+  return std::move(__return_value_ret_val_holder).AssumeInitAndTakeValue();
+}
+
+}  // namespace repr_rust_packed
 
 }  // namespace unions
 #endif  // THIRD_PARTY_CRUBIT_CC_BINDINGS_FROM_RS_TEST_UNIONS_UNIONS_GOLDEN

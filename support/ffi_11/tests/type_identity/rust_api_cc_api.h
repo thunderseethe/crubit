@@ -21,8 +21,40 @@ namespace rust_api {
 decltype(char(0)) c_char();
 
 // Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=8
-std::uint8_t c_uchar();
+// support/ffi_11/tests/type_identity/rust_api.rs;l=60
+decltype(char16_t(0)) c_char16_t();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=64
+decltype(char32_t(0)) c_char32_t();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=56
+decltype(char8_t(0)) c_char8_t();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=44
+double c_double();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=41
+float c_float();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=21
+std::int32_t c_int();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=27
+std::int64_t c_long();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=34
+long long c_longlong();
+
+// Generated from:
+// support/ffi_11/tests/type_identity/rust_api.rs;l=48
+decltype(nullptr) c_nullptr_t();
 
 // Generated from:
 // support/ffi_11/tests/type_identity/rust_api.rs;l=11
@@ -33,44 +65,24 @@ std::int8_t c_schar();
 std::int16_t c_short();
 
 // Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=18
-std::uint16_t c_ushort();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=21
-std::int32_t c_int();
+// support/ffi_11/tests/type_identity/rust_api.rs;l=8
+std::uint8_t c_uchar();
 
 // Generated from:
 // support/ffi_11/tests/type_identity/rust_api.rs;l=24
 std::uint32_t c_uint();
 
 // Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=27
-std::int64_t c_long();
-
-// Generated from:
 // support/ffi_11/tests/type_identity/rust_api.rs;l=30
 std::uint64_t c_ulong();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=34
-long long c_longlong();
 
 // Generated from:
 // support/ffi_11/tests/type_identity/rust_api.rs;l=37
 unsigned long long c_ulonglong();
 
 // Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=41
-float c_float();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=44
-double c_double();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=48
-decltype(nullptr) c_nullptr_t();
+// support/ffi_11/tests/type_identity/rust_api.rs;l=18
+std::uint16_t c_ushort();
 
 // Error generating bindings for `c_wchar_t` defined at
 // support/ffi_11/tests/type_identity/rust_api.rs;l=52:
@@ -78,18 +90,6 @@ decltype(nullptr) c_nullptr_t();
 // to format type for the definition of `ffi_11::wchar_type::c_wchar_t`: Error
 // formatting the fully-qualified C++ name of `c_wchar_t`: `wchar_t` is a C++
 // reserved keyword and can't be used as a C++ identifier
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=56
-decltype(char8_t(0)) c_char8_t();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=60
-decltype(char16_t(0)) c_char16_t();
-
-// Generated from:
-// support/ffi_11/tests/type_identity/rust_api.rs;l=64
-decltype(char32_t(0)) c_char32_t();
 
 namespace __crubit_internal {
 extern "C" decltype(char(0)) __crubit_thunk_c_uchar();
@@ -99,10 +99,64 @@ inline decltype(char(0)) c_char() {
 }
 
 namespace __crubit_internal {
-extern "C" std::uint8_t __crubit_thunk_c_uuchar();
+extern "C" decltype(char16_t(0)) __crubit_thunk_c_uchar16_ut();
 }
-inline std::uint8_t c_uchar() {
-  return __crubit_internal::__crubit_thunk_c_uuchar();
+inline decltype(char16_t(0)) c_char16_t() {
+  return __crubit_internal::__crubit_thunk_c_uchar16_ut();
+}
+
+namespace __crubit_internal {
+extern "C" decltype(char32_t(0)) __crubit_thunk_c_uchar32_ut();
+}
+inline decltype(char32_t(0)) c_char32_t() {
+  return __crubit_internal::__crubit_thunk_c_uchar32_ut();
+}
+
+namespace __crubit_internal {
+extern "C" decltype(char8_t(0)) __crubit_thunk_c_uchar8_ut();
+}
+inline decltype(char8_t(0)) c_char8_t() {
+  return __crubit_internal::__crubit_thunk_c_uchar8_ut();
+}
+
+namespace __crubit_internal {
+extern "C" double __crubit_thunk_c_udouble();
+}
+inline double c_double() {
+  return __crubit_internal::__crubit_thunk_c_udouble();
+}
+
+namespace __crubit_internal {
+extern "C" float __crubit_thunk_c_ufloat();
+}
+inline float c_float() { return __crubit_internal::__crubit_thunk_c_ufloat(); }
+
+namespace __crubit_internal {
+extern "C" std::int32_t __crubit_thunk_c_uint();
+}
+inline std::int32_t c_int() {
+  return __crubit_internal::__crubit_thunk_c_uint();
+}
+
+namespace __crubit_internal {
+extern "C" std::int64_t __crubit_thunk_c_ulong();
+}
+inline std::int64_t c_long() {
+  return __crubit_internal::__crubit_thunk_c_ulong();
+}
+
+namespace __crubit_internal {
+extern "C" long long __crubit_thunk_c_ulonglong();
+}
+inline long long c_longlong() {
+  return __crubit_internal::__crubit_thunk_c_ulonglong();
+}
+
+namespace __crubit_internal {
+extern "C" decltype(nullptr) __crubit_thunk_c_unullptr_ut();
+}
+inline decltype(nullptr) c_nullptr_t() {
+  return __crubit_internal::__crubit_thunk_c_unullptr_ut();
 }
 
 namespace __crubit_internal {
@@ -120,17 +174,10 @@ inline std::int16_t c_short() {
 }
 
 namespace __crubit_internal {
-extern "C" std::uint16_t __crubit_thunk_c_uushort();
+extern "C" std::uint8_t __crubit_thunk_c_uuchar();
 }
-inline std::uint16_t c_ushort() {
-  return __crubit_internal::__crubit_thunk_c_uushort();
-}
-
-namespace __crubit_internal {
-extern "C" std::int32_t __crubit_thunk_c_uint();
-}
-inline std::int32_t c_int() {
-  return __crubit_internal::__crubit_thunk_c_uint();
+inline std::uint8_t c_uchar() {
+  return __crubit_internal::__crubit_thunk_c_uuchar();
 }
 
 namespace __crubit_internal {
@@ -141,24 +188,10 @@ inline std::uint32_t c_uint() {
 }
 
 namespace __crubit_internal {
-extern "C" std::int64_t __crubit_thunk_c_ulong();
-}
-inline std::int64_t c_long() {
-  return __crubit_internal::__crubit_thunk_c_ulong();
-}
-
-namespace __crubit_internal {
 extern "C" std::uint64_t __crubit_thunk_c_uulong();
 }
 inline std::uint64_t c_ulong() {
   return __crubit_internal::__crubit_thunk_c_uulong();
-}
-
-namespace __crubit_internal {
-extern "C" long long __crubit_thunk_c_ulonglong();
-}
-inline long long c_longlong() {
-  return __crubit_internal::__crubit_thunk_c_ulonglong();
 }
 
 namespace __crubit_internal {
@@ -169,43 +202,10 @@ inline unsigned long long c_ulonglong() {
 }
 
 namespace __crubit_internal {
-extern "C" float __crubit_thunk_c_ufloat();
+extern "C" std::uint16_t __crubit_thunk_c_uushort();
 }
-inline float c_float() { return __crubit_internal::__crubit_thunk_c_ufloat(); }
-
-namespace __crubit_internal {
-extern "C" double __crubit_thunk_c_udouble();
-}
-inline double c_double() {
-  return __crubit_internal::__crubit_thunk_c_udouble();
-}
-
-namespace __crubit_internal {
-extern "C" decltype(nullptr) __crubit_thunk_c_unullptr_ut();
-}
-inline decltype(nullptr) c_nullptr_t() {
-  return __crubit_internal::__crubit_thunk_c_unullptr_ut();
-}
-
-namespace __crubit_internal {
-extern "C" decltype(char8_t(0)) __crubit_thunk_c_uchar8_ut();
-}
-inline decltype(char8_t(0)) c_char8_t() {
-  return __crubit_internal::__crubit_thunk_c_uchar8_ut();
-}
-
-namespace __crubit_internal {
-extern "C" decltype(char16_t(0)) __crubit_thunk_c_uchar16_ut();
-}
-inline decltype(char16_t(0)) c_char16_t() {
-  return __crubit_internal::__crubit_thunk_c_uchar16_ut();
-}
-
-namespace __crubit_internal {
-extern "C" decltype(char32_t(0)) __crubit_thunk_c_uchar32_ut();
-}
-inline decltype(char32_t(0)) c_char32_t() {
-  return __crubit_internal::__crubit_thunk_c_uchar32_ut();
+inline std::uint16_t c_ushort() {
+  return __crubit_internal::__crubit_thunk_c_uushort();
 }
 
 }  // namespace rust_api

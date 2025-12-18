@@ -10,6 +10,25 @@
 #![allow(improper_ctypes_definitions)]
 #![deny(warnings)]
 
+const _: () = assert!(::std::mem::size_of::<::rs_default_golden::derived_impl::SomeStruct>() == 4);
+const _: () = assert!(::std::mem::align_of::<::rs_default_golden::derived_impl::SomeStruct>() == 4);
+#[unsafe(no_mangle)]
+unsafe extern "C" fn __crubit_thunk_default(__ret_ptr: *mut core::ffi::c_void) -> () {
+    unsafe {
+        let __rs_return_value =
+            <::rs_default_golden::derived_impl::SomeStruct as ::core::default::Default>::default();
+        (__ret_ptr as *mut ::rs_default_golden::derived_impl::SomeStruct).write(__rs_return_value);
+    }
+}
+#[unsafe(no_mangle)]
+unsafe extern "C" fn __crubit_thunk_extract_uint(
+    s: &'static mut ::core::mem::MaybeUninit<::rs_default_golden::derived_impl::SomeStruct>,
+) -> i32 {
+    unsafe {
+        let s = s.assume_init_read();
+        ::rs_default_golden::derived_impl::SomeStruct::extract_int(s)
+    }
+}
 const _: () = assert!(::std::mem::size_of::<::rs_default_golden::explicit_impl::SomeStruct>() == 4);
 const _: () =
     assert!(::std::mem::align_of::<::rs_default_golden::explicit_impl::SomeStruct>() == 4);
@@ -28,25 +47,6 @@ unsafe extern "C" fn __crubit_thunk_extract_uint(
     unsafe {
         let s = s.assume_init_read();
         ::rs_default_golden::explicit_impl::SomeStruct::extract_int(s)
-    }
-}
-const _: () = assert!(::std::mem::size_of::<::rs_default_golden::derived_impl::SomeStruct>() == 4);
-const _: () = assert!(::std::mem::align_of::<::rs_default_golden::derived_impl::SomeStruct>() == 4);
-#[unsafe(no_mangle)]
-unsafe extern "C" fn __crubit_thunk_default(__ret_ptr: *mut core::ffi::c_void) -> () {
-    unsafe {
-        let __rs_return_value =
-            <::rs_default_golden::derived_impl::SomeStruct as ::core::default::Default>::default();
-        (__ret_ptr as *mut ::rs_default_golden::derived_impl::SomeStruct).write(__rs_return_value);
-    }
-}
-#[unsafe(no_mangle)]
-unsafe extern "C" fn __crubit_thunk_extract_uint(
-    s: &'static mut ::core::mem::MaybeUninit<::rs_default_golden::derived_impl::SomeStruct>,
-) -> i32 {
-    unsafe {
-        let s = s.assume_init_read();
-        ::rs_default_golden::derived_impl::SomeStruct::extract_int(s)
     }
 }
 const _: () = assert!(

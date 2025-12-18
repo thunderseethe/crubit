@@ -6,7 +6,7 @@
 //! `rs_bindings_from_cc/ir.h` for more
 //! information.
 
-use arc_anyhow::{anyhow, bail, Context, Error, Result};
+use arc_anyhow::{anyhow, bail, ensure, Context, Error, Result};
 use code_gen_utils::{make_rs_ident, NamespaceQualifier};
 use crubit_feature::CrubitFeature;
 use proc_macro2::{Ident, TokenStream};
@@ -1054,6 +1054,7 @@ pub enum BridgeType {
         rust_name: Rc<str>,
         abi_rust: Rc<str>,
         abi_cpp: Rc<str>,
+        template_args: Rc<[TemplateArg]>,
     },
     StdOptional(CcType),
     StdPair(CcType, CcType),
@@ -1068,14 +1069,30 @@ pub struct TemplateArg {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub struct TemplateSpecialization {
-    /// Is this a `std::string_view`?
-    pub is_string_view: bool,
-    /// Is this a `std::wstring_view`?
-    pub is_wstring_view: bool,
     /// The target containing the template definition
     pub defining_target: BazelLabel,
-    pub template_name: Rc<str>,
-    pub template_args: Vec<TemplateArg>,
+
+    /// The kind of template specialization.
+    pub kind: TemplateSpecializationKind,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum TemplateSpecializationKind {
+    /// std::basic_string_view<char, std::char_traits<char>>
+    StdStringView,
+    /// std::basic_string_view<wchar_t, std::char_traits<wchar_t>>
+    StdWStringView,
+    /// std::vector<T, std::allocator<T>>
+    StdVector { element_type: TemplateArg },
+    /// std::unique_ptr<T, std::default_delete<T>>
+    StdUniquePtr { element_type: TemplateArg },
+    /// c9::Co<T>
+    C9Co { element_type: TemplateArg },
+    /// absl::Span<T>
+    AbslSpan { element_type: TemplateArg },
+    /// Some other template specialization.
+    NonSpecial,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
@@ -1213,7 +1230,6 @@ impl Record {
 
     pub fn should_implement_drop(&self) -> bool {
         match self.destructor {
-            // TODO(b/202258760): Only omit destructor if `Copy` is specified.
             SpecialMemberFunc::Trivial => false,
 
             // TODO(jeanpierreda): b/212690698 - Avoid calling into the C++ destructor
@@ -1234,15 +1250,50 @@ impl Record {
         }
     }
 
-    /// Whether this is a template instantiation that is generally available.
+    pub fn should_derive_copy(&self) -> bool {
+        match self.trait_derives.copy {
+            TraitImplPolarity::Positive => true,
+            TraitImplPolarity::Negative => false,
+            TraitImplPolarity::None => {
+                self.is_unpin()
+                    && self.copy_constructor == SpecialMemberFunc::Trivial
+                    && self.destructor == SpecialMemberFunc::Trivial
+                    && self.check_by_value().is_ok()
+                    && self.trait_derives.clone != TraitImplPolarity::Negative
+            }
+        }
+    }
+
+    /// Returns Ok if the type can exist by value.
     ///
-    /// We special-case a handful of template specializations, such as `std::string_view`,
-    /// AKA `basic_string_view<char>`, even though we do not make `basic_string_view` itself
-    /// available to all.
-    pub fn is_disallowed_template_instantiation(self: &Record) -> bool {
-        self.template_specialization
-            .as_ref()
-            .is_some_and(|ts| !ts.is_string_view && !ts.is_wstring_view)
+    /// This does not necessarily imply that the type is Rust-movable, e.g. trivially relocatable.
+    pub fn check_by_value(&self) -> Result<()> {
+        ensure!(
+            self.destructor != SpecialMemberFunc::Unavailable,
+            "Can't directly construct values of type `{}` as it has a non-public or deleted destructor",
+            self.cc_name
+        );
+        ensure!(
+            !self.is_abstract,
+            "Can't directly construct values of type `{}`: it is abstract",
+            self.cc_name
+        );
+        Ok(())
+    }
+
+    /// Whether this record has a unique owning target.
+    ///
+    /// Notably, all records that have a unique owning target are supported, e.g. `std::string`, but
+    /// not all supported records have a unique owning target, e.g. `std::vector<int>`.
+    pub fn has_unique_owning_target(self: &Record) -> bool {
+        matches!(
+            &self.template_specialization,
+            Some(TemplateSpecialization {
+                kind: TemplateSpecializationKind::StdStringView
+                    | TemplateSpecializationKind::StdWStringView,
+                ..
+            }) | None
+        )
     }
 
     pub fn defining_target(&self) -> Option<&BazelLabel> {

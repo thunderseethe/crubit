@@ -107,11 +107,6 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
 };
 
 // Generated from:
-// cc_bindings_from_rs/test/lifetimes/lifetimes.rs;l=70
-void function_with_trivial_unnamed_lifetime_param(
-    std::int32_t const& __param_0);
-
-// Generated from:
 // cc_bindings_from_rs/test/lifetimes/lifetimes.rs;l=72
 struct CRUBIT_INTERNAL_RUST_TYPE(
     ":: lifetimes_golden :: StructWithLifetimeAndDropGlue") alignas(8)
@@ -124,8 +119,9 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
   // Drop::drop
   ~StructWithLifetimeAndDropGlue();
 
-  // C++ moves are deleted because there's no non-destructive implementation
-  // available.
+  // C++ move operations are unavailable for this type. See
+  // http://<internal link>/rust/movable_types for an explanation of Rust types that
+  // are C++ movable.
   StructWithLifetimeAndDropGlue(StructWithLifetimeAndDropGlue&&) = delete;
   StructWithLifetimeAndDropGlue& operator=(StructWithLifetimeAndDropGlue&&) =
       delete;
@@ -156,6 +152,11 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
  private:
   static void __crubit_field_offset_assertions();
 };
+
+// Generated from:
+// cc_bindings_from_rs/test/lifetimes/lifetimes.rs;l=70
+void function_with_trivial_unnamed_lifetime_param(
+    std::int32_t const& __param_0);
 
 static_assert(
     sizeof(StructWithLifetime) == 8,
@@ -296,18 +297,6 @@ inline StructWithLifetime::operator std::int32_t() {
 inline void StructWithLifetime::__crubit_field_offset_assertions() {
   static_assert(0 == offsetof(StructWithLifetime, field_with_lifetime));
 }
-namespace __crubit_internal {
-extern "C" void
-__crubit_thunk_function_uwith_utrivial_uunnamed_ulifetime_uparam(
-    std::int32_t const&);
-}
-inline void function_with_trivial_unnamed_lifetime_param(
-    std::int32_t const& __param_0) {
-  return __crubit_internal::
-      __crubit_thunk_function_uwith_utrivial_uunnamed_ulifetime_uparam(
-          __param_0);
-}
-
 static_assert(
     sizeof(StructWithLifetimeAndDropGlue) == 32,
     "Verify that ADT layout didn't change since this header got generated");
@@ -339,5 +328,17 @@ inline void StructWithLifetimeAndDropGlue::__crubit_field_offset_assertions() {
   static_assert(24 ==
                 offsetof(StructWithLifetimeAndDropGlue, field_with_lifetime));
 }
+namespace __crubit_internal {
+extern "C" void
+__crubit_thunk_function_uwith_utrivial_uunnamed_ulifetime_uparam(
+    std::int32_t const&);
+}
+inline void function_with_trivial_unnamed_lifetime_param(
+    std::int32_t const& __param_0) {
+  return __crubit_internal::
+      __crubit_thunk_function_uwith_utrivial_uunnamed_ulifetime_uparam(
+          __param_0);
+}
+
 }  // namespace lifetimes
 #endif  // THIRD_PARTY_CRUBIT_CC_BINDINGS_FROM_RS_TEST_LIFETIMES_LIFETIMES_GOLDEN

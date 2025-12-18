@@ -32,7 +32,8 @@ use crate::format_type::{
 use crate::generate_function::{generate_function, must_use_attr_of};
 use crate::generate_function_thunk::{generate_trait_thunks, TraitThunks};
 use crate::generate_struct_and_union::{
-    from_trait_impls_by_argument, generate_adt, generate_adt_core, scalar_value_to_string,
+    cpp_enum_cpp_underlying_type, from_trait_impls_by_argument, generate_adt, generate_adt_core,
+    scalar_value_to_string,
 };
 use arc_anyhow::{Context, Error, Result};
 use code_gen_utils::{format_cc_includes, CcConstQualifier, CcInclude, NamespaceQualifier};
@@ -119,22 +120,56 @@ fn repr_attrs_from_db(
 }
 
 fn source_crate_num(db: &dyn BindingsGenerator<'_>) -> CrateNum {
-    let Some(source_crate_name) = db.source_crate_name() else {
-        return LOCAL_CRATE;
-    };
-    let source_crate_name = Symbol::intern(&*source_crate_name);
-    let tcx = db.tcx();
-    let Some(crate_num) = tcx
-        .used_crates(())
-        .iter()
-        .copied()
-        .find(|&crate_num| tcx.crate_name(crate_num) == source_crate_name)
-    else {
-        db.fatal_errors()
-            .report(&format!("Failed to resolve source crate name: `{source_crate_name}`"));
-        return LOCAL_CRATE;
-    };
-    crate_num
+    // This is a temporary workaround while migrating to the rmeta interface. Our old implementation
+    // breaks with some rmeta files, notably proto files, due to crate renaming behavior. But our
+    // new implementation relies on assuming our source is the placeholder file provided by
+    // compilation.
+    if db.enable_rmeta_interface() {
+        let tcx = db.tcx();
+        // We know statically this will be the fake input
+        // ```
+        // extern crate <source-crate-name>;
+        // fn main() {}
+        // ```
+        // And we use that fact here to look up the def id of `extern crate <source-crate-name>`.
+        let mod_children = tcx.module_children_local(LOCAL_CRATE.as_def_id().expect_local());
+        mod_children
+            .iter()
+            .find_map(|mod_child| {
+                if db
+                    .source_crate_name()
+                    .is_some_and(|name| name.as_ref() == mod_child.ident.as_str())
+                {
+                    use rustc_middle::metadata::Reexport;
+                    mod_child.reexport_chain.first().and_then(|reexport| match reexport {
+                        Reexport::ExternCrate(def_id) => def_id.as_local(),
+                        _ => None,
+                    })
+                } else {
+                    None
+                }
+            })
+            .and_then(|def_id| tcx.resolutions(()).extern_crate_map.get(&def_id))
+            .cloned()
+            .unwrap_or(LOCAL_CRATE)
+    } else {
+        let Some(source_crate_name) = db.source_crate_name() else {
+            return LOCAL_CRATE;
+        };
+        let source_crate_name = Symbol::intern(source_crate_name.as_ref());
+        let tcx = db.tcx();
+        let Some(crate_num) = tcx
+            .used_crates(())
+            .iter()
+            .copied()
+            .find(|&crate_num| tcx.crate_name(crate_num) == source_crate_name)
+        else {
+            db.fatal_errors()
+                .report(&format!("Failed to resolve source crate name: `{source_crate_name}`"));
+            return LOCAL_CRATE;
+        };
+        crate_num
+    }
 }
 
 pub fn new_database<'db>(
@@ -145,6 +180,7 @@ pub fn new_database<'db>(
     default_features: flagset::FlagSet<crubit_feature::CrubitFeature>,
     enable_hir_types: bool,
     kythe_annotations: bool,
+    enable_rmeta_interface: bool,
     crate_name_to_include_paths: Rc<HashMap<Rc<str>, Vec<CcInclude>>>,
     crate_name_to_features: Rc<HashMap<Rc<str>, flagset::FlagSet<crubit_feature::CrubitFeature>>>,
     crate_name_to_namespace: Rc<HashMap<Rc<str>, Rc<str>>>,
@@ -162,6 +198,7 @@ pub fn new_database<'db>(
         default_features,
         enable_hir_types,
         kythe_annotations,
+        enable_rmeta_interface,
         crate_name_to_include_paths,
         crate_name_to_features,
         crate_name_to_namespace,
@@ -538,7 +575,17 @@ fn symbol_canonical_name(
         })
         .or_else(|| db.symbol_unqualified_name(def_id))?;
 
-    let krate = tcx.crate_name(def_id.krate);
+    // `crate_name` gets the crate name written out in the rmeta file, which is not always the name
+    // we want to spell out in our generated bindings. Proto targets, for example, rename their crate
+    // to include the `_rust_proto` suffix, but the rmeta file contains the unsuffixed crate name.
+    // If we're naming a symbol from our source crate, use the source crate name as the krate name
+    // to resolve any renaming issues.
+    let krate = (def_id.krate == db.source_crate_num())
+        .then_some(())
+        .and_then(|_| db.source_crate_name())
+        .map(|source_crate_name| Symbol::intern(source_crate_name.as_ref()))
+        .unwrap_or_else(|| tcx.crate_name(def_id.krate));
+    //let krate = tcx.crate_name(def_id.krate);
     if krate.as_str() == "polars_plan"
         && matches!(unqualified.rs_name.as_str(), "date_range" | "time_range")
     {
@@ -1043,8 +1090,9 @@ fn generate_move_ctor_and_assignment_operator<'tcx>(
                 Ok(ApiSnippets::default())
             } else {
                 bail!(
-                    "C++ moves are deleted \
-                       because there's no non-destructive implementation available."
+                    "C++ move operations are unavailable for this type. See \
+                    http://<internal link>/rust/movable_types for an explanation of Rust types that are C++ \
+                    movable."
                 );
             }
         } else {
@@ -1123,6 +1171,17 @@ fn generate_fwd_decl(db: &Database<'_>, def_id: DefId) -> TokenStream {
         .expect("`generate_fwd_decl` should only be called if `generate_adt_core` succeeded");
     let AdtCoreBindings { keyword, cc_short_name, .. } = &*core_bindings;
 
+    // If we're forward declaring a C++ enum, we need to include the underlying type in the forward
+    // declaration. Otherwise, it will default to `int` and cause a compilation error.
+    let tcx = db.tcx();
+    let crubit_attrs = crubit_attr::get_attrs(tcx, core_bindings.def_id).unwrap_or_default();
+    if crubit_attrs.cpp_enum.is_some() {
+        let cpp_enum_cpp_underlying_type_snippet = cpp_enum_cpp_underlying_type(db, def_id)
+            .expect("`generate_fwd_decl` should only be called if we successfully generated an enum for this type");
+        let cpp_enum_cpp_underlying_type = cpp_enum_cpp_underlying_type_snippet.tokens;
+        return quote! { #keyword #cc_short_name : #cpp_enum_cpp_underlying_type; };
+    }
+
     quote! { #keyword #cc_short_name; }
 }
 
@@ -1136,7 +1195,15 @@ fn generate_kythe_doc_comment(
     // capture tag; it's fine to emit capture tags that never capture anything.)
     let tcx = db.tcx();
     let def_span = tcx.def_ident_span(def_id).unwrap_or_else(|| tcx.def_span(def_id));
+    #[rustversion::before(2025-12-14)]
     let file_name = tcx.sess().source_map().span_to_filename(def_span).prefer_local().to_string();
+    #[rustversion::since(2025-12-14)]
+    let file_name = tcx
+        .sess()
+        .source_map()
+        .span_to_filename(def_span)
+        .prefer_local_unconditionally()
+        .to_string();
     let start = def_span.lo().0.to_string();
     let end = def_span.hi().0.to_string();
     quote! { __CAPTURE_TAG__ #file_name #start #end __COMMENT__ #doc_comment}
@@ -1150,12 +1217,18 @@ fn generate_source_location(db: &dyn BindingsGenerator, def_id: DefId) -> String
             Ok(filelines) => filelines,
             Err(_) => return "unknown location".to_string(),
         };
+    #[rustversion::before(2025-12-14)]
     let file_name = file.name.prefer_local().to_string();
+    #[rustversion::since(2025-12-14)]
+    let file_name = file.name.prefer_local_unconditionally().to_string();
+    // Virtual paths will have a "./" prefix that we don't want to display.
+    let file_name = file_name.strip_prefix("./").unwrap_or(file_name.as_str());
+
     // Note: line_index starts at 0, while most everything else starts indexing at 1.
     let line_number = (lines[0].line_index + 1).to_string();
     if let Some(path_format) = db.crubit_debug_path_format() {
         if file.name.is_real() {
-            return path_format.format(&[file_name.as_str(), line_number.as_str()]);
+            return path_format.format(&[file_name, line_number.as_str()]);
         }
     }
     format!("{file_name};l={line_number}")
@@ -1213,9 +1286,9 @@ fn generate_item_impl(
     def_id: DefId,
 ) -> Result<Option<ApiSnippets>> {
     let tcx = db.tcx();
-    if db.symbol_canonical_name(def_id).is_none() {
+    let Some(canonical_name) = db.symbol_canonical_name(def_id) else {
         return Ok(None);
-    }
+    };
     let item = match tcx.def_kind(def_id) {
         DefKind::Struct | DefKind::Enum | DefKind::Union => {
             let attributes = crubit_attr::get_attrs(tcx, def_id).unwrap();
@@ -1232,7 +1305,7 @@ fn generate_item_impl(
                 bail!("Generic types are not supported yet (b/259749095)");
             }
 
-            if let Some(cpp_type) = attributes.cpp_type {
+            if let Some(cpp_type) = canonical_name.unqualified.cpp_type {
                 let item_name = tcx.def_path_str(def_id);
                 bail!(
                     "Type bindings for {item_name} suppressed due to being mapped to \
@@ -1351,15 +1424,13 @@ pub fn format_namespace_bound_cc_tokens(
 
 /// Compares two `DefId` s
 pub(crate) fn stable_def_id_cmp<'tcx>(tcx: TyCtxt<'tcx>, lhs_id: DefId, rhs_id: DefId) -> Ordering {
-    let lhs_span = tcx.def_span(lhs_id);
-    let rhs_span = tcx.def_span(rhs_id);
-    if lhs_span.source_equal(rhs_span) {
-        let lhs_def_path_hash = tcx.def_path_hash(lhs_id);
-        let rhs_def_path_hash = tcx.def_path_hash(rhs_id);
-        lhs_def_path_hash.cmp(&rhs_def_path_hash)
-    } else {
-        lhs_span.cmp(&rhs_span)
-    }
+    let lhs_def_path_hash = tcx.def_path_str(lhs_id);
+    let rhs_def_path_hash = tcx.def_path_str(rhs_id);
+    lhs_def_path_hash.cmp(&rhs_def_path_hash).then_with(|| {
+        let lhs_def_hash = tcx.def_path_hash(lhs_id);
+        let rhs_def_hash = tcx.def_path_hash(rhs_id);
+        lhs_def_hash.cmp(&rhs_def_hash)
+    })
 }
 
 pub(crate) trait SortedByDef: Iterator + Sized {

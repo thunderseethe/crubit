@@ -19,47 +19,6 @@
 
 namespace rs_default {
 
-namespace explicit_impl {
-
-// Generated from:
-// cc_bindings_from_rs/test/known_traits/default/default.rs;l=10
-struct CRUBIT_INTERNAL_RUST_TYPE(
-    ":: rs_default_golden :: explicit_impl :: SomeStruct") alignas(4)
-    [[clang::trivial_abi]] SomeStruct final {
- public:
-  // Default::default
-  SomeStruct();
-
-  // No custom `Drop` impl and no custom "drop glue" required
-  ~SomeStruct() = default;
-  SomeStruct(SomeStruct&&) = default;
-  SomeStruct& operator=(SomeStruct&&) = default;
-
-  // `rs_default_golden::explicit_impl::SomeStruct` doesn't implement the
-  // `Clone` trait
-  SomeStruct(const SomeStruct&) = delete;
-  SomeStruct& operator=(const SomeStruct&) = delete;
-  SomeStruct(::crubit::UnsafeRelocateTag, SomeStruct&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-
-  // Generated from:
-  // cc_bindings_from_rs/test/known_traits/default/default.rs;l=19
-  static std::int32_t extract_int(::rs_default::explicit_impl::SomeStruct s);
-
- private:
-  union {
-    // Generated from:
-    // cc_bindings_from_rs/test/known_traits/default/default.rs;l=10
-    std::int32_t __field0;
-  };
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
-}  // namespace explicit_impl
-
 namespace derived_impl {
 
 // Generated from:
@@ -100,6 +59,47 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
 };
 
 }  // namespace derived_impl
+
+namespace explicit_impl {
+
+// Generated from:
+// cc_bindings_from_rs/test/known_traits/default/default.rs;l=10
+struct CRUBIT_INTERNAL_RUST_TYPE(
+    ":: rs_default_golden :: explicit_impl :: SomeStruct") alignas(4)
+    [[clang::trivial_abi]] SomeStruct final {
+ public:
+  // Default::default
+  SomeStruct();
+
+  // No custom `Drop` impl and no custom "drop glue" required
+  ~SomeStruct() = default;
+  SomeStruct(SomeStruct&&) = default;
+  SomeStruct& operator=(SomeStruct&&) = default;
+
+  // `rs_default_golden::explicit_impl::SomeStruct` doesn't implement the
+  // `Clone` trait
+  SomeStruct(const SomeStruct&) = delete;
+  SomeStruct& operator=(const SomeStruct&) = delete;
+  SomeStruct(::crubit::UnsafeRelocateTag, SomeStruct&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+
+  // Generated from:
+  // cc_bindings_from_rs/test/known_traits/default/default.rs;l=19
+  static std::int32_t extract_int(::rs_default::explicit_impl::SomeStruct s);
+
+ private:
+  union {
+    // Generated from:
+    // cc_bindings_from_rs/test/known_traits/default/default.rs;l=10
+    std::int32_t __field0;
+  };
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
+
+}  // namespace explicit_impl
 
 namespace field_with_no_default {
 
@@ -268,37 +268,6 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
 
 }  // namespace transparent_struct
 
-namespace explicit_impl {
-
-static_assert(
-    sizeof(SomeStruct) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(SomeStruct) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-namespace __crubit_internal {
-extern "C" void __crubit_thunk_default(
-    ::rs_default::explicit_impl::SomeStruct* __ret_ptr);
-}
-inline SomeStruct::SomeStruct() {
-  __crubit_internal::__crubit_thunk_default(this);
-}
-static_assert(std::is_trivially_destructible_v<SomeStruct>);
-static_assert(std::is_trivially_move_constructible_v<SomeStruct>);
-static_assert(std::is_trivially_move_assignable_v<SomeStruct>);
-namespace __crubit_internal {
-extern "C" std::int32_t __crubit_thunk_extract_uint(
-    ::rs_default::explicit_impl::SomeStruct*);
-}
-inline std::int32_t SomeStruct::extract_int(
-    ::rs_default::explicit_impl::SomeStruct s) {
-  return __crubit_internal::__crubit_thunk_extract_uint(&s);
-}
-inline void SomeStruct::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(SomeStruct, __field0));
-}
-}  // namespace explicit_impl
-
 namespace derived_impl {
 
 static_assert(
@@ -329,6 +298,37 @@ inline void SomeStruct::__crubit_field_offset_assertions() {
   static_assert(0 == offsetof(SomeStruct, __field0));
 }
 }  // namespace derived_impl
+
+namespace explicit_impl {
+
+static_assert(
+    sizeof(SomeStruct) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(SomeStruct) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+namespace __crubit_internal {
+extern "C" void __crubit_thunk_default(
+    ::rs_default::explicit_impl::SomeStruct* __ret_ptr);
+}
+inline SomeStruct::SomeStruct() {
+  __crubit_internal::__crubit_thunk_default(this);
+}
+static_assert(std::is_trivially_destructible_v<SomeStruct>);
+static_assert(std::is_trivially_move_constructible_v<SomeStruct>);
+static_assert(std::is_trivially_move_assignable_v<SomeStruct>);
+namespace __crubit_internal {
+extern "C" std::int32_t __crubit_thunk_extract_uint(
+    ::rs_default::explicit_impl::SomeStruct*);
+}
+inline std::int32_t SomeStruct::extract_int(
+    ::rs_default::explicit_impl::SomeStruct s) {
+  return __crubit_internal::__crubit_thunk_extract_uint(&s);
+}
+inline void SomeStruct::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(SomeStruct, __field0));
+}
+}  // namespace explicit_impl
 
 namespace field_with_no_default {
 

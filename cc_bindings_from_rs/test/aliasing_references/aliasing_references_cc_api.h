@@ -21,14 +21,55 @@
 namespace aliasing_references {
 
 // Generated from:
-// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=8
-void mut_refs(std::int32_t& __param_0, std::int32_t& __param_1);
+// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=24
+struct CRUBIT_INTERNAL_RUST_TYPE(
+    ":: aliasing_references_golden :: NonFreezeType") alignas(4)
+    [[clang::trivial_abi]] NonFreezeType final {
+ public:
+  // Default::default
+  NonFreezeType();
 
-// Generated from:
-// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=9
-void mut_ref_and_shared_refs(std::int32_t& __param_0,
-                             std::int32_t const& __param_1,
-                             std::int32_t const& __param_2);
+  // No custom `Drop` impl and no custom "drop glue" required
+  ~NonFreezeType() = default;
+  NonFreezeType(NonFreezeType&&) = default;
+  NonFreezeType& operator=(NonFreezeType&&) = default;
+
+  // `aliasing_references_golden::NonFreezeType` doesn't implement the `Clone`
+  // trait
+  NonFreezeType(const NonFreezeType&) = delete;
+  NonFreezeType& operator=(const NonFreezeType&) = delete;
+  NonFreezeType(::crubit::UnsafeRelocateTag, NonFreezeType&& value) {
+    memcpy(this, &value, sizeof(value));
+  }
+
+  //  # Safety
+  //
+  //
+  //
+  //  This function must not be called while an outstanding reference to the
+  //  underlying
+  //
+  //  `i32` is held.
+  //
+  // Generated from:
+  // cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=32
+  std::int32_t& [[clang::annotate_type("lifetime",
+                                       "__anon1")]] as_mut_unchecked()
+      const& [[clang::annotate_type("lifetime",
+                                    "__anon1")]] CRUBIT_LIFETIME_BOUND;
+
+  // Generated from:
+  // cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=35
+  void shared_self_mut_ref_allows_alias(std::int32_t& __param_1) const;
+
+ private:
+  // Field type has been replaced with a blob of bytes: Generic types are not
+  // supported yet (b/259749095)
+  unsigned char __field0[4];
+
+ private:
+  static void __crubit_field_offset_assertions();
+};
 
 // Generated from:
 // cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=12
@@ -80,83 +121,58 @@ struct CRUBIT_INTERNAL_RUST_TYPE(
 };
 
 // Generated from:
-// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=24
-struct CRUBIT_INTERNAL_RUST_TYPE(
-    ":: aliasing_references_golden :: NonFreezeType") alignas(4)
-    [[clang::trivial_abi]] NonFreezeType final {
- public:
-  // Default::default
-  NonFreezeType();
+// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=9
+void mut_ref_and_shared_refs(std::int32_t& __param_0,
+                             std::int32_t const& __param_1,
+                             std::int32_t const& __param_2);
 
-  // No custom `Drop` impl and no custom "drop glue" required
-  ~NonFreezeType() = default;
-  NonFreezeType(NonFreezeType&&) = default;
-  NonFreezeType& operator=(NonFreezeType&&) = default;
+// Generated from:
+// cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=8
+void mut_refs(std::int32_t& __param_0, std::int32_t& __param_1);
 
-  // `aliasing_references_golden::NonFreezeType` doesn't implement the `Clone`
-  // trait
-  NonFreezeType(const NonFreezeType&) = delete;
-  NonFreezeType& operator=(const NonFreezeType&) = delete;
-  NonFreezeType(::crubit::UnsafeRelocateTag, NonFreezeType&& value) {
-    memcpy(this, &value, sizeof(value));
-  }
-
-  //  # Safety
-  //
-  //
-  //
-  //  This function must not be called while an outstanding reference to the
-  //  underlying
-  //
-  //  `i32` is held.
-  //
-  // Generated from:
-  // cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=32
-  std::int32_t& [[clang::annotate_type("lifetime",
-                                       "__anon1")]] as_mut_unchecked()
-      const& [[clang::annotate_type("lifetime",
-                                    "__anon1")]] CRUBIT_LIFETIME_BOUND;
-
-  // Generated from:
-  // cc_bindings_from_rs/test/aliasing_references/aliasing_references.rs;l=35
-  void shared_self_mut_ref_allows_alias(std::int32_t& __param_1) const;
-
- private:
-  // Field type has been replaced with a blob of bytes: Generic types are not
-  // supported yet (b/259749095)
-  unsigned char __field0[4];
-
- private:
-  static void __crubit_field_offset_assertions();
-};
-
+static_assert(
+    sizeof(NonFreezeType) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
+static_assert(
+    alignof(NonFreezeType) == 4,
+    "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_mut_urefs(std::int32_t&, std::int32_t&);
+extern "C" void __crubit_thunk_default(
+    ::aliasing_references::NonFreezeType* __ret_ptr);
 }
-inline void mut_refs(std::int32_t& __param_0, std::int32_t& __param_1) {
-  crubit::internal::CheckNoMutableAliasing(
-      crubit::internal::AsMutPtrDatas<std::int32_t&, std::int32_t&>(__param_0,
-                                                                    __param_1),
-      crubit::internal::AsPtrDatas<>());
-  return __crubit_internal::__crubit_thunk_mut_urefs(__param_0, __param_1);
+inline NonFreezeType::NonFreezeType() {
+  __crubit_internal::__crubit_thunk_default(this);
+}
+static_assert(std::is_trivially_destructible_v<NonFreezeType>);
+static_assert(std::is_trivially_move_constructible_v<NonFreezeType>);
+static_assert(std::is_trivially_move_assignable_v<NonFreezeType>);
+namespace __crubit_internal {
+extern "C" std::int32_t& [[clang::annotate_type(
+    "lifetime",
+    "__anon1")]] __crubit_thunk_as_umut_uunchecked(::aliasing_references::
+                                                       NonFreezeType const&);
+}
+inline std::int32_t& [[clang::annotate_type(
+    "lifetime", "__anon1")]] NonFreezeType::as_mut_unchecked()
+    const& [[clang::annotate_type("lifetime",
+                                  "__anon1")]] CRUBIT_LIFETIME_BOUND {
+  auto&& self = *this;
+  return __crubit_internal::__crubit_thunk_as_umut_uunchecked(self);
 }
 
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_mut_uref_uand_ushared_urefs(std::int32_t&,
-                                                           std::int32_t const&,
-                                                           std::int32_t const&);
+extern "C" void __crubit_thunk_shared_uself_umut_uref_uallows_ualias(
+    ::aliasing_references::NonFreezeType const&, std::int32_t&);
 }
-inline void mut_ref_and_shared_refs(std::int32_t& __param_0,
-                                    std::int32_t const& __param_1,
-                                    std::int32_t const& __param_2) {
-  crubit::internal::CheckNoMutableAliasing(
-      crubit::internal::AsMutPtrDatas<std::int32_t&>(__param_0),
-      crubit::internal::AsPtrDatas<std::int32_t const&, std::int32_t const&>(
-          __param_1, __param_2));
-  return __crubit_internal::__crubit_thunk_mut_uref_uand_ushared_urefs(
-      __param_0, __param_1, __param_2);
+inline void NonFreezeType::shared_self_mut_ref_allows_alias(
+    std::int32_t& __param_1) const {
+  auto&& self = *this;
+  return __crubit_internal::
+      __crubit_thunk_shared_uself_umut_uref_uallows_ualias(self, __param_1);
 }
-
+inline void NonFreezeType::__crubit_field_offset_assertions() {
+  static_assert(0 == offsetof(NonFreezeType, __field0));
+}
 static_assert(
     sizeof(SomeStruct) == 4,
     "Verify that ADT layout didn't change since this header got generated");
@@ -230,48 +246,32 @@ inline void SomeStruct::shared_self_and_shared_ref_allows_alias(
 inline void SomeStruct::__crubit_field_offset_assertions() {
   static_assert(0 == offsetof(SomeStruct, field));
 }
-static_assert(
-    sizeof(NonFreezeType) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
-static_assert(
-    alignof(NonFreezeType) == 4,
-    "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_default(
-    ::aliasing_references::NonFreezeType* __ret_ptr);
+extern "C" void __crubit_thunk_mut_uref_uand_ushared_urefs(std::int32_t&,
+                                                           std::int32_t const&,
+                                                           std::int32_t const&);
 }
-inline NonFreezeType::NonFreezeType() {
-  __crubit_internal::__crubit_thunk_default(this);
-}
-static_assert(std::is_trivially_destructible_v<NonFreezeType>);
-static_assert(std::is_trivially_move_constructible_v<NonFreezeType>);
-static_assert(std::is_trivially_move_assignable_v<NonFreezeType>);
-namespace __crubit_internal {
-extern "C" std::int32_t& [[clang::annotate_type(
-    "lifetime",
-    "__anon1")]] __crubit_thunk_as_umut_uunchecked(::aliasing_references::
-                                                       NonFreezeType const&);
-}
-inline std::int32_t& [[clang::annotate_type(
-    "lifetime", "__anon1")]] NonFreezeType::as_mut_unchecked()
-    const& [[clang::annotate_type("lifetime",
-                                  "__anon1")]] CRUBIT_LIFETIME_BOUND {
-  auto&& self = *this;
-  return __crubit_internal::__crubit_thunk_as_umut_uunchecked(self);
+inline void mut_ref_and_shared_refs(std::int32_t& __param_0,
+                                    std::int32_t const& __param_1,
+                                    std::int32_t const& __param_2) {
+  crubit::internal::CheckNoMutableAliasing(
+      crubit::internal::AsMutPtrDatas<std::int32_t&>(__param_0),
+      crubit::internal::AsPtrDatas<std::int32_t const&, std::int32_t const&>(
+          __param_1, __param_2));
+  return __crubit_internal::__crubit_thunk_mut_uref_uand_ushared_urefs(
+      __param_0, __param_1, __param_2);
 }
 
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_shared_uself_umut_uref_uallows_ualias(
-    ::aliasing_references::NonFreezeType const&, std::int32_t&);
+extern "C" void __crubit_thunk_mut_urefs(std::int32_t&, std::int32_t&);
 }
-inline void NonFreezeType::shared_self_mut_ref_allows_alias(
-    std::int32_t& __param_1) const {
-  auto&& self = *this;
-  return __crubit_internal::
-      __crubit_thunk_shared_uself_umut_uref_uallows_ualias(self, __param_1);
+inline void mut_refs(std::int32_t& __param_0, std::int32_t& __param_1) {
+  crubit::internal::CheckNoMutableAliasing(
+      crubit::internal::AsMutPtrDatas<std::int32_t&, std::int32_t&>(__param_0,
+                                                                    __param_1),
+      crubit::internal::AsPtrDatas<>());
+  return __crubit_internal::__crubit_thunk_mut_urefs(__param_0, __param_1);
 }
-inline void NonFreezeType::__crubit_field_offset_assertions() {
-  static_assert(0 == offsetof(NonFreezeType, __field0));
-}
+
 }  // namespace aliasing_references
 #endif  // THIRD_PARTY_CRUBIT_CC_BINDINGS_FROM_RS_TEST_ALIASING_REFERENCES_ALIASING_REFERENCES_GOLDEN

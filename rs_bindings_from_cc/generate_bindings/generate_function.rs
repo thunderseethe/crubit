@@ -8,9 +8,8 @@ use crubit_abi_type::{CrubitAbiTypeToRustExprTokens, CrubitAbiTypeToRustTokens};
 use database::code_snippet::{ApiSnippets, Feature, GeneratedItem, Thunk, Visibility};
 use database::function_types::{FunctionId, GeneratedFunction, ImplFor, ImplKind, TraitName};
 use database::rs_snippet::{
-    check_by_value, format_generic_params, format_generic_params_replacing_by_self,
-    should_derive_clone, should_derive_copy, unique_lifetimes, Lifetime, LifetimeOptions,
-    Mutability, RsTypeKind,
+    format_generic_params, format_generic_params_replacing_by_self, should_derive_clone,
+    unique_lifetimes, Lifetime, LifetimeOptions, Mutability, RsTypeKind,
 };
 use database::BindingsGenerator;
 use error_report::{anyhow, bail, ErrorList};
@@ -363,7 +362,7 @@ fn api_func_shape_for_operator_assign(
     let trait_name;
     let func_name;
     if record.is_unpin() {
-        if rhs.is_ref_to(record) && should_derive_copy(record) {
+        if rhs.is_ref_to(record) && record.should_derive_copy() {
             // `MoveAndAssignViaCopy` is derived for `Copy` types, so we don't need to generate
             // `UnpinAssign` explicitly.
             return None;
@@ -765,7 +764,7 @@ fn api_func_shape_for_constructor(
     let Some(record) = maybe_record else {
         panic!("Constructors must be associated with a record.");
     };
-    if let Err(err) = check_by_value(record) {
+    if let Err(err) = record.check_by_value() {
         errors.add(err);
     }
     materialize_ctor_in_caller(func, param_types);
@@ -830,7 +829,7 @@ fn api_func_shape_for_constructor(
             Some((func_name, impl_kind))
         }
         2 => {
-            if param_types[1].is_rvalue_ref_to(record) && should_derive_copy(record) {
+            if param_types[1].is_rvalue_ref_to(record) && record.should_derive_copy() {
                 // `MoveAndAssignViaCopy` is derived for `Copy` types, so we don't need to
                 // generate move constructor bindings explicitly.
                 return None;
@@ -1541,13 +1540,18 @@ pub fn generate_function(
             quote! {}
         };
 
-        // If we don't have an outer `impl ... { ... }` block, we have to introduce the
-        // lifetimes and bounds inside this one.
-        let has_wrapping_impl = match impl_kind {
+        // If we are generating a trait impl, its `where` clause will be on the `impl` item.
+        // Otherwise, it must be on the `fn` item.
+        let where_clause_on_impl = match impl_kind {
+            ImplKind::Trait { .. } => true,
+            // Free functions have no impl.
             ImplKind::None { .. } => false,
-            ImplKind::Struct { .. } | ImplKind::Trait { .. } => true,
+            // Struct functions are placed in an inherent impl block later by `generate_record`, but
+            // inherent impls cannot take where clauses in the same way that trait impls can, so the
+            // where clause must be on the function.
+            ImplKind::Struct { .. } => false,
         };
-        let where_clause = if has_wrapping_impl {
+        let where_clause = if where_clause_on_impl {
             None
         } else {
             if let Some(lt) = &error_lifetime_param {
@@ -1611,6 +1615,7 @@ pub fn generate_function(
         generate_doc_comment(func.doc_comment.as_deref(), Some(&func.source_loc), db.environment());
     let api_func: TokenStream;
     let function_id: FunctionId;
+    let mut member_functions_map = HashMap::new();
     match impl_kind {
         ImplKind::None { .. } => {
             api_func = quote! { #unimplemented_trait_def #doc_comment #api_func_def };
@@ -1623,15 +1628,12 @@ pub fn generate_function(
             let record_name = make_rs_ident(
                 derived_record.as_deref().unwrap_or(record.as_ref()).rs_name.identifier.as_ref(),
             );
-            let error_lifetime_generic =
-                error_lifetime_param.as_ref().map(|lifetime| quote! { <#lifetime> });
+            member_functions_map.insert(
+                derived_record.as_deref().unwrap_or(record.as_ref()).id,
+                vec![quote! { #unsatisfied_where_clause #doc_comment #api_func_def }],
+            );
             api_func = quote! {
                 #unimplemented_trait_def
-                impl #error_lifetime_generic #record_name
-                #unsatisfied_where_clause {
-                    #doc_comment
-                    #api_func_def
-                }
             };
             function_id = FunctionId {
                 self_type: None,
@@ -1816,6 +1818,7 @@ pub fn generate_function(
         },
         features,
         cc_details,
+        member_functions: member_functions_map,
         ..Default::default()
     };
 
