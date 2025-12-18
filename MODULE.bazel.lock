@@ -681,7 +681,7 @@
     "@@rules_rust+//crate_universe:extensions.bzl%crate": {
       "general": {
         "bzlTransitiveDigest": "h4orDXrfTqoC0znIEzqgsqQiuwrwGFDqtvjIP7KYBoE=",
-        "usagesDigest": "S7dQ4lGH5dfuf88AZloJykw5NhjiV85GmMfms5nePiM=",
+        "usagesDigest": "88Z9FH+7pN0FEcQ1Su55rIfHY99PWHCaypQtVlpiEPY=",
         "recordedFileInputs": {
           "@@//Cargo.toml": "3cbf0c2c5632c9c665565f5fbf5aaa5320b49c85c3e69ae4fc2146a4c74dc8f3",
           "@@//cargo/build/Cargo.toml": "4106cd17e7a2ac7d362ac2c292623a4dd14ebf10617e905bab331c27df57874c",
@@ -734,7 +734,7 @@
           "@@//cargo/rs_bindings_from_cc/generate_bindings/database/database/Cargo.toml": "b83a17e0bbf96609b632a8f45deba1bb44cfe5e7e8f3a088df9e4d6f0c39219c",
           "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_bindings/Cargo.toml": "b3b31d0b957ffb85fba0108ddabfa7d344fe1c3cf4b76a0d978c74670baf8fd2",
           "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_comment/Cargo.toml": "666f2ec731b268be2ec9fcf7781cab13c0b4846b9bed081c7a0d5e086be146b9",
-          "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_enum/Cargo.toml": "9cb7bb28b2bc519f29a7633a348212df15b26ab05ec8c7aeba3e333a2bc944a9",
+          "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_enum/Cargo.toml": "e11269ad1a129be918b0f290522c1c2f1766bb973c61113b40324f05f6294825",
           "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_function/Cargo.toml": "8a3f1ecddb022bb17d6a457235023a5935e8a51ee875e1d7f26ca18779e35f19",
           "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_function_thunk/Cargo.toml": "a72a0b07d6e37949782bf027479678b23d83a9cb3d256826fae3c598c30673a5",
           "@@//cargo/rs_bindings_from_cc/generate_bindings/generate_struct_and_union/Cargo.toml": "1ab1d550f5861e16c16fae9a7456029977ae5a628155eb50acc379495d1e5772",

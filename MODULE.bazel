@@ -6,7 +6,7 @@
 # (see WORKSPACE.bzlmod)
 bazel_dep(name = "rules_rust", version = "0.68.1")
 
-bazel_dep(name = "rules_cc", version = "0.2.2")
+bazel_dep(name = "rules_cc", version = "0.2.8")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
 bazel_dep(name = "abseil-cpp", version = "20250127.1")
@@ -47,9 +47,6 @@ crate.from_cargo(
   name = "crate_index",
   manifests = [
    "//:Cargo.toml",
-   "//:cargo/cc_bindings_from_rs/cc_bindings_from_rs/Cargo.toml",
-   "//:cargo/rs_bindings_from_cc/rs_bindings_from_cc/Cargo.toml",
-   "//support/ffi_11:Cargo.toml",
   ],
 )
 
