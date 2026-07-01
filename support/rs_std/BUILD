@@ -60,72 +60,72 @@ crubit_cc_test(
     ],
 )
 
-cc_library(
-    name = "cpp_waker",
-    srcs = ["cpp_waker.cc"],
-    hdrs = ["cpp_waker.h"],
-    aspect_hints = ["//features:supported"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = ["//visibility:public"],
-)
+#cc_library(
+#    name = "cpp_waker",
+#    srcs = ["cpp_waker.cc"],
+#    hdrs = ["cpp_waker.h"],
+#    aspect_hints = ["//features:supported"],
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    visibility = ["//visibility:public"],
+#)
+#
+#cc_library(
+#    name = "waker",
+#    srcs = ["waker.cc"],
+#    hdrs = ["waker.h"],
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    visibility = [
+#        "//:__subpackages__",
+#        "//google_internal/release:crubit_support_lib_visibility",
+#    ],
+#)
+#
+#rust_library(
+#    name = "erased_future",
+#    srcs = ["erased_future.rs"],
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    visibility = [
+#        "//:__subpackages__",
+#        "//google_internal/release:crubit_support_lib_visibility",
+#    ],
+#)
+#
+#crubit_rust_test(
+#    name = "erased_future_test",
+#    size = "small",
+#    srcs = ["erased_future_test.rs"],
+#    deps = [
+#        ":erased_future",
+#        "@crate_index//:googletest",
+#    ],
+#)
 
-cc_library(
-    name = "waker",
-    srcs = ["waker.cc"],
-    hdrs = ["waker.h"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = [
-        "//:__subpackages__",
-        "//google_internal/release:crubit_support_lib_visibility",
-    ],
-)
+#rust_library(
+#    name = "dyn_erased_future",
+#    srcs = ["dyn_erased_future.rs"],
+    #compatible_with = ["//buildenv/target:non_prod"],
+    #link_deps = [
+    #    ":waker",
+    #],
+#    visibility = [
+        #"//:__subpackages__",
+        #"//google_internal/release:crubit_support_lib_visibility",
+#    ],
+#    deps = [
+#        ":erased_future",
+#    ],
+#)
 
-rust_library(
-    name = "erased_future",
-    srcs = ["erased_future.rs"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = [
-        "//:__subpackages__",
-        "//google_internal/release:crubit_support_lib_visibility",
-    ],
-)
-
-crubit_rust_test(
-    name = "erased_future_test",
-    size = "small",
-    srcs = ["erased_future_test.rs"],
-    deps = [
-        ":erased_future",
-        "@crate_index//:googletest",
-    ],
-)
-
-rust_library(
-    name = "dyn_erased_future",
-    srcs = ["dyn_erased_future.rs"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    link_deps = [
-        ":waker",
-    ],
-    visibility = [
-        "//:__subpackages__",
-        "//google_internal/release:crubit_support_lib_visibility",
-    ],
-    deps = [
-        ":erased_future",
-    ],
-)
-
-cc_library(
-    name = "dyn_erased_future_cc",
-    hdrs = ["dyn_erased_future.h"],
-    compatible_with = ["//buildenv/target:non_prod"],
-    visibility = [
-        "//:__subpackages__",
-        "//google_internal/release:crubit_support_lib_visibility",
-    ],
-    deps = [":waker"],
-)
+#cc_library(
+#    name = "dyn_erased_future_cc",
+#    hdrs = ["dyn_erased_future.h"],
+#    compatible_with = ["//buildenv/target:non_prod"],
+#    visibility = [
+#        "//:__subpackages__",
+#        "//google_internal/release:crubit_support_lib_visibility",
+#    ],
+#    deps = [":waker"],
+#)
 
 cc_library(
     name = "slice_ref",

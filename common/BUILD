@@ -408,7 +408,7 @@ cc_library(
 cc_library(
     name = "rust_allocator_shims",
     srcs = ["rust_allocator_shims.c"],
-    visibility = ["@rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:__subpackages__"],
+    #visibility = ["@rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:__subpackages__"],
 )
 
 cc_library(

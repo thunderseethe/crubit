@@ -10,23 +10,15 @@ local_path_override(
     path = "../..",
 )
 
-bazel_dep(name = "rules_rust", version = "0.70.0")
+bazel_dep(name = "rules_rust", version = "0.71.2")
 bazel_dep(name = "rules_cc", version = "0.2.19")
 bazel_dep(name = "toolchains_llvm", version = "1.7.0")
-
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
-rust.toolchain(
-    edition = "2024",
-    dev_components = True,
-    versions = ["nightly/2026-05-31"],
-)
-use_repo(rust, "rust_toolchains")
 
 crubit_toolchains = use_extension("@rules_crubit//bazel:extensions.bzl", "crubit_toolchains")
 crubit_toolchains.configure(
     rust_version = "nightly/2026-05-31",
 )
-use_repo(crubit_toolchains, "llvm_toolchain")
+use_repo(crubit_toolchains, "llvm_toolchain", "rust_toolchains")
 
 register_toolchains(
   "@rust_toolchains//:all",

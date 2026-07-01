@@ -2,7 +2,8 @@
 # Exceptions. See /LICENSE for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-load("@rules_rust//rust:repositories.bzl", "rust_repository_set")
+load("@rules_rust//rust/private:repositories.bzl", "rust_repository_set", "rust_register_toolchains", "DEFAULT_TOOLCHAIN_TRIPLES")
+load("@rules_rust//rust/private:repository_utils.bzl", "DEFAULT_STATIC_RUST_URL_TEMPLATES")
 load("@rules_rust//rust/platform:triple.bzl", "get_host_triple")
 load("@toolchains_llvm//toolchain:rules.bzl", "llvm_toolchain")
 load("//bazel:versions.bzl", "LLVM_MAP")
@@ -25,18 +26,6 @@ def _crubit_toolchains_impl(ctx):
         for config in mod.tags.configure:
             if config.rust_version:
                 rust_version = config.rust_version
-            if config.llvm_version:
-                llvm_version = config.llvm_version
-            if config.llvm_extra_distributions:
-                llvm_extra_distributions = config.llvm_extra_distributions
-            if config.exec_triple:
-                exec_triple = config.exec_triple
-            if config.dev_components != None:
-                dev_components = config.dev_components
-            if config.llvm_toolchain:
-                user_llvm_repo = config.llvm_toolchain
-            if config.rust_toolchain:
-                user_rust_repo = config.rust_toolchain
 
     # 1. Define the LLVM repository.
     # It must be named "llvm_toolchain" to satisfy Crubit's default internal label references.
@@ -66,14 +55,30 @@ def _crubit_toolchains_impl(ctx):
 
     # 2. Define the Rust repository.
     if not user_rust_repo:
-        rust_repository_set(
-            name = "rust_toolchain",
-            edition = "2024",
-            versions = [rust_version],
-            exec_triple = exec_triple,
-            dev_components = dev_components,
-            register_toolchain = False,
-        )
+        toolchain_triples = dict(DEFAULT_TOOLCHAIN_TRIPLES)
+        rust_register_toolchains(
+                hub_name = "rust_toolchains",
+                dev_components = True,
+                edition = "2024",
+                extra_rustc_flags = [],
+                extra_exec_rustc_flags = [],
+                allocator_library = None,
+                global_allocator_library = None,
+                rustfmt_version = rust_version,
+                rust_analyzer_version = None,
+                sha256s = None,
+                extra_target_triples = [],
+                opt_level = None,
+                strip_level = None,
+                urls = DEFAULT_STATIC_RUST_URL_TEMPLATES,
+                versions = [rust_version],
+                compact_windows_names = True,
+                aliases = {},
+                toolchain_triples = toolchain_triples,
+                rustfmt_toolchain_triples = DEFAULT_TOOLCHAIN_TRIPLES,
+                target_settings = [str(v) for v in []],
+                extra_toolchain_infos = {},
+            )
 
 crubit_toolchains = module_extension(
     implementation = _crubit_toolchains_impl,
@@ -81,12 +86,6 @@ crubit_toolchains = module_extension(
         "configure": tag_class(
             attrs = {
                 "rust_version": attr.string(doc = "The version of Rust to install."),
-                "llvm_version": attr.string(doc = "The version of LLVM to install."),
-                "llvm_extra_distributions": attr.string_dict(doc = "Custom SHA256 mapping for LLVM tarballs."),
-                "exec_triple": attr.string(doc = "The Rust-style target triple that the compiler runs on."),
-                "dev_components": attr.bool(doc = "Whether to download the rustc-dev components.", default = True),
-                "llvm_toolchain": attr.label(doc = "External LLVM repository to use."),
-                "rust_toolchain": attr.label(doc = "External Rust toolchain hub to use."),
             }
         )
     }
