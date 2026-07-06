@@ -313,8 +313,8 @@
   "moduleExtensions": {
     "//bazel:extensions.bzl%crubit_toolchains": {
       "general": {
-        "bzlTransitiveDigest": "kTH22/ufQrSEoeI3cxeGZTwEhT1qiu7vNhesq8muUv4=",
-        "usagesDigest": "S82D6Actx48Sof4oOdFg3O/UydPxvelykQ+2naTySJQ=",
+        "bzlTransitiveDigest": "/FsqWLi6cDEqtWAiyxQwf/LmW0AQzzn2py6lNb5PBkw=",
+        "usagesDigest": "Klvc3cZu5IefsY2a5sszPUmHt5lnSUUT0Rr4p3RUhbA=",
         "recordedInputs": [
           "REPO_MAPPING:,rules_rust rules_rust+",
           "REPO_MAPPING:,toolchains_llvm toolchains_llvm+",
@@ -361,7 +361,8 @@
               "version": "nightly/2026-05-31",
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
-              ]
+              ],
+              "sha256s": {}
             }
           },
           "rust_analyzer_nightly-2026-05-31": {
@@ -382,8 +383,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -407,6 +411,230 @@
               ]
             }
           },
+          "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_macos_aarch64__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-apple-darwin",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_aarch64__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_aarch64__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rw-206060356_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -416,8 +644,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -441,6 +672,267 @@
               ]
             }
           },
+          "rw-10275915_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-10275915": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-10275915_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rw-1257118537_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1257118537": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1257118537_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rw-419392413_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-419392413": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-419392413_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rw-1751648421_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1751648421": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1751648421_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rw-2030194902_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-2030194902": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-2030194902_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rw-1800514120_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1800514120": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1800514120_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rw-1997027625_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-pc-windows-msvc",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1997027625": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1997027625_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -450,8 +942,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -475,6 +970,230 @@
               ]
             }
           },
+          "rust_linux_aarch64__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_aarch64__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "aarch64-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_aarch64__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_aarch64__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -484,8 +1203,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -509,6 +1231,267 @@
               ]
             }
           },
+          "rust_linux_powerpc64le__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "powerpc64le-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_powerpc64le__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_powerpc64le__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:ppc64le",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_linux_s390x__s390x-unknown-linux-gnu__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -518,8 +1501,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -543,6 +1529,267 @@
               ]
             }
           },
+          "rust_linux_s390x__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_s390x__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "s390x-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_s390x__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_s390x__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:s390x",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_macos_x86_64__x86_64-apple-darwin__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -552,8 +1799,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -577,6 +1827,230 @@
               ]
             }
           },
+          "rust_macos_x86_64__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-apple-darwin",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_macos_x86_64__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_macos_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rw-863368150_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -586,8 +2060,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -611,6 +2088,267 @@
               ]
             }
           },
+          "rw-2124729419_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-2124729419": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-2124729419_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rw-1140202313_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1140202313": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1140202313_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rw-1174967395_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1174967395": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1174967395_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rw-1569716059_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1569716059": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1569716059_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rw-1794486058_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-1794486058": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-1794486058_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rw-642361928_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-642361928": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-642361928_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rw-838875433_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-pc-windows-msvc",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rw-838875433": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rw-838875433_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:windows"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -620,8 +2358,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -645,6 +2386,267 @@
               ]
             }
           },
+          "rust_freebsd_x86_64__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-freebsd",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_freebsd_x86_64__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_freebsd_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:freebsd"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
             "attributes": {
@@ -654,8 +2656,11 @@
               "rustfmt_version": "nightly/2026-05-31",
               "edition": "2024",
               "dev_components": true,
-              "extra_rustc_flags": [],
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
               "extra_exec_rustc_flags": [],
+              "sha256s": {},
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ]
@@ -679,6 +2684,230 @@
               ]
             }
           },
+          "rust_linux_x86_64__aarch64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "aarch64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__aarch64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "aarch64-unknown-linux-gnu",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:aarch64",
+                "@platforms//os:linux"
+              ]
+            }
+          },
+          "rust_linux_x86_64__x86_64-apple-darwin__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "x86_64-apple-darwin",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__x86_64-apple-darwin__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:osx"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-unknown-unknown__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "wasm32-unknown-unknown",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-unknown-unknown__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:none"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-wasip1__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip1",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-wasip1__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_1"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-wasip2__nightly_tools": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rust_toolchain_tools_repository",
+            "attributes": {
+              "exec_triple": "x86_64-unknown-linux-gnu",
+              "target_triple": "wasm32-wasip2",
+              "version": "nightly/2026-05-31",
+              "rustfmt_version": "nightly/2026-05-31",
+              "edition": "2024",
+              "dev_components": true,
+              "extra_rustc_flags": [
+                "--cfg=crubit_test"
+              ],
+              "extra_exec_rustc_flags": [],
+              "sha256s": {},
+              "urls": [
+                "https://static.rust-lang.org/dist/{}.tar.xz"
+              ]
+            }
+          },
+          "rust_linux_x86_64__wasm32-wasip2__nightly": {
+            "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%toolchain_repository_proxy",
+            "attributes": {
+              "toolchain": "@rust_linux_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
+              "target_settings": [
+                "@rules_rust//rust/toolchain/channel:nightly"
+              ],
+              "toolchain_type": "@rules_rust//rust:toolchain",
+              "exec_compatible_with": [
+                "@platforms//cpu:x86_64",
+                "@platforms//os:linux"
+              ],
+              "target_compatible_with": [
+                "@platforms//cpu:wasm32",
+                "@platforms//os:wasi",
+                "@rules_rust//rust/platform:wasi_preview_2"
+              ]
+            }
+          },
           "rustfmt_nightly-2026-05-31__aarch64-apple-darwin_tools": {
             "repoRuleId": "@@rules_rust+//rust/private:repositories.bzl%rustfmt_toolchain_tools_repository",
             "attributes": {
@@ -686,6 +2915,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "aarch64-apple-darwin"
             }
           },
@@ -708,6 +2938,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "aarch64-pc-windows-msvc"
             }
           },
@@ -730,6 +2961,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "aarch64-unknown-linux-gnu"
             }
           },
@@ -752,6 +2984,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "powerpc64le-unknown-linux-gnu"
             }
           },
@@ -774,6 +3007,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "s390x-unknown-linux-gnu"
             }
           },
@@ -796,6 +3030,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "x86_64-apple-darwin"
             }
           },
@@ -818,6 +3053,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "x86_64-pc-windows-msvc"
             }
           },
@@ -840,6 +3076,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "x86_64-unknown-freebsd"
             }
           },
@@ -862,6 +3099,7 @@
               "urls": [
                 "https://static.rust-lang.org/dist/{}.tar.xz"
               ],
+              "sha256s": {},
               "exec_triple": "x86_64-unknown-linux-gnu"
             }
           },
@@ -883,14 +3121,73 @@
               "toolchain_names": [
                 "rust_analyzer_nightly-2026-05-31",
                 "rust_macos_aarch64__aarch64-apple-darwin__nightly",
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly",
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly",
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly",
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly",
+                "rust_macos_aarch64__wasm32-wasip1__nightly",
+                "rust_macos_aarch64__wasm32-wasip2__nightly",
                 "rw-206060356",
+                "rw-10275915",
+                "rw-1257118537",
+                "rw-419392413",
+                "rw-1751648421",
+                "rw-2030194902",
+                "rw-1800514120",
+                "rw-1997027625",
                 "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly",
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly",
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly",
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly",
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly",
+                "rust_linux_aarch64__wasm32-wasip1__nightly",
+                "rust_linux_aarch64__wasm32-wasip2__nightly",
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly",
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly",
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly",
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly",
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly",
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly",
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly",
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly",
                 "rust_linux_s390x__s390x-unknown-linux-gnu__nightly",
+                "rust_linux_s390x__aarch64-apple-darwin__nightly",
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly",
+                "rust_linux_s390x__x86_64-apple-darwin__nightly",
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly",
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly",
+                "rust_linux_s390x__wasm32-wasip1__nightly",
+                "rust_linux_s390x__wasm32-wasip2__nightly",
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly",
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly",
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly",
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly",
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly",
+                "rust_macos_x86_64__wasm32-wasip1__nightly",
+                "rust_macos_x86_64__wasm32-wasip2__nightly",
                 "rw-863368150",
+                "rw-2124729419",
+                "rw-1140202313",
+                "rw-1174967395",
+                "rw-1569716059",
+                "rw-1794486058",
+                "rw-642361928",
+                "rw-838875433",
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly",
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly",
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly",
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly",
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly",
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly",
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly",
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly",
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly",
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly",
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly",
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly",
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly",
+                "rust_linux_x86_64__wasm32-wasip1__nightly",
+                "rust_linux_x86_64__wasm32-wasip2__nightly",
                 "rustfmt_nightly-2026-05-31__aarch64-apple-darwin",
                 "rustfmt_nightly-2026-05-31__aarch64-pc-windows-msvc",
                 "rustfmt_nightly-2026-05-31__aarch64-unknown-linux-gnu",
@@ -904,14 +3201,73 @@
               "toolchain_labels": {
                 "rust_analyzer_nightly-2026-05-31": "@rust_analyzer_nightly-2026-05-31_tools//:rust_analyzer_toolchain",
                 "rust_macos_aarch64__aarch64-apple-darwin__nightly": "@rust_macos_aarch64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": "@rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly": "@rust_macos_aarch64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": "@rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly": "@rust_macos_aarch64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__wasm32-wasip1__nightly": "@rust_macos_aarch64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_macos_aarch64__wasm32-wasip2__nightly": "@rust_macos_aarch64__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rw-206060356": "@rw-206060356_tools//:rust_toolchain",
+                "rw-10275915": "@rw-10275915_tools//:rust_toolchain",
+                "rw-1257118537": "@rw-1257118537_tools//:rust_toolchain",
+                "rw-419392413": "@rw-419392413_tools//:rust_toolchain",
+                "rw-1751648421": "@rw-1751648421_tools//:rust_toolchain",
+                "rw-2030194902": "@rw-2030194902_tools//:rust_toolchain",
+                "rw-1800514120": "@rw-1800514120_tools//:rust_toolchain",
+                "rw-1997027625": "@rw-1997027625_tools//:rust_toolchain",
                 "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly": "@rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly": "@rust_linux_aarch64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly": "@rust_linux_aarch64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": "@rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly": "@rust_linux_aarch64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__wasm32-wasip1__nightly": "@rust_linux_aarch64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_linux_aarch64__wasm32-wasip2__nightly": "@rust_linux_aarch64__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly": "@rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": "@rust_linux_powerpc64le__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": "@rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": "@rust_linux_powerpc64le__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": "@rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": "@rust_linux_powerpc64le__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly": "@rust_linux_powerpc64le__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly": "@rust_linux_powerpc64le__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rust_linux_s390x__s390x-unknown-linux-gnu__nightly": "@rust_linux_s390x__s390x-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__aarch64-apple-darwin__nightly": "@rust_linux_s390x__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": "@rust_linux_s390x__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__x86_64-apple-darwin__nightly": "@rust_linux_s390x__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": "@rust_linux_s390x__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly": "@rust_linux_s390x__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__wasm32-wasip1__nightly": "@rust_linux_s390x__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_linux_s390x__wasm32-wasip2__nightly": "@rust_linux_s390x__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly": "@rust_macos_x86_64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly": "@rust_macos_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": "@rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": "@rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly": "@rust_macos_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__wasm32-wasip1__nightly": "@rust_macos_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_macos_x86_64__wasm32-wasip2__nightly": "@rust_macos_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rw-863368150": "@rw-863368150_tools//:rust_toolchain",
+                "rw-2124729419": "@rw-2124729419_tools//:rust_toolchain",
+                "rw-1140202313": "@rw-1140202313_tools//:rust_toolchain",
+                "rw-1174967395": "@rw-1174967395_tools//:rust_toolchain",
+                "rw-1569716059": "@rw-1569716059_tools//:rust_toolchain",
+                "rw-1794486058": "@rw-1794486058_tools//:rust_toolchain",
+                "rw-642361928": "@rw-642361928_tools//:rust_toolchain",
+                "rw-838875433": "@rw-838875433_tools//:rust_toolchain",
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly": "@rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": "@rust_freebsd_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": "@rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": "@rust_freebsd_x86_64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": "@rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": "@rust_freebsd_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly": "@rust_freebsd_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly": "@rust_freebsd_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly": "@rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly": "@rust_linux_x86_64__aarch64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": "@rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly": "@rust_linux_x86_64__x86_64-apple-darwin__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly": "@rust_linux_x86_64__wasm32-unknown-unknown__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__wasm32-wasip1__nightly": "@rust_linux_x86_64__wasm32-wasip1__nightly_tools//:rust_toolchain",
+                "rust_linux_x86_64__wasm32-wasip2__nightly": "@rust_linux_x86_64__wasm32-wasip2__nightly_tools//:rust_toolchain",
                 "rustfmt_nightly-2026-05-31__aarch64-apple-darwin": "@rustfmt_nightly-2026-05-31__aarch64-apple-darwin_tools//:rustfmt_toolchain",
                 "rustfmt_nightly-2026-05-31__aarch64-pc-windows-msvc": "@rustfmt_nightly-2026-05-31__aarch64-pc-windows-msvc_tools//:rustfmt_toolchain",
                 "rustfmt_nightly-2026-05-31__aarch64-unknown-linux-gnu": "@rustfmt_nightly-2026-05-31__aarch64-unknown-linux-gnu_tools//:rustfmt_toolchain",
@@ -925,14 +3281,73 @@
               "toolchain_types": {
                 "rust_analyzer_nightly-2026-05-31": "@rules_rust//rust/rust_analyzer:toolchain_type",
                 "rust_macos_aarch64__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_aarch64__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rw-206060356": "@rules_rust//rust:toolchain",
+                "rw-10275915": "@rules_rust//rust:toolchain",
+                "rw-1257118537": "@rules_rust//rust:toolchain",
+                "rw-419392413": "@rules_rust//rust:toolchain",
+                "rw-1751648421": "@rules_rust//rust:toolchain",
+                "rw-2030194902": "@rules_rust//rust:toolchain",
+                "rw-1800514120": "@rules_rust//rust:toolchain",
+                "rw-1997027625": "@rules_rust//rust:toolchain",
                 "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_aarch64__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rust_linux_s390x__s390x-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_s390x__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_macos_x86_64__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rw-863368150": "@rules_rust//rust:toolchain",
+                "rw-2124729419": "@rules_rust//rust:toolchain",
+                "rw-1140202313": "@rules_rust//rust:toolchain",
+                "rw-1174967395": "@rules_rust//rust:toolchain",
+                "rw-1569716059": "@rules_rust//rust:toolchain",
+                "rw-1794486058": "@rules_rust//rust:toolchain",
+                "rw-642361928": "@rules_rust//rust:toolchain",
+                "rw-838875433": "@rules_rust//rust:toolchain",
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__wasm32-wasip1__nightly": "@rules_rust//rust:toolchain",
+                "rust_linux_x86_64__wasm32-wasip2__nightly": "@rules_rust//rust:toolchain",
                 "rustfmt_nightly-2026-05-31__aarch64-apple-darwin": "@rules_rust//rust/rustfmt:toolchain_type",
                 "rustfmt_nightly-2026-05-31__aarch64-pc-windows-msvc": "@rules_rust//rust/rustfmt:toolchain_type",
                 "rustfmt_nightly-2026-05-31__aarch64-unknown-linux-gnu": "@rules_rust//rust/rustfmt:toolchain_type",
@@ -947,28 +3362,205 @@
                 "rust_macos_aarch64__aarch64-apple-darwin__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_aarch64__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_aarch64__wasm32-wasip2__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
                 "rw-206060356": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-10275915": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1257118537": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-419392413": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1751648421": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-2030194902": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1800514120": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1997027625": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
                 "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_aarch64__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_aarch64__wasm32-wasip2__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
                 "rust_linux_s390x__s390x-unknown-linux-gnu__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
+                "rust_linux_s390x__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_s390x__wasm32-wasip2__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_macos_x86_64__wasm32-wasip2__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
                 "rw-863368150": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
+                "rw-2124729419": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1140202313": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1174967395": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1569716059": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-1794486058": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-642361928": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rw-838875433": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ],
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__wasm32-wasip1__nightly": [
+                  "@rules_rust//rust/toolchain/channel:nightly"
+                ],
+                "rust_linux_x86_64__wasm32-wasip2__nightly": [
                   "@rules_rust//rust/toolchain/channel:nightly"
                 ]
               },
@@ -978,7 +3570,59 @@
                   "@platforms//cpu:aarch64",
                   "@platforms//os:osx"
                 ],
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
                 "rw-206060356": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-10275915": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1257118537": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-419392413": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1751648421": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-2030194902": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1800514120": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1997027625": [
                   "@platforms//cpu:aarch64",
                   "@platforms//os:windows"
                 ],
@@ -986,7 +3630,59 @@
                   "@platforms//cpu:aarch64",
                   "@platforms//os:linux"
                 ],
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:ppc64le",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly": [
                   "@platforms//cpu:ppc64le",
                   "@platforms//os:linux"
                 ],
@@ -994,7 +3690,59 @@
                   "@platforms//cpu:s390x",
                   "@platforms//os:linux"
                 ],
+                "rust_linux_s390x__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:s390x",
+                  "@platforms//os:linux"
+                ],
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__wasm32-wasip2__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:osx"
                 ],
@@ -1002,11 +3750,91 @@
                   "@platforms//cpu:x86_64",
                   "@platforms//os:windows"
                 ],
+                "rw-2124729419": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1140202313": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1174967395": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1569716059": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-1794486058": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-642361928": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
+                "rw-838875433": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows"
+                ],
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:freebsd"
                 ],
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:freebsd"
+                ],
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__wasm32-wasip2__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:linux"
                 ],
@@ -1053,37 +3881,291 @@
                   "@platforms//cpu:aarch64",
                   "@platforms//os:osx"
                 ],
+                "rust_macos_aarch64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_macos_aarch64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_macos_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_macos_aarch64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_macos_aarch64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
+                ],
                 "rw-206060356": [
                   "@platforms//cpu:aarch64",
                   "@platforms//os:windows"
+                ],
+                "rw-10275915": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rw-1257118537": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rw-419392413": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rw-1751648421": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rw-2030194902": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rw-1800514120": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rw-1997027625": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
                 ],
                 "rust_linux_aarch64__aarch64-unknown-linux-gnu__nightly": [
                   "@platforms//cpu:aarch64",
                   "@platforms//os:linux"
                 ],
+                "rust_linux_aarch64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_aarch64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_aarch64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_aarch64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_linux_aarch64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_linux_aarch64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
+                ],
                 "rust_linux_powerpc64le__powerpc64le-unknown-linux-gnu__nightly": [
                   "@platforms//cpu:ppc64le",
                   "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_powerpc64le__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_powerpc64le__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_powerpc64le__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_linux_powerpc64le__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
                 ],
                 "rust_linux_s390x__s390x-unknown-linux-gnu__nightly": [
                   "@platforms//cpu:s390x",
                   "@platforms//os:linux"
                 ],
+                "rust_linux_s390x__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_s390x__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_s390x__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_s390x__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_linux_s390x__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_linux_s390x__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
+                ],
                 "rust_macos_x86_64__x86_64-apple-darwin__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_macos_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_macos_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_macos_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_macos_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_macos_x86_64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
                 ],
                 "rw-863368150": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:windows"
                 ],
+                "rw-2124729419": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rw-1140202313": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rw-1174967395": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rw-1569716059": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rw-1794486058": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rw-642361928": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rw-838875433": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
+                ],
                 "rust_freebsd_x86_64__x86_64-unknown-freebsd__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:freebsd"
                 ],
+                "rust_freebsd_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_freebsd_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_freebsd_x86_64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_freebsd_x86_64__x86_64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:linux"
+                ],
+                "rust_freebsd_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_freebsd_x86_64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
+                ],
                 "rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly": [
                   "@platforms//cpu:x86_64",
                   "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__aarch64-apple-darwin__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_x86_64__aarch64-unknown-linux-gnu__nightly": [
+                  "@platforms//cpu:aarch64",
+                  "@platforms//os:linux"
+                ],
+                "rust_linux_x86_64__x86_64-apple-darwin__nightly": [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:osx"
+                ],
+                "rust_linux_x86_64__wasm32-unknown-unknown__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:none"
+                ],
+                "rust_linux_x86_64__wasm32-wasip1__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_1"
+                ],
+                "rust_linux_x86_64__wasm32-wasip2__nightly": [
+                  "@platforms//cpu:wasm32",
+                  "@platforms//os:wasi",
+                  "@rules_rust//rust/platform:wasi_preview_2"
                 ],
                 "rustfmt_nightly-2026-05-31__aarch64-apple-darwin": [],
                 "rustfmt_nightly-2026-05-31__aarch64-pc-windows-msvc": [],
