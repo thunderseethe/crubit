@@ -11,15 +11,7 @@ cc_binary(
     srcs = ["hello-world.cpp"],
     deps = [
       ":lib_cc_api",
-      ":lib_static",
     ],
-)
-
-# We need a rust_static_library in the dependency graph of the cc_binary
-# to ensure that the Rust allocator shims and runtime are linked in.
-rust_static_library(
-  name = "lib_static",
-  srcs = ["lib.rs"],
 )
 
 rust_library(

@@ -9,7 +9,7 @@ load("@rules_rust//rust/private:repository_utils.bzl",
     "DEFAULT_NIGHTLY_VERSION")
 load("@rules_rust//rust/platform:triple.bzl", "get_host_triple")
 load("@toolchains_llvm//toolchain:rules.bzl", "llvm_toolchain")
-load("//bazel:versions.bzl", "LLVM_MAP")
+load("//bazel:llvm_version_check.bzl", "llvm_version_check")
 
 # These attributes are mirrored from rules_rust's toolchain tag to allow 
 # configuration without duplicating the implementation logic.
@@ -54,7 +54,7 @@ def _crubit_toolchains_impl(ctx):
 
     # 1. Coordinate versions
     rust_version = (config.rust_version if config else None) or "nightly/2026-05-31"
-    mapped_config = LLVM_MAP.get(rust_version, {})
+    mapped_config = {}
     
     # 2. Define LLVM repository
     final_llvm_version = (getattr(config, "llvm_version", None) or 
@@ -66,6 +66,14 @@ def _crubit_toolchains_impl(ctx):
     final_strip_prefix = (getattr(config, "llvm_strip_prefix", None) or 
                           mapped_config.get("strip_prefix"))
 
+    # Perform LLVM version check against system rustc
+    llvm_version_check(
+        name = "llvm_version_check",
+        llvm_version = final_llvm_version,
+    )
+
+    if not final_urls and not final_llvm_version:
+      fail("Please specify one or the other.")
     if final_urls:
         llvm_toolchain(
             name = "llvm_toolchain",

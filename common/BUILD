@@ -7,6 +7,7 @@ load(
     "rust_library",
     "rust_proc_macro",
     "rust_test",
+    "rust_static_library",
 )
 load("//common/bazel_support:external_binaries.bzl", "EXTERNAL_BINARIES")
 load("//common:crubit_wrapper_macros_oss.bzl", "crubit_cc_test", "crubit_rust_test")
@@ -409,6 +410,12 @@ cc_library(
     name = "rust_allocator_shims",
     srcs = ["rust_allocator_shims.c"],
     #visibility = ["@rust_linux_x86_64__x86_64-unknown-linux-gnu__nightly_tools//:__subpackages__"],
+)
+
+rust_static_library(
+  name = "include_allocator_symbols",
+  srcs = ["empty.rs"],
+  deps = []
 )
 
 cc_library(
