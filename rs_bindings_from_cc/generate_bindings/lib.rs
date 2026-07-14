@@ -15,10 +15,11 @@ use database::code_snippet::{
     self, integer_constant_to_token_stream, ApiSnippets, Bindings, BindingsTokens, CppDetails,
     CppIncludes, DeprecatedAttr, Feature, GeneratedItem,
 };
-use database::db::{BindingsGenerator, CodegenFunctions};
+use database::db::{BindingsGenerator, CodegenFunctions, Interner};
+use database::intern;
 use database::rs_snippet::{
-    BackingType, BridgeRsTypeKind, Callable, FnTrait, LifetimeOptions, Mutability,
-    PassingConvention, RsTypeKind, RustPtrKind, UniformReprTemplateType, UnsafeReason,
+    BackingType, BridgeRsTypeKind, Callable, CustomizeMethodsKind, FnTrait, LifetimeOptions,
+    Mutability, PassingConvention, RsTypeKind, RustPtrKind, UniformReprTemplateType, UnsafeReason,
 };
 use dyn_format::Format;
 use error_report::{bail, ErrorReporting, ReportFatalError};
@@ -49,6 +50,7 @@ mod generate_dyn_callable;
 pub fn generate_bindings(
     ir: &IR,
     crubit_support_path_format: &str,
+    crubit_support_versioned_path_format: &str,
     clang_format_exe_path: &OsStr,
     rustfmt_exe_path: &OsStr,
     rustfmt_config_path: &OsStr,
@@ -60,10 +62,20 @@ pub fn generate_bindings(
 ) -> Result<Bindings> {
     let crubit_support_path_format =
         Format::parse_with_metavars(crubit_support_path_format, &["header"])?;
+    let owned_support_format;
+    let mut crubit_support_versioned_path_format = crubit_support_versioned_path_format;
+    if crubit_support_versioned_path_format.is_empty() {
+        // Default to the `internal` directory inside `crubit_support_path_format`
+        owned_support_format = crubit_support_path_format.format(&["internal/{header}"]);
+        crubit_support_versioned_path_format = &owned_support_format;
+    }
+    let crubit_support_versioned_path_format =
+        Format::parse_with_metavars(crubit_support_versioned_path_format, &["header"])?;
 
     let BindingsTokens { rs_api, rs_api_impl } = generate_bindings_tokens(
         &ir,
         crubit_support_path_format,
+        crubit_support_versioned_path_format,
         errors,
         fatal_errors,
         is_golden_test,
@@ -121,7 +133,7 @@ fn generate_type_alias(
 ) -> Result<ApiSnippets> {
     let assume_lifetimes = db
         .ir()
-        .target_crubit_features(&raw_type_alias.owning_target)
+        .target_crubit_features(raw_type_alias.as_ref().owning_target())
         .contains(crubit_feature::CrubitFeature::AssumeLifetimes);
     let type_alias = if assume_lifetimes {
         &lifetime_defaults_transform_type_alias(db, raw_type_alias.as_ref())?
@@ -151,14 +163,14 @@ fn generate_type_alias(
 
     let underlying_type = db
         .rs_type_kind_with_lifetime_elision(
-            type_alias.underlying_type.clone(),
+            type_alias.underlying_type().clone(),
             LifetimeOptions { assume_lifetimes, ..Default::default() },
         )
         .with_context(|| format!("Failed to format underlying type for {type_alias}"))?;
     let mut lifetime_params = vec![];
     if assume_lifetimes {
         lifetime_params =
-            type_alias.lifetime_inputs.iter().map(|id| make_rs_lifetime_ident(id)).collect();
+            type_alias.lifetime_inputs().iter().map(|id| make_rs_lifetime_ident(id)).collect();
     }
 
     // If this type alias refers to a record with nested types,
@@ -173,35 +185,37 @@ fn generate_type_alias(
 
     let generated_item = GeneratedItem::TypeAlias {
         doc_comment: generate_doc_comment(
-            type_alias.doc_comment.as_deref(),
+            type_alias.doc_comment(),
             None,
-            Some(&type_alias.source_loc),
+            Some(type_alias.source_loc()),
             db.is_golden_test(),
             db.kythe_annotations(),
         ),
-        visibility: db.type_visibility(&type_alias.owning_target, rs_type_kind).unwrap_or_default(),
-        ident: make_rs_ident(&type_alias.rs_name.identifier),
+        visibility: db
+            .type_visibility(type_alias.owning_target(), rs_type_kind)
+            .unwrap_or_default(),
+        ident: make_rs_ident(type_alias.rs_name().as_str()),
         underlying_type: underlying_type.to_token_stream(db),
         underlying_nested_module_path,
-        deprecated_attr: type_alias.deprecated.clone().map(DeprecatedAttr),
+        deprecated_attr: type_alias.deprecated().map(|s| DeprecatedAttr(Rc::from(s))),
         lifetime_params,
     };
     Ok(ApiSnippets {
-        generated_items: HashMap::from([(type_alias.id, generated_item)]),
+        generated_items: HashMap::from([(type_alias.id(), generated_item)]),
         ..Default::default()
     })
 }
 
 fn generate_constant(db: &BindingsGenerator, constant: &Constant) -> Result<ApiSnippets> {
     db.errors().add_category(error_report::Category::Constant);
-    let type_ = db.rs_type_kind(constant.type_.clone())?;
-    let value = match integer_constant_to_token_stream(db, constant.value, &type_) {
+    let type_ = db.rs_type_kind(constant.type_().clone())?;
+    let value = match integer_constant_to_token_stream(db, constant.value(), &type_) {
         Ok(value) => value,
         Err(e) => {
             return Ok(ApiSnippets {
                 generated_items: HashMap::from([(
-                    constant.id,
-                    GeneratedItem::Comment { message: e.to_string().into() },
+                    constant.id(),
+                    GeneratedItem::Comment { message: intern!(db.interner(), "{e}") },
                 )]),
                 ..Default::default()
             })
@@ -209,12 +223,12 @@ fn generate_constant(db: &BindingsGenerator, constant: &Constant) -> Result<ApiS
     };
     Ok(ApiSnippets {
         generated_items: HashMap::from([(
-            constant.id,
+            constant.id(),
             GeneratedItem::Constant {
-                ident: make_rs_ident(&constant.rs_name.identifier),
+                ident: make_rs_ident(constant.rs_name().as_str()),
                 type_tokens: type_.to_token_stream(db),
                 value,
-                deprecated_attr: constant.deprecated.clone().map(DeprecatedAttr),
+                deprecated_attr: constant.deprecated().map(|s| DeprecatedAttr(Rc::from(s))),
             },
         )]),
         ..Default::default()
@@ -223,18 +237,18 @@ fn generate_constant(db: &BindingsGenerator, constant: &Constant) -> Result<ApiS
 
 fn generate_global_var(db: &BindingsGenerator, var: &GlobalVar) -> Result<ApiSnippets> {
     db.errors().add_category(error_report::Category::Variable);
-    let type_ = db.rs_type_kind(var.type_.clone())?;
+    let type_ = db.rs_type_kind(var.type_().clone())?;
 
     Ok(ApiSnippets {
         generated_items: HashMap::from([(
-            var.id,
+            var.id(),
             GeneratedItem::GlobalVar {
-                link_name: var.mangled_name.clone(),
-                is_mut: !var.type_.is_const,
-                ident: make_rs_ident(&var.rs_name.identifier),
+                link_name: var.mangled_name().map(Rc::from),
+                is_mut: !var.type_().is_const(),
+                ident: make_rs_ident(var.rs_name().as_str()),
                 type_tokens: type_.to_token_stream(db),
-                visibility: db.type_visibility(&var.owning_target, type_).unwrap_or_default(),
-                deprecated_attr: var.deprecated.clone().map(DeprecatedAttr),
+                visibility: db.type_visibility(var.owning_target(), type_).unwrap_or_default(),
+                deprecated_attr: var.deprecated().map(|s| DeprecatedAttr(Rc::from(s))),
             },
         )]),
         ..Default::default()
@@ -246,17 +260,16 @@ fn generate_namespace(db: &BindingsGenerator, namespace: Rc<Namespace>) -> Resul
 
     let mut api_snippets = ApiSnippets::default();
 
-    for &item_id in &namespace.child_item_ids {
-        let item = db.find_untyped_decl(item_id);
+    for item in namespace.children() {
         api_snippets.append(db.generate_item(item.clone())?);
     }
 
-    api_snippets.generated_items.insert(namespace.id, GeneratedItem::NonCanonicalNamespace);
+    api_snippets.generated_items.insert(namespace.id(), GeneratedItem::NonCanonicalNamespace);
     api_snippets.generated_items.insert(
-        namespace.canonical_namespace_id,
+        namespace.canonical_namespace_id(),
         GeneratedItem::CanonicalNamespace {
-            items: namespace.child_item_ids.to_vec(),
-            deprecated_attr: namespace.deprecated.clone().map(DeprecatedAttr),
+            items: namespace.children().iter().map(|c| c.id()).collect(),
+            deprecated_attr: namespace.deprecated().map(|s| DeprecatedAttr(Rc::from(s))),
         },
     );
     Ok(api_snippets)
@@ -302,7 +315,7 @@ fn generate_item_impl(db: &BindingsGenerator, item: &Item) -> Result<ApiSnippets
                     // uncallable function item.
                     db.errors().report(e);
                 }
-                if db.is_ambiguous_function(&generated_function.id, func.id) {
+                if db.is_ambiguous_function(&generated_function.id, func.id()) {
                     bail!("Cannot generate bindings for overloaded function")
                 } else {
                     (*generated_function.snippets).clone()
@@ -323,7 +336,7 @@ fn generate_item_impl(db: &BindingsGenerator, item: &Item) -> Result<ApiSnippets
             // had a more specific type, which is why this categorization goes here, and not
             // in generate_unsupported.
             use UnsupportedItemKind::*;
-            match unsupported.kind {
+            match unsupported.kind() {
                 Func | Constructor => {
                     db.errors().add_category(error_report::Category::Function);
                 }
@@ -343,29 +356,28 @@ fn generate_item_impl(db: &BindingsGenerator, item: &Item) -> Result<ApiSnippets
         Item::Comment(comment) => generate_comment(comment.clone()),
         Item::Namespace(namespace) => generate_namespace(db, namespace.clone())?,
         Item::UseMod(use_mod) => {
-            let UseMod { path, mod_name, .. } = &**use_mod;
-            let mod_name = make_rs_ident(&mod_name.identifier);
+            let mod_name = make_rs_ident(use_mod.mod_name().as_str());
             // TODO(b/308949532): Skip re-export if the module being used is empty
             // (transitively).
             ApiSnippets {
                 generated_items: HashMap::from([(
-                    use_mod.id,
-                    GeneratedItem::UseMod { path: path.clone(), mod_name },
+                    use_mod.id(),
+                    GeneratedItem::UseMod { path: Rc::from(use_mod.path()), mod_name },
                 )]),
                 ..Default::default()
             }
         }
         Item::ExistingRustType(existing_rust_type) => {
             let rs_type_kind = db.rs_type_kind((&**existing_rust_type).into())?;
-            let disable_comment = format!(
+            let disable_comment = intern!(
+                db.interner(),
                 "Type bindings for {cpp_type} suppressed due to being mapped to \
                     an existing Rust type ({rs_type_kind})",
                 cpp_type = db.debug_name(existing_rust_type.id()),
                 rs_type_kind = rs_type_kind.display(db),
             );
             let assertions = existing_rust_type
-                .size_align
-                .as_ref()
+                .size_align()
                 .map(|size_align| {
                     generate_struct_and_union::rs_size_align_assertions(
                         rs_type_kind.to_token_stream(db),
@@ -377,8 +389,8 @@ fn generate_item_impl(db: &BindingsGenerator, item: &Item) -> Result<ApiSnippets
 
             ApiSnippets {
                 generated_items: HashMap::from([(
-                    existing_rust_type.id,
-                    GeneratedItem::Comment { message: disable_comment.into() },
+                    existing_rust_type.id(),
+                    GeneratedItem::Comment { message: disable_comment },
                 )]),
                 assertions,
                 ..Default::default()
@@ -399,6 +411,7 @@ pub fn new_database<'db>(
     fatal_errors: &'db dyn ReportFatalError,
     is_golden_test: bool,
     kythe_annotations: bool,
+    interner: &'db Interner,
 ) -> BindingsGenerator<'db> {
     BindingsGenerator::new(
         ir,
@@ -412,6 +425,7 @@ pub fn new_database<'db>(
             generate_record: generate_struct_and_union::generate_record,
             decl_lifetime_arity: lifetime_defaults_transform::decl_lifetime_arity,
         },
+        interner,
         rs_type_kind_safety,
         record_field_safety,
         record_safety,
@@ -425,6 +439,7 @@ pub fn new_database<'db>(
         crubit_abi_type,
         has_bindings::type_target_restriction,
         has_bindings::resolve_names,
+        generate_function::mangled_name_counts,
     )
 }
 
@@ -435,12 +450,14 @@ pub fn new_database<'db>(
 pub fn generate_bindings_tokens(
     ir: &IR,
     crubit_support_path_format: Format<1>,
+    crubit_support_versioned_path_format: Format<1>,
     errors: &dyn ErrorReporting,
     fatal_errors: &dyn ReportFatalError,
     is_golden_test: bool,
     kythe_annotations: bool,
 ) -> Result<BindingsTokens> {
-    let db = new_database(ir, errors, fatal_errors, is_golden_test, kythe_annotations);
+    let interner = Interner::default();
+    let db = new_database(ir, errors, fatal_errors, is_golden_test, kythe_annotations, &interner);
     let mut snippets = ApiSnippets::default();
 
     // For #![rustfmt::skip].
@@ -452,8 +469,7 @@ pub fn generate_bindings_tokens(
         snippets.features |= Feature::cfg_sanitize;
     }
 
-    for top_level_item_id in ir.top_level_item_ids() {
-        let item = db.find_untyped_decl(*top_level_item_id);
+    for item in ir.top_level_items_in_target(ir.current_target()) {
         snippets.append(db.generate_item(item.clone())?);
     }
 
@@ -524,7 +540,7 @@ pub fn generate_bindings_tokens(
 
                 internal_includes.insert(CcInclude::SupportLibHeader(
                     crubit_support_path_format.clone(),
-                    "rs_std/dyn_callable.h".into(),
+                    intern!(db.interner(), "rs_std/dyn_callable.h"),
                 ));
 
                 Some((cpp_api, rust_api))
@@ -555,14 +571,18 @@ pub fn generate_bindings_tokens(
         free_functions: _,
     } = snippets;
 
-    let main_api = code_snippet::generated_items_to_token_stream(
-        &generated_items,
-        &db,
-        ir.top_level_item_ids(),
-    );
+    let top_level_ids: Vec<ItemId> =
+        ir.top_level_items_in_target(ir.current_target()).iter().map(|item| item.id()).collect();
+    let main_api =
+        code_snippet::generated_items_to_token_stream(&generated_items, &db, &top_level_ids);
 
     let cc_details = CppDetails {
-        includes: generate_rs_api_impl_includes(&db, crubit_support_path_format, internal_includes),
+        includes: generate_rs_api_impl_includes(
+            &db,
+            crubit_support_path_format,
+            crubit_support_versioned_path_format,
+            internal_includes,
+        ),
         dyn_callable_cpp_decls: callables_rs_api_impl,
         thunks: cc_details,
     };
@@ -636,15 +656,15 @@ pub fn generate_bindings_tokens(
             // C++ names don't follow Rust guidelines:
             #![allow(nonstandard_style)] __NEWLINE__
 
-            // TODO(b/499149377): Remove this after we switch to compiling with edition 2024. Until
-            // then, ensure we don't introduce any more compatibility problems.
-            #![deny(rust_2024_compatibility)]
-
             // Parts of our generated code are sometimes considered dead
             // (b/349776381).
             #![allow(unused)] __NEWLINE__
             #![allow(deprecated)] __NEWLINE__
-            #![deny(warnings)] __NEWLINE__ __NEWLINE__
+            // We emit bindings to symbols like strlen that trigger suspicious_runtime_symbol_definitions.
+            // The lint is triggered because we give them a Crubit compatible signature, instead of the expected Rust standard library signature.
+            // But this is the intended behavior, so we allow the warning.
+            #![allow(unknown_lints, suspicious_runtime_symbol_definitions)] __NEWLINE__ __NEWLINE__
+            #![deny(warnings)] __NEWLINE__
 
             #extern_crate_alloc
 
@@ -663,10 +683,11 @@ pub fn generate_bindings_tokens(
 /// Implementation of `BindingsGenerator::rs_type_kind_safety`.
 fn rs_type_kind_safety(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Option<UnsafeReason> {
     match rs_type_kind {
-        RsTypeKind::Error { error, .. } => Some(UnsafeReason(
-            format!("Crubit cannot assume unknown types are safe: {error}").into(),
-        )),
-        RsTypeKind::Pointer { .. } => Some(UnsafeReason("raw pointer".into())),
+        RsTypeKind::Error { error, .. } => Some(UnsafeReason(intern!(
+            db.interner(),
+            "Crubit cannot assume unknown types are safe: {error}"
+        ))),
+        RsTypeKind::Pointer { .. } => Some(UnsafeReason(intern!(db.interner(), "raw pointer"))),
         RsTypeKind::Reference { referent: t, .. }
         | RsTypeKind::RvalueReference { referent: t, .. }
         | RsTypeKind::TypeAlias { underlying_type: t, .. } => {
@@ -687,10 +708,10 @@ fn rs_type_kind_safety(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Opti
             // TODO(b/390621592): Should bridge types just delegate to the underlying type?
             BridgeRsTypeKind::Bridge { .. } => record_safety(db, original_type.clone())
                 // Full unsafe reason is not shown here, it's documented on the type instead.
-                .map(|_reason| UnsafeReason("unsafe bridge type".into())),
+                .map(|_reason| UnsafeReason(intern!(db.interner(), "unsafe bridge type"))),
             BridgeRsTypeKind::ProtoMessageBridge { .. } => record_safety(db, original_type.clone())
                 // Full unsafe reason is not shown here, it's documented on the type instead.
-                .map(|_reason| UnsafeReason("unsafe proto message type".into())),
+                .map(|_reason| UnsafeReason(intern!(db.interner(), "unsafe proto message type"))),
             BridgeRsTypeKind::StdOptional(t) => db.rs_type_kind_safety(t.as_ref().clone()),
             BridgeRsTypeKind::StdPair(t1, t2) => {
                 let s1 = db.rs_type_kind_safety(t1.as_ref().clone());
@@ -700,9 +721,11 @@ fn rs_type_kind_safety(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Opti
                 let r2 = s2.map(|reason| format!("pair's second element is unsafe: {reason}"));
 
                 match (r1, r2) {
-                    (Some(r1), Some(r2)) => Some(UnsafeReason(format!("{r1}; {r2}").into())),
-                    (Some(r1), None) => Some(UnsafeReason(r1.into())),
-                    (None, Some(r2)) => Some(UnsafeReason(r2.into())),
+                    (Some(r1), Some(r2)) => {
+                        Some(UnsafeReason(intern!(db.interner(), "{r1}; {r2}")))
+                    }
+                    (Some(r1), None) => Some(UnsafeReason(intern!(db.interner(), "{r1}"))),
+                    (None, Some(r2)) => Some(UnsafeReason(intern!(db.interner(), "{r2}"))),
                     (None, None) => None,
                 }
             }
@@ -719,30 +742,32 @@ fn rs_type_kind_safety(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Opti
             if !record.is_raw_string_view()
                 && db
                     .ir()
-                    .target_crubit_features(&record.owning_target)
+                    .target_crubit_features(record.as_ref().owning_target())
                     .contains(crubit_feature::CrubitFeature::AssumeLifetimes)
             {
                 match (db.codegen_functions().decl_lifetime_arity)(db, record.id()) {
                     Ok(arity) => {
                         if arity != 0 && lifetimes.len() != arity {
-                            return Some(UnsafeReason(format!(
+                            return Some(UnsafeReason(intern!(
+                                db.interner(),
                                 "type {} has {} lifetime parameter{}, but {} {} provided; callers must ensure that arguments have the appropriate lifetime",
-                                record.rs_name, arity, if arity == 1 { "" } else { "s" }, lifetimes.len(), if lifetimes.len() == 1 { "was" } else { "were" }
-                            ).into()));
+                                record.rs_name(), arity, if arity == 1 { "" } else { "s" }, lifetimes.len(), if lifetimes.len() == 1 { "was" } else { "were" }
+                            )));
                         }
                     }
                     _ => {
-                        return Some(UnsafeReason(format!(
+                        return Some(UnsafeReason(intern!(
+                            db.interner(),
                             "unable to determine lifetime how many lifetime parameters {} accepts; callers must ensure that arguments have the appropriate lifetime",
-                            record.rs_name
-                        ).into()));
+                            record.rs_name()
+                        )));
                     }
                 }
             }
 
             // Full unsafe reason is not shown here, it's documented on the type instead.
             record_safety(db, record.clone())
-                .map(|_reason| UnsafeReason("unsafe struct or union".into()))
+                .map(|_reason| UnsafeReason(intern!(db.interner(), "unsafe struct or union")))
         }
     }
 }
@@ -784,21 +809,22 @@ fn callable_safety(
         }
     }
 
-    Some(UnsafeReason(reasons.into()))
+    Some(UnsafeReason(intern!(db.interner(), "{reasons}")))
 }
 
 /// Implementation of `BindingsGenerator::record_field_safety`.
 fn record_field_safety(db: &BindingsGenerator, field: Field) -> Option<UnsafeReason> {
-    if field.access != AccessSpecifier::Public {
+    if field.access() != AccessSpecifier::Public {
         return None;
     }
-    let field_rs_type_kind = match db.rs_type_kind(field.type_.clone()) {
+    let field_rs_type_kind = match db.rs_type_kind(field.type_().clone()) {
         Ok(field_rs_type_kind) => field_rs_type_kind,
         Err(err) => {
             // If we can't get the RsTypeKind for a public field, we assume it's unsafe.
-            return Some(UnsafeReason(
-                format!("Rust type is unknown; safety requirements cannot be automatically generated: {err}").into(),
-            ));
+            return Some(UnsafeReason(intern!(
+                db.interner(),
+                "Rust type is unknown; safety requirements cannot be automatically generated: {err}"
+            )));
         }
     };
     db.rs_type_kind_safety(field_rs_type_kind)
@@ -808,7 +834,7 @@ fn record_field_safety(db: &BindingsGenerator, field: Field) -> Option<UnsafeRea
 fn record_safety(db: &BindingsGenerator, record: Rc<Record>) -> Option<UnsafeReason> {
     let mut doc = String::new();
 
-    match record.safety_annotation {
+    match record.safety_annotation() {
         SafetyAnnotation::DisableUnsafe => {
             return None;
         }
@@ -824,14 +850,14 @@ fn record_safety(db: &BindingsGenerator, record: Rc<Record>) -> Option<UnsafeRea
     }
 
     let reasons: Vec<_> = record
-        .fields
+        .fields()
         .iter()
         .filter_map(|field| {
             let reason = db.record_field_safety(field.clone())?;
 
             // TODO(nicholasbishop): handle unnamed better.
             let mut name = field
-                .rust_identifier
+                .rust_identifier()
                 .as_ref()
                 .map(|i| format!("`{}`", i.as_str()))
                 .unwrap_or("unnamed field".to_owned());
@@ -840,7 +866,7 @@ fn record_safety(db: &BindingsGenerator, record: Rc<Record>) -> Option<UnsafeRea
         })
         .collect();
 
-    if matches!(record.safety_annotation, SafetyAnnotation::Unannotated)
+    if matches!(record.safety_annotation(), SafetyAnnotation::Unannotated)
         && !record.is_union()
         && reasons.is_empty()
     {
@@ -858,17 +884,16 @@ fn record_safety(db: &BindingsGenerator, record: Rc<Record>) -> Option<UnsafeRea
     // Verify that we didn't generate an empty safety doc.
     assert!(!doc.is_empty());
 
-    Some(UnsafeReason(
-        format!(
-            "To call a function that accepts this type, you must uphold these requirements:\n{doc}"
-        )
-        .into(),
-    ))
+    Some(UnsafeReason(intern!(
+        db.interner(),
+        "To call a function that accepts this type, you must uphold these requirements:\n{doc}"
+    )))
 }
 
 fn generate_rs_api_impl_includes(
     db: &BindingsGenerator,
     crubit_support_path_format: Format<1>,
+    crubit_support_versioned_path_format: Format<1>,
     mut internal_includes: BTreeSet<CcInclude>,
 ) -> CppIncludes {
     let ir = db.ir();
@@ -877,13 +902,14 @@ fn generate_rs_api_impl_includes(
     if ir.records().next().is_some() {
         internal_includes.insert(CcInclude::cstddef());
         internal_includes.insert(CcInclude::SupportLibHeader(
-            crubit_support_path_format.clone(),
-            "internal/sizeof.h".into(),
+            crubit_support_versioned_path_format.clone(),
+            intern!(db.interner(), "sizeof.h"),
         ));
     };
 
     let crubit_any_invocable_support_header =
-        generate_dyn_callable::CRUBIT_ANY_INVOCABLE_SUPPORT_HEADER.map(Rc::<str>::from);
+        generate_dyn_callable::CRUBIT_ANY_INVOCABLE_SUPPORT_HEADER
+            .map(|header| intern!(db.interner(), "{header}"));
 
     for record in ir.records() {
         // We don't actually use the possible c9::Co, but need to pass in something to `new`.
@@ -898,11 +924,12 @@ fn generate_rs_api_impl_includes(
                 BridgeRsTypeKind::C9Co { .. } => {
                     internal_includes.insert(CcInclude::SupportLibHeader(
                         crubit_support_path_format.clone(),
-                        "bridge.h".into(),
+                        intern!(db.interner(), "bridge.h"),
                     ));
-                    internal_includes.insert(CcInclude::user_header(
-                        "util/c9/internal/rust/co_crubit_abi.h".into(),
-                    ));
+                    internal_includes.insert(CcInclude::user_header(intern!(
+                        db.interner(),
+                        "util/c9/internal/rust/co_crubit_abi.h"
+                    )));
                 }
                 BridgeRsTypeKind::Callable(callable)
                     if matches!(&callable.backing_type, BackingType::AnyInvocable { .. }) =>
@@ -912,7 +939,7 @@ fn generate_rs_api_impl_includes(
                     {
                         internal_includes.insert(CcInclude::SupportLibHeader(
                             crubit_support_path_format.clone(),
-                            "bridge.h".into(),
+                            intern!(db.interner(), "bridge.h"),
                         ));
                         internal_includes.insert(CcInclude::user_header(Rc::clone(
                             crubit_any_invocable_support_header,
@@ -924,37 +951,37 @@ fn generate_rs_api_impl_includes(
                 _ => {
                     internal_includes.insert(CcInclude::SupportLibHeader(
                         crubit_support_path_format.clone(),
-                        "bridge.h".into(),
+                        intern!(db.interner(), "bridge.h"),
                     ));
                     internal_includes.insert(CcInclude::SupportLibHeader(
-                        crubit_support_path_format.clone(),
-                        "internal/slot.h".into(),
+                        crubit_support_versioned_path_format.clone(),
+                        intern!(db.interner(), "slot.h"),
                     ));
                 }
             }
         }
 
-        if record.detected_formatter {
+        if record.detected_formatter() {
             internal_includes.insert(CcInclude::SupportLibHeader(
                 crubit_support_path_format.clone(),
-                "rs_std/lossy_formatter_for_bindings.h".into(),
+                intern!(db.interner(), "rs_std/lossy_formatter_for_bindings.h"),
             ));
             internal_includes.insert(CcInclude::SupportLibHeader(
-                crubit_support_path_format.clone(),
-                "internal/fmt.h".into(),
+                crubit_support_versioned_path_format.clone(),
+                intern!(db.interner(), "fmt.h"),
             ));
         }
     }
 
     for e in ir.enums() {
-        if e.detected_formatter {
+        if e.detected_formatter() {
             internal_includes.insert(CcInclude::SupportLibHeader(
                 crubit_support_path_format.clone(),
-                "rs_std/lossy_formatter_for_bindings.h".into(),
+                intern!(db.interner(), "rs_std/lossy_formatter_for_bindings.h"),
             ));
             internal_includes.insert(CcInclude::SupportLibHeader(
-                crubit_support_path_format.clone(),
-                "internal/fmt.h".into(),
+                crubit_support_versioned_path_format.clone(),
+                intern!(db.interner(), "fmt.h"),
             ));
         }
     }
@@ -967,19 +994,19 @@ fn generate_rs_api_impl_includes(
         if rs_type_kind.is_bridge_type() {
             internal_includes.insert(CcInclude::SupportLibHeader(
                 crubit_support_path_format.clone(),
-                "bridge.h".into(),
+                intern!(db.interner(), "bridge.h"),
             ));
             internal_includes.insert(CcInclude::SupportLibHeader(
-                crubit_support_path_format.clone(),
-                "internal/slot.h".into(),
+                crubit_support_versioned_path_format.clone(),
+                intern!(db.interner(), "slot.h"),
             ));
         }
     }
 
-    for crubit_header in ["internal/cxx20_backports.h", "internal/offsetof.h"] {
+    for crubit_header in ["cxx20_backports.h", "offsetof.h"] {
         internal_includes.insert(CcInclude::SupportLibHeader(
-            crubit_support_path_format.clone(),
-            crubit_header.into(),
+            crubit_support_versioned_path_format.clone(),
+            intern!(db.interner(), "{crubit_header}"),
         ));
     }
     let internal_includes = format_cc_includes(&internal_includes);
@@ -989,8 +1016,10 @@ fn generate_rs_api_impl_includes(
     // process these includes via `format_cc_includes` to preserve their
     // original order (some libraries require certain headers to be included
     // first - e.g. `config.h`).
-    let ir_includes =
-        ir.public_headers().map(|hdr| CcInclude::user_header(hdr.name.clone())).collect_vec();
+    let ir_includes = ir
+        .public_headers()
+        .map(|hdr| CcInclude::user_header(intern!(db.interner(), "{}", hdr.name())))
+        .collect_vec();
 
     CppIncludes { internal_includes, ir_includes }
 }
@@ -1047,6 +1076,7 @@ fn all_static_lifetimes_internal(t: Rc<RsTypeKind>) -> Rc<RsTypeKind> {
             uniform_repr_template_type,
             owned_ptr_type,
             lifetimes,
+            customize_methods,
         } => Rc::new(RsTypeKind::Record {
             record: record.clone(),
             crate_path: crate_path.clone(),
@@ -1098,6 +1128,20 @@ fn all_static_lifetimes_internal(t: Rc<RsTypeKind>) -> Rc<RsTypeKind> {
                 .iter()
                 .map(|_| database::rs_snippet::Lifetime::new("static"))
                 .collect(),
+            customize_methods: customize_methods.as_ref().map(|customize_methods| {
+                Rc::new(match customize_methods.as_ref() {
+                    CustomizeMethodsKind::AbslFlatHashMap { key_type, value_type } => {
+                        CustomizeMethodsKind::AbslFlatHashMap {
+                            key_type: all_static_lifetimes_internal(Rc::new(key_type.clone()))
+                                .as_ref()
+                                .clone(),
+                            value_type: all_static_lifetimes_internal(Rc::new(value_type.clone()))
+                                .as_ref()
+                                .clone(),
+                        }
+                    }
+                })
+            }),
         }),
         RsTypeKind::Enum { .. } => t,
         RsTypeKind::TypeAlias { type_alias, underlying_type, crate_path, lifetimes } => {
@@ -1204,15 +1248,14 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
             })
         }
         RsTypeKind::Enum { ref enum_, .. } => {
-            let cpp_type =
-                make_cpp_type_from_item(enum_.as_ref(), enum_.cc_name.identifier.as_ref(), db)?;
+            let cpp_type = make_cpp_type_from_item(enum_.as_ref(), enum_.cc_name().as_str(), db)?;
 
             Ok(CrubitAbiType::Transmute { rust_type: rs_type_kind.to_token_stream(db), cpp_type })
         }
         RsTypeKind::ExistingRustType { ref existing_rust_type, .. } => {
             let cpp_type = make_cpp_type_from_item(
                 existing_rust_type.as_ref(),
-                existing_rust_type.cc_name.as_ref(),
+                existing_rust_type.cc_name(),
                 db,
             )?;
 
@@ -1224,16 +1267,33 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
             Primitive::Float => CrubitAbiType::transmute("f32", "float"),
             Primitive::Double => CrubitAbiType::transmute("f64", "double"),
             Primitive::Char => CrubitAbiType::transmute("::core::ffi::c_char", "char"),
-            Primitive::SignedChar => CrubitAbiType::SignedChar,
-            Primitive::UnsignedChar => CrubitAbiType::UnsignedChar,
+            Primitive::SignedChar => {
+                CrubitAbiType::transmute("::core::ffi::c_schar", "signed char")
+            }
+            Primitive::UnsignedChar => {
+                CrubitAbiType::transmute("::core::ffi::c_uchar", "unsigned char")
+            }
             Primitive::Short => CrubitAbiType::transmute("::core::ffi::c_short", "short"),
             Primitive::Int => CrubitAbiType::transmute("::core::ffi::c_int", "int"),
             Primitive::Long => CrubitAbiType::transmute("::core::ffi::c_long", "long"),
-            Primitive::LongLong => CrubitAbiType::LongLong,
-            Primitive::UnsignedShort => CrubitAbiType::UnsignedShort,
-            Primitive::UnsignedInt => CrubitAbiType::UnsignedInt,
-            Primitive::UnsignedLong => CrubitAbiType::UnsignedLong,
-            Primitive::UnsignedLongLong => CrubitAbiType::UnsignedLongLong,
+            Primitive::LongLong => {
+                CrubitAbiType::transmute("::core::ffi::c_long_long", "long long")
+            }
+            Primitive::Int128 => CrubitAbiType::transmute("i128", "__int128"),
+            Primitive::UnsignedShort => {
+                CrubitAbiType::transmute("::core::ffi::c_ushort", "unsigned short")
+            }
+            Primitive::UnsignedInt => {
+                CrubitAbiType::transmute("::core::ffi::c_uint", "unsigned int")
+            }
+            Primitive::UnsignedLong => {
+                CrubitAbiType::transmute("::core::ffi::c_ulong", "unsigned long")
+            }
+            Primitive::UnsignedLongLong => {
+                CrubitAbiType::transmute("::core::ffi::c_ulong_long", "unsigned long long")
+            }
+            Primitive::UnsignedInt128 => CrubitAbiType::transmute("u128", "unsigned __int128"),
+
             Primitive::Char16T => CrubitAbiType::transmute("u16", "char16_t"),
             Primitive::Char32T => CrubitAbiType::transmute("u32", "char32_t"),
             Primitive::PtrdiffT => CrubitAbiType::transmute("isize", "ptrdiff_t"),
@@ -1266,7 +1326,7 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
                 let ir = db.ir();
                 let target = db
                     .defining_target(original_type.id())
-                    .unwrap_or_else(|| original_type.owning_target.clone());
+                    .unwrap_or_else(|| original_type.as_ref().owning_target().clone());
                 let rust_abi_path =
                     make_rust_abi_path_from_str("ProtoMessageRustBridge", ir, &target);
 
@@ -1275,7 +1335,7 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
                 // Rust message types are exported to crate root, but we need the full namespace for the C++ ABI.
                 let merged_cpp_abi_path = cpp_namespace_qualifier.parts().join("::")
                     + "::"
-                    + original_type.cc_name.identifier.as_ref();
+                    + original_type.cc_name().as_str();
 
                 Ok(CrubitAbiType::ProtoMessage {
                     proto_message_rust_bridge: rust_abi_path,
@@ -1287,7 +1347,7 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
                 let ir = db.ir();
                 let target = db
                     .defining_target(original_type.id())
-                    .unwrap_or_else(|| original_type.owning_target.clone());
+                    .unwrap_or_else(|| original_type.as_ref().owning_target().clone());
                 let rust_abi_path = make_rust_abi_path_from_str(&abi_rust, ir, &target);
 
                 let cpp_abi_path = make_cpp_abi_path_from_str(&abi_cpp)?;
@@ -1421,15 +1481,15 @@ fn crubit_abi_type(db: &BindingsGenerator, rs_type_kind: RsTypeKind) -> Result<C
             ensure!(
                 record.is_unpin(),
                 "Type `{}` must be Rust-movable in order to memcpy through a bridge buffer. See crubit.rs/cpp/classes_and_structs#rust_movable",
-                record.cc_name
+                record.cc_name()
             );
 
             // This inlines the logic of code_gen_utils::format_cc_ident and joins the namespace parts,
             // except that it creates an Ident instead of a TokenStream.
-            code_gen_utils::check_valid_cc_name(&record.cc_name.identifier)
+            code_gen_utils::check_valid_cc_name(record.cc_name().as_str())
                 .expect("IR should only contain valid C++ types");
 
-            let cpp_type = make_cpp_type_from_item(record, record.cc_name.identifier.as_ref(), db)?;
+            let cpp_type = make_cpp_type_from_item(record, record.cc_name().as_str(), db)?;
 
             Ok(CrubitAbiType::Transmute { rust_type: rs_type_kind.to_token_stream(db), cpp_type })
         }

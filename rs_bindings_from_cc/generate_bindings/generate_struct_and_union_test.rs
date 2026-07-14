@@ -25,7 +25,7 @@ fn test_template_in_dependency_and_alias_in_current_target() -> Result<()> {
     let ir = {
         let dependency_src = r#" #pragma clang lifetime_elision
                 template <typename T>
-                struct MyTemplate {
+                struct [[clang::annotate("crubit_always_instantiate")]] MyTemplate {
                     ~MyTemplate();
                     T GetValue() { return field; }
                     T field;
@@ -70,7 +70,7 @@ fn test_template_in_dependency_and_alias_in_current_target() -> Result<()> {
             mod detail { ...  unsafe extern "C" {
                 ...
                 pub(crate) unsafe fn
-                __rust_thunk___ZN10MyTemplateIiE8GetValueEv__2f_2ftest_3atesting_5ftarget<'a>(
+                ...<'a>(
                     __this: ... Pin<&'a mut crate::__CcTemplateInst10MyTemplateIiE>
                 ) -> ::ffi_11::c_int;
                 ...
@@ -81,7 +81,7 @@ fn test_template_in_dependency_and_alias_in_current_target() -> Result<()> {
         rs_api_impl,
         quote! {
             extern "C"
-            int __rust_thunk___ZN10MyTemplateIiE8GetValueEv__2f_2ftest_3atesting_5ftarget(
+            int ... (
                     struct MyTemplate<int>* __this) {
                 return __this->GetValue();
             }
@@ -98,7 +98,7 @@ fn test_template_with_out_of_line_definition() -> Result<()> {
     let ir = ir_from_cc(
         r#"
             template <typename T>
-            class MyTemplate final {
+            class [[clang::annotate("crubit_always_instantiate")]] MyTemplate final {
              public:
               static MyTemplate Create(T value);
               const T& value() const;
@@ -128,7 +128,7 @@ fn test_template_with_out_of_line_definition() -> Result<()> {
         rs_api_impl,
         quote! {
             extern "C" void
-            __rust_thunk___ZN10MyTemplateIiE6CreateEi__2f_2ftest_3atesting_5ftarget(
+            ... (
                 class MyTemplate<int>* __return, int value) {
               new (__return) auto(MyTemplate<int>::Create(value));
             }
@@ -138,7 +138,7 @@ fn test_template_with_out_of_line_definition() -> Result<()> {
         rs_api_impl,
         quote! {
             extern "C" int const*
-            __rust_thunk___ZNK10MyTemplateIiE5valueEv__2f_2ftest_3atesting_5ftarget(
+            ... (
                     class MyTemplate<int> const * __this) {
                 return std::addressof(__this->value());
             }
@@ -167,6 +167,7 @@ fn test_simple_struct() -> Result<()> {
         rs_api,
         quote! {
             #[::ctor::recursively_pinned(PinnedDrop)]
+            #[cfi_encoding = "10SomeStruct"]
             #[repr(C, align(4))]
             #[doc="CRUBIT_ANNOTATE: cpp_type=SomeStruct"]
             pub struct SomeStruct {
@@ -608,28 +609,28 @@ fn test_copy_derives() {
 #[gtest]
 fn test_copy_derives_not_is_trivial_abi() {
     let mut record = ir_record("S");
-    record.is_trivial_abi = false;
+    record.set_is_trivial_abi(false);
     assert_derives(&record, &[]);
 }
 
 #[gtest]
 fn test_copy_derives_ctor_deleted() {
     let mut record = ir_record("S");
-    record.copy_constructor = ir::SpecialMemberFunc::Unavailable;
+    record.set_copy_constructor(ir::SpecialMemberFunc::Unavailable);
     assert_derives(&record, &[]);
 }
 
 #[gtest]
 fn test_copy_derives_ctor_nontrivial_members() {
     let mut record = ir_record("S");
-    record.copy_constructor = ir::SpecialMemberFunc::NontrivialMembers;
+    record.set_copy_constructor(ir::SpecialMemberFunc::NontrivialMembers);
     assert_derives(&record, &[]);
 }
 
 #[gtest]
 fn test_copy_derives_ctor_nontrivial_self() {
     let mut record = ir_record("S");
-    record.copy_constructor = ir::SpecialMemberFunc::NontrivialUserDefined;
+    record.set_copy_constructor(ir::SpecialMemberFunc::NontrivialUserDefined);
     assert_derives(&record, &[]);
 }
 
@@ -640,7 +641,7 @@ fn test_copy_derives_dtor_nontrivial_self() {
     for definition in
         [ir::SpecialMemberFunc::NontrivialUserDefined, ir::SpecialMemberFunc::NontrivialMembers]
     {
-        record.destructor = definition;
+        record.set_destructor(definition);
         assert_derives(&record, &["Clone"]);
     }
 }
@@ -995,6 +996,7 @@ fn test_doc_comment_record() -> Result<()> {
         quote! {
             #[doc = " Doc Comment\n \n  * with bullet\n \n Generated from: ir_from_cc_virtual_header.h;l=6"]
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "10SomeStruct"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=SomeStruct"]
             pub struct SomeStruct {
@@ -1022,6 +1024,7 @@ fn test_basic_union() -> Result<()> {
         rs_api,
         quote! {
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "9SomeUnion"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=SomeUnion"]
             pub union SomeUnion {
@@ -1133,6 +1136,7 @@ fn test_union_with_private_fields() -> Result<()> {
         rs_api,
         quote! {
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "26SomeUnionWithPrivateFields"]
             #[repr(C, align(8))]
             #[doc="CRUBIT_ANNOTATE: cpp_type=SomeUnionWithPrivateFields"]
             pub union SomeUnionWithPrivateFields {
@@ -1181,6 +1185,7 @@ fn test_nontrivial_unions() -> Result<()> {
         rs_api,
         quote! {
             #[::ctor::recursively_pinned]
+            #[cfi_encoding = "24UnionWithNontrivialField"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=UnionWithNontrivialField"]
             pub union UnionWithNontrivialField { ... }
@@ -1202,6 +1207,7 @@ fn test_empty_struct() -> Result<()> {
         rs_api,
         quote! {
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "11EmptyStruct"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=EmptyStruct"]
             pub struct EmptyStruct {
@@ -1239,6 +1245,7 @@ fn test_empty_union() -> Result<()> {
         rs_api,
         quote! {
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "10EmptyUnion"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=EmptyUnion"]
             pub union EmptyUnion {
@@ -1317,6 +1324,7 @@ fn test_union_with_constructors() -> Result<()> {
         rs_api,
         quote! {
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "28UnionWithDefaultConstructors"]
             #[repr(C)]
             #[doc="CRUBIT_ANNOTATE: cpp_type=UnionWithDefaultConstructors"]
             pub union UnionWithDefaultConstructors {
@@ -1512,7 +1520,7 @@ fn test_implicit_template_specializations_are_sorted_by_mangled_name() -> Result
     let bindings = generate_bindings_tokens_for_test(ir_from_cc(
         r#"
             template <typename T>
-            struct MyStruct {
+            struct [[clang::annotate("crubit_always_instantiate")]] MyStruct {
                 T getT();
             };
 
@@ -1553,21 +1561,13 @@ fn test_implicit_template_specializations_are_sorted_by_mangled_name() -> Result
         }
     );
 
-    // User defined methods in mangled name order
-    let my_struct_bool_method =
-        make_rs_ident("__rust_thunk___ZN8MyStructIbE4getTEv__2f_2ftest_3atesting_5ftarget");
-    let my_struct_double_method =
-        make_rs_ident("__rust_thunk___ZN8MyStructIdE4getTEv__2f_2ftest_3atesting_5ftarget");
-    let my_struct_int_method =
-        make_rs_ident("__rust_thunk___ZN8MyStructIiE4getTEv__2f_2ftest_3atesting_5ftarget");
-
     assert_cc_matches!(
         &bindings.rs_api_impl,
         quote! {
             ...
-            extern "C" bool #my_struct_bool_method(struct MyStruct<bool>*__this) {...} ...
-            extern "C" double #my_struct_double_method(struct MyStruct<double>*__this) {...} ...
-            extern "C" int #my_struct_int_method(struct MyStruct<int>*__this) {...} ...
+            extern "C" bool ...(struct MyStruct<bool>*__this) {...} ...
+            extern "C" double ...(struct MyStruct<double>*__this) {...} ...
+            extern "C" int ...(struct MyStruct<int>*__this) {...} ...
         }
     );
     Ok(())

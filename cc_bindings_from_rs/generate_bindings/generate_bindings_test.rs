@@ -1835,6 +1835,39 @@ fn test_trait_impl_for_std_iter_iterator_trait() {
 }
 
 #[test]
+fn test_trait_impl_for_unpin_trait() {
+    let test_src = r#"
+            #![allow(unused)]
+
+            pub struct MyStruct(i32);
+            pub struct NonUnpinStruct(i32, std::marker::PhantomPinned);
+        "#;
+    test_generated_bindings(test_src, |bindings| {
+        let bindings = bindings.unwrap();
+
+        // `MyStruct` is Unpin, which defaults to `kIsImplemented = true` generally.
+        // So we expect no specialization to be generated.
+        assert_cc_not_matches!(
+            bindings.cc_api,
+            quote! {
+                struct rs_std::impl<::rust_out::MyStruct, ::rs::core::marker::Unpin>
+            }
+        );
+
+        // `NonUnpinStruct` is not Unpin, so it has `kIsImplemented = false` as a specialization.
+        assert_cc_matches!(
+            bindings.cc_api,
+            quote! {
+                template <>
+                struct rs_std::impl<::rust_out::NonUnpinStruct, ::rs::core::marker::Unpin> {
+                    static constexpr bool kIsImplemented = false;
+                };
+            }
+        );
+    });
+}
+
+#[test]
 fn test_trait_impl_for_std_future_future_trait() {
     let test_src = r#"
             #![allow(unused)]
@@ -1952,6 +1985,7 @@ fn test_trait_impl_for_mapped_cpp_type() {
             #![allow(unused)]
             #[doc = "CRUBIT_ANNOTATE: cpp_type=::some_ns::SomeCppStruct"]
             #[doc = "CRUBIT_ANNOTATE: include_path=some_ns/some_cpp_struct.h"]
+            #[doc = "CRUBIT_ANNOTATE: include_path=some_ns/another_header.h"]
             pub struct SomeCppStruct(i32);
 
             impl std::iter::Iterator for SomeCppStruct {
@@ -1969,6 +2003,7 @@ fn test_trait_impl_for_mapped_cpp_type() {
             bindings.cc_api,
             quote! {
                 ...
+                __HASH_TOKEN__ include "some_ns/another_header.h"
                 __HASH_TOKEN__ include "some_ns/some_cpp_struct.h"
                 ...
                 template <>

@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/golden:crubit_internal_rust_type_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod crubit {
     pub mod rust_type { // error: class `crubit::rust_type::Args` could not be bound
                         //   Class templates are not yet supported
@@ -51,6 +50,7 @@ pub type NonStringArg = ::ffi_11::c_uchar;
 pub type BadSameAbiAttr = ::ffi_11::c_uchar;
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "26ExistingRustTypeFieldTypes"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=ExistingRustTypeFieldTypes
 pub struct ExistingRustTypeFieldTypes {

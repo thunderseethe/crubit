@@ -6,19 +6,19 @@
 // //rs_bindings_from_cc/test/golden:doc_comment_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// Doc comment
 ///
 ///  * with three slashes
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "17DocCommentSlashes"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DocCommentSlashes
 pub struct DocCommentSlashes {
@@ -35,12 +35,12 @@ unsafe impl ::cxx::ExternType for DocCommentSlashes {
 impl DocCommentSlashes {
     /// A non-static member function (`const` flavor).
     #[inline(always)]
-    pub fn get_field_value<'a>(&'a self) -> ::ffi_11::c_int {
+    pub fn get_field_value<'__this>(&'__this self) -> ::ffi_11::c_int {
         unsafe { self::doc_comment_slashes::get_field_value(self) }
     }
     /// A non-static member function (non-`const` flavor).
     #[inline(always)]
-    pub fn set_field_value<'a>(&'a mut self, new_value: ::ffi_11::c_int) {
+    pub fn set_field_value<'__this>(&'__this mut self, new_value: ::ffi_11::c_int) {
         unsafe { self::doc_comment_slashes::set_field_value(self, new_value) }
     }
     /// A static method.
@@ -49,26 +49,6 @@ impl DocCommentSlashes {
         unsafe { self::doc_comment_slashes::static_method() }
     }
 }
-
-// error: constructor `DocCommentSlashes::DocCommentSlashes` could not be bound
-//   Unsupported parameter type `const DocCommentSlashes& __param_0`:
-//     references are not yet supported
-
-// error: constructor `DocCommentSlashes::DocCommentSlashes` could not be bound
-//   Unsupported parameter type `DocCommentSlashes&& __param_0`:
-//     references are not yet supported
-
-// error: function `DocCommentSlashes::operator=` could not be bound
-//   Unsupported parameter type `const DocCommentSlashes& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `DocCommentSlashes&`:
-//     references are not yet supported
-
-// error: function `DocCommentSlashes::operator=` could not be bound
-//   Unsupported parameter type `DocCommentSlashes&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `DocCommentSlashes&`:
-//     references are not yet supported
 
 /// The default constructor which will get translated into
 /// `impl Default for DocCommentSlashes`.
@@ -111,13 +91,15 @@ impl ::ctor::CtorNew<::ffi_11::c_int> for DocCommentSlashes {
 pub mod doc_comment_slashes {
     /// A non-static member function (`const` flavor).
     #[inline(always)]
-    pub(crate) fn get_field_value<'a>(__this: &'a crate::DocCommentSlashes) -> ::ffi_11::c_int {
+    pub(crate) fn get_field_value<'__this>(
+        __this: &'__this crate::DocCommentSlashes,
+    ) -> ::ffi_11::c_int {
         unsafe { crate::detail::__rust_thunk___ZNK17DocCommentSlashes15get_field_valueEv(__this) }
     }
     /// A non-static member function (non-`const` flavor).
     #[inline(always)]
-    pub(crate) fn set_field_value<'a>(
-        __this: &'a mut crate::DocCommentSlashes,
+    pub(crate) fn set_field_value<'__this>(
+        __this: &'__this mut crate::DocCommentSlashes,
         new_value: ::ffi_11::c_int,
     ) {
         unsafe {
@@ -137,6 +119,7 @@ pub mod doc_comment_slashes {
 ///
 ///  * with slashes and bang
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "14DocCommentBang"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DocCommentBang
 pub struct DocCommentBang {
@@ -161,30 +144,11 @@ impl Default for DocCommentBang {
     }
 }
 
-// error: constructor `DocCommentBang::DocCommentBang` could not be bound
-//   Unsupported parameter type `const DocCommentBang& __param_0`:
-//     references are not yet supported
-
-// error: constructor `DocCommentBang::DocCommentBang` could not be bound
-//   Unsupported parameter type `DocCommentBang&& __param_0`:
-//     references are not yet supported
-
-// error: function `DocCommentBang::operator=` could not be bound
-//   Unsupported parameter type `const DocCommentBang& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `DocCommentBang&`:
-//     references are not yet supported
-
-// error: function `DocCommentBang::operator=` could not be bound
-//   Unsupported parameter type `DocCommentBang&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `DocCommentBang&`:
-//     references are not yet supported
-
 /// Multiline comment
 ///
 ///  with two stars
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "24MultilineCommentTwoStars"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=MultilineCommentTwoStars
 pub struct MultilineCommentTwoStars {
@@ -209,30 +173,11 @@ impl Default for MultilineCommentTwoStars {
     }
 }
 
-// error: constructor `MultilineCommentTwoStars::MultilineCommentTwoStars` could not be bound
-//   Unsupported parameter type `const MultilineCommentTwoStars& __param_0`:
-//     references are not yet supported
-
-// error: constructor `MultilineCommentTwoStars::MultilineCommentTwoStars` could not be bound
-//   Unsupported parameter type `MultilineCommentTwoStars&& __param_0`:
-//     references are not yet supported
-
-// error: function `MultilineCommentTwoStars::operator=` could not be bound
-//   Unsupported parameter type `const MultilineCommentTwoStars& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `MultilineCommentTwoStars&`:
-//     references are not yet supported
-
-// error: function `MultilineCommentTwoStars::operator=` could not be bound
-//   Unsupported parameter type `MultilineCommentTwoStars&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `MultilineCommentTwoStars&`:
-//     references are not yet supported
-
 /// Line comment
 ///
 ///  * with two slashes
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "11LineComment"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=LineComment
 pub struct LineComment {
@@ -257,30 +202,11 @@ impl Default for LineComment {
     }
 }
 
-// error: constructor `LineComment::LineComment` could not be bound
-//   Unsupported parameter type `const LineComment& __param_0`:
-//     references are not yet supported
-
-// error: constructor `LineComment::LineComment` could not be bound
-//   Unsupported parameter type `LineComment&& __param_0`:
-//     references are not yet supported
-
-// error: function `LineComment::operator=` could not be bound
-//   Unsupported parameter type `const LineComment& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `LineComment&`:
-//     references are not yet supported
-
-// error: function `LineComment::operator=` could not be bound
-//   Unsupported parameter type `LineComment&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `LineComment&`:
-//     references are not yet supported
-
 /// Multiline comment
 ///
 ///  with one star
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "16MultilineOneStar"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=MultilineOneStar
 pub struct MultilineOneStar {
@@ -304,26 +230,6 @@ impl Default for MultilineOneStar {
         }
     }
 }
-
-// error: constructor `MultilineOneStar::MultilineOneStar` could not be bound
-//   Unsupported parameter type `const MultilineOneStar& __param_0`:
-//     references are not yet supported
-
-// error: constructor `MultilineOneStar::MultilineOneStar` could not be bound
-//   Unsupported parameter type `MultilineOneStar&& __param_0`:
-//     references are not yet supported
-
-// error: function `MultilineOneStar::operator=` could not be bound
-//   Unsupported parameter type `const MultilineOneStar& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `MultilineOneStar&`:
-//     references are not yet supported
-
-// error: function `MultilineOneStar::operator=` could not be bound
-//   Unsupported parameter type `MultilineOneStar&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `MultilineOneStar&`:
-//     references are not yet supported
 
 /// A function
 #[inline(always)]
@@ -378,12 +284,12 @@ mod detail {
             __param_0: ::ffi_11::c_int,
         );
         #[link_name = "_ZNK17DocCommentSlashes15get_field_valueEv"]
-        pub(crate) unsafe fn __rust_thunk___ZNK17DocCommentSlashes15get_field_valueEv<'a>(
-            __this: &'a crate::DocCommentSlashes,
+        pub(crate) unsafe fn __rust_thunk___ZNK17DocCommentSlashes15get_field_valueEv<'__this>(
+            __this: &'__this crate::DocCommentSlashes,
         ) -> ::ffi_11::c_int;
         #[link_name = "_ZN17DocCommentSlashes15set_field_valueEi"]
-        pub(crate) unsafe fn __rust_thunk___ZN17DocCommentSlashes15set_field_valueEi<'a>(
-            __this: &'a mut crate::DocCommentSlashes,
+        pub(crate) unsafe fn __rust_thunk___ZN17DocCommentSlashes15set_field_valueEi<'__this>(
+            __this: &'__this mut crate::DocCommentSlashes,
             new_value: ::ffi_11::c_int,
         );
         #[link_name = "_ZN17DocCommentSlashes13static_methodEv"]

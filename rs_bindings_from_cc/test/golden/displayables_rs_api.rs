@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/golden:displayables_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "17DisplayableStruct"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DisplayableStruct
 pub struct DisplayableStruct {
@@ -53,6 +53,7 @@ impl Default for DisplayableStruct {
 
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
+#[cfi_encoding = "15DisplayableEnum"]
 ///CRUBIT_ANNOTATE: cpp_type=DisplayableEnum
 pub struct DisplayableEnum(::ffi_11::c_int);
 impl DisplayableEnum {

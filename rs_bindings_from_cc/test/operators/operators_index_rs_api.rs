@@ -6,18 +6,18 @@
 // //rs_bindings_from_cc/test/operators:operators_index
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod crubit {
     pub mod test {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test9ItemUnpinE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ItemUnpin
         pub struct ItemUnpin {
@@ -44,6 +44,7 @@ pub mod crubit {
         }
 
         #[::ctor::recursively_pinned(PinnedDrop)]
+        #[cfi_encoding = "N6crubit4test12ItemNonUnpinE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ItemNonUnpin
         pub struct ItemNonUnpin {
@@ -72,12 +73,12 @@ pub mod crubit {
             }
         }
 
-        impl<'__unelided> ::ctor::CtorNew<&'__unelided Self> for ItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for ItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: &'__unelided Self) -> Self::CtorType {
+            fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
                 let mut __param_0 = args;
                 unsafe {
                     ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
@@ -89,20 +90,23 @@ pub mod crubit {
                 }
             }
         }
-        impl<'__unelided> ::ctor::CtorNew<(&'__unelided Self,)> for ItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for ItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: (&'__unelided Self,)) -> Self::CtorType {
+            fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
                 let (arg,) = args;
-                <Self as ::ctor::CtorNew<&'__unelided Self>>::ctor_new(arg)
+                <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
             }
         }
 
-        impl ::ctor::Assign<&Self> for ItemNonUnpin {
+        impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for ItemNonUnpin {
             #[inline(always)]
-            fn assign(self: ::core::pin::Pin<&mut Self>, __param_0: &Self) {
+            fn assign<'__this>(
+                self: ::core::pin::Pin<&'__this mut Self>,
+                __param_0: &'__param_0 Self,
+            ) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test12ItemNonUnpinaSERKS1_(
                         self, __param_0,
@@ -113,12 +117,13 @@ pub mod crubit {
 
         impl ::ctor::PinnedDrop for ItemNonUnpin {
             #[inline(always)]
-            unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+            unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
                 unsafe { crate::detail::__rust_thunk___ZN6crubit4test12ItemNonUnpinD1Ev(self) }
             }
         }
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test23ContainerUnpinItemUnpinE"]
         #[repr(C, align(4))]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerUnpinItemUnpin
         pub struct ContainerUnpinItemUnpin {
@@ -195,6 +200,7 @@ pub mod crubit {
         ///   * `items_storage_`: Rust type is unknown; safety requirements cannot be automatically generated: Unsupported type 'crubit::test::ItemNonUnpin[10]': Unsupported clang::Type class 'ConstantArray'
         ///   * `items_`: raw pointer
         #[::ctor::recursively_pinned(PinnedDrop)]
+        #[cfi_encoding = "N6crubit4test26ContainerUnpinItemNonUnpinE"]
         #[repr(C, align(8))]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerUnpinItemNonUnpin
         pub struct ContainerUnpinItemNonUnpin {
@@ -211,12 +217,12 @@ pub mod crubit {
             type Kind = ::cxx::kind::Opaque;
         }
 
-        impl<'__unelided> ::ctor::CtorNew<&'__unelided Self> for ContainerUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for ContainerUnpinItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: &'__unelided Self) -> Self::CtorType {
+            fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
                 let mut __param_0 = args;
                 unsafe {
                     ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
@@ -225,14 +231,14 @@ pub mod crubit {
                 }
             }
         }
-        impl<'__unelided> ::ctor::CtorNew<(&'__unelided Self,)> for ContainerUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for ContainerUnpinItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: (&'__unelided Self,)) -> Self::CtorType {
+            fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
                 let (arg,) = args;
-                <Self as ::ctor::CtorNew<&'__unelided Self>>::ctor_new(arg)
+                <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
             }
         }
 
@@ -267,7 +273,7 @@ pub mod crubit {
 
         impl ::ctor::PinnedDrop for ContainerUnpinItemNonUnpin {
             #[inline(always)]
-            unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+            unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinD1Ev(
                         self,
@@ -276,9 +282,12 @@ pub mod crubit {
             }
         }
 
-        impl ::ctor::Assign<&Self> for ContainerUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for ContainerUnpinItemNonUnpin {
             #[inline(always)]
-            fn assign(self: ::core::pin::Pin<&mut Self>, __param_0: &Self) {
+            fn assign<'__this>(
+                self: ::core::pin::Pin<&'__this mut Self>,
+                __param_0: &'__param_0 Self,
+            ) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinaSERKS1_(self,__param_0);
                 }
@@ -287,8 +296,8 @@ pub mod crubit {
 
         impl ::ctor::Assign<::ctor::RvalueReference<'_, Self>> for ContainerUnpinItemNonUnpin {
             #[inline(always)]
-            fn assign(
-                self: ::core::pin::Pin<&mut Self>,
+            fn assign<'__this>(
+                self: ::core::pin::Pin<&'__this mut Self>,
                 __param_0: ::ctor::RvalueReference<'_, Self>,
             ) {
                 unsafe {
@@ -377,6 +386,7 @@ pub mod crubit {
         }
 
         #[::ctor::recursively_pinned(PinnedDrop)]
+        #[cfi_encoding = "N6crubit4test26ContainerNonUnpinItemUnpinE"]
         #[repr(C, align(4))]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerNonUnpinItemUnpin
         pub struct ContainerNonUnpinItemUnpin {
@@ -392,12 +402,12 @@ pub mod crubit {
             type Kind = ::cxx::kind::Opaque;
         }
 
-        impl<'__unelided> ::ctor::CtorNew<&'__unelided Self> for ContainerNonUnpinItemUnpin {
+        impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for ContainerNonUnpinItemUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: &'__unelided Self) -> Self::CtorType {
+            fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
                 let mut __param_0 = args;
                 unsafe {
                     ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
@@ -406,20 +416,23 @@ pub mod crubit {
                 }
             }
         }
-        impl<'__unelided> ::ctor::CtorNew<(&'__unelided Self,)> for ContainerNonUnpinItemUnpin {
+        impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for ContainerNonUnpinItemUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: (&'__unelided Self,)) -> Self::CtorType {
+            fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
                 let (arg,) = args;
-                <Self as ::ctor::CtorNew<&'__unelided Self>>::ctor_new(arg)
+                <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
             }
         }
 
-        impl ::ctor::Assign<&Self> for ContainerNonUnpinItemUnpin {
+        impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for ContainerNonUnpinItemUnpin {
             #[inline(always)]
-            fn assign(self: ::core::pin::Pin<&mut Self>, __param_0: &Self) {
+            fn assign<'__this>(
+                self: ::core::pin::Pin<&'__this mut Self>,
+                __param_0: &'__param_0 Self,
+            ) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinaSERKS1_(self,__param_0);
                 }
@@ -442,7 +455,7 @@ pub mod crubit {
 
         impl ::ctor::PinnedDrop for ContainerNonUnpinItemUnpin {
             #[inline(always)]
-            unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+            unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinD1Ev(
                         self,
@@ -496,6 +509,7 @@ pub mod crubit {
         }
 
         #[::ctor::recursively_pinned(PinnedDrop)]
+        #[cfi_encoding = "N6crubit4test29ContainerNonUnpinItemNonUnpinE"]
         #[repr(C, align(4))]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerNonUnpinItemNonUnpin
         pub struct ContainerNonUnpinItemNonUnpin {
@@ -511,12 +525,12 @@ pub mod crubit {
             type Kind = ::cxx::kind::Opaque;
         }
 
-        impl<'__unelided> ::ctor::CtorNew<&'__unelided Self> for ContainerNonUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for ContainerNonUnpinItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: &'__unelided Self) -> Self::CtorType {
+            fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
                 let mut __param_0 = args;
                 unsafe {
                     ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
@@ -525,20 +539,23 @@ pub mod crubit {
                 }
             }
         }
-        impl<'__unelided> ::ctor::CtorNew<(&'__unelided Self,)> for ContainerNonUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for ContainerNonUnpinItemNonUnpin {
             type CtorType =
-                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+                impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
             type Error = ::ctor::Infallible;
             #[inline(always)]
-            fn ctor_new(args: (&'__unelided Self,)) -> Self::CtorType {
+            fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
                 let (arg,) = args;
-                <Self as ::ctor::CtorNew<&'__unelided Self>>::ctor_new(arg)
+                <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
             }
         }
 
-        impl ::ctor::Assign<&Self> for ContainerNonUnpinItemNonUnpin {
+        impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for ContainerNonUnpinItemNonUnpin {
             #[inline(always)]
-            fn assign(self: ::core::pin::Pin<&mut Self>, __param_0: &Self) {
+            fn assign<'__this>(
+                self: ::core::pin::Pin<&'__this mut Self>,
+                __param_0: &'__param_0 Self,
+            ) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinaSERKS1_(self,__param_0);
                 }
@@ -561,7 +578,7 @@ pub mod crubit {
 
         impl ::ctor::PinnedDrop for ContainerNonUnpinItemNonUnpin {
             #[inline(always)]
-            unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+            unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
                 unsafe {
                     crate::detail::__rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinD1Ev(
                         self,
@@ -607,6 +624,7 @@ pub mod crubit {
         }
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test14ContainerValueE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerValue
         pub struct ContainerValue {
@@ -637,6 +655,7 @@ pub mod crubit {
 
         /// R-value qualified overloads are not supported.
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test15ContainerRvalueE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerRvalue
         pub struct ContainerRvalue {
@@ -670,6 +689,7 @@ pub mod crubit {
         /// - const references returned from non-const indexing
         /// are invalid overload signatures and should not generate bindings.
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test24ContainerMutRefFromConstE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerMutRefFromConst
         pub struct ContainerMutRefFromConst {
@@ -702,6 +722,7 @@ pub mod crubit {
         //   Instead found a method: (which is const?)=true, and (whose return value is const?)=false
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test24ContainerConstRefFromMutE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ContainerConstRefFromMut
         pub struct ContainerConstRefFromMut {
@@ -747,39 +768,36 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinC1ERKS1_<'__unelided>(
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinC1ERKS1_<'__param_0>(
             __this: *mut ::core::ffi::c_void,
-            __param_0: &'__unelided crate::crubit::test::ItemNonUnpin,
+            __param_0: &'__param_0 crate::crubit::test::ItemNonUnpin,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinaSERKS1_<
-            '__return_lifetime,
+            '__param_0,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ItemNonUnpin>,
-            __param_0: &crate::crubit::test::ItemNonUnpin,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ItemNonUnpin>;
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::crubit::test::ItemNonUnpin>,
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ItemNonUnpin>,
+            __param_0: &'__param_0 crate::crubit::test::ItemNonUnpin,
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ItemNonUnpin>;
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test12ItemNonUnpinD1Ev<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ItemNonUnpin>,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test23ContainerUnpinItemUnpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZNK6crubit4test23ContainerUnpinItemUnpinixEj<
-            '__return_lifetime,
-        >(
-            __this: &crate::crubit::test::ContainerUnpinItemUnpin,
+        pub(crate) unsafe fn __rust_thunk___ZNK6crubit4test23ContainerUnpinItemUnpinixEj<'__this>(
+            __this: &'__this crate::crubit::test::ContainerUnpinItemUnpin,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime crate::crubit::test::ItemUnpin;
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test23ContainerUnpinItemUnpinixEj<
-            '__return_lifetime,
-        >(
-            __this: &mut crate::crubit::test::ContainerUnpinItemUnpin,
+        ) -> &'__this crate::crubit::test::ItemUnpin;
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test23ContainerUnpinItemUnpinixEj<'__this>(
+            __this: &'__this mut crate::crubit::test::ContainerUnpinItemUnpin,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime mut crate::crubit::test::ItemUnpin;
+        ) -> &'__this mut crate::crubit::test::ItemUnpin;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinC1ERKS1_<
-            '__unelided,
+            '__param_0,
         >(
             __this: *mut ::core::ffi::c_void,
-            __param_0: &'__unelided crate::crubit::test::ContainerUnpinItemNonUnpin,
+            __param_0: &'__param_0 crate::crubit::test::ContainerUnpinItemNonUnpin,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinC1EOS1_<
             '__unelided,
@@ -790,21 +808,24 @@ mod detail {
                 crate::crubit::test::ContainerUnpinItemNonUnpin,
             >,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinD1Ev<
+            '__this,
+        >(
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinaSERKS1_<
-            '__return_lifetime,
+            '__param_0,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
-            __param_0: &crate::crubit::test::ContainerUnpinItemNonUnpin,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ContainerUnpinItemNonUnpin>;
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
+            __param_0: &'__param_0 crate::crubit::test::ContainerUnpinItemNonUnpin,
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinaSEOS1_<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
             __param_0: ::ctor::RvalueReference<'_, crate::crubit::test::ContainerUnpinItemNonUnpin>,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ContainerUnpinItemNonUnpin>;
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
@@ -813,79 +834,89 @@ mod detail {
             items: *mut crate::crubit::test::ItemNonUnpin,
         );
         pub(crate) unsafe fn __rust_thunk___ZNK6crubit4test26ContainerUnpinItemNonUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: &crate::crubit::test::ContainerUnpinItemNonUnpin,
+            __this: &'__this crate::crubit::test::ContainerUnpinItemNonUnpin,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime crate::crubit::test::ItemNonUnpin;
+        ) -> &'__this crate::crubit::test::ItemNonUnpin;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerUnpinItemNonUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerUnpinItemNonUnpin>,
             index: ::ffi_11::c_uint,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ItemNonUnpin>;
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ItemNonUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinC1ERKS1_<
-            '__unelided,
+            '__param_0,
         >(
             __this: *mut ::core::ffi::c_void,
-            __param_0: &'__unelided crate::crubit::test::ContainerNonUnpinItemUnpin,
+            __param_0: &'__param_0 crate::crubit::test::ContainerNonUnpinItemUnpin,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinaSERKS1_<
-            '__return_lifetime,
+            '__param_0,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
-            __param_0: &crate::crubit::test::ContainerNonUnpinItemUnpin,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ContainerNonUnpinItemUnpin>;
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
+            __param_0: &'__param_0 crate::crubit::test::ContainerNonUnpinItemUnpin,
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerNonUnpinItemUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinD1Ev<
+            '__this,
+        >(
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
         );
         pub(crate) unsafe fn __rust_thunk___ZNK6crubit4test26ContainerNonUnpinItemUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: &crate::crubit::test::ContainerNonUnpinItemUnpin,
+            __this: &'__this crate::crubit::test::ContainerNonUnpinItemUnpin,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime crate::crubit::test::ItemUnpin;
+        ) -> &'__this crate::crubit::test::ItemUnpin;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test26ContainerNonUnpinItemUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
+            __this: ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerNonUnpinItemUnpin>,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime mut crate::crubit::test::ItemUnpin;
+        ) -> &'__this mut crate::crubit::test::ItemUnpin;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinC1ERKS1_<
-            '__unelided,
+            '__param_0,
         >(
             __this: *mut ::core::ffi::c_void,
-            __param_0: &'__unelided crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+            __param_0: &'__param_0 crate::crubit::test::ContainerNonUnpinItemNonUnpin,
         );
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinaSERKS1_<
-            '__return_lifetime,
+            '__param_0,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerNonUnpinItemNonUnpin>,
-            __param_0: &crate::crubit::test::ContainerNonUnpinItemNonUnpin,
-        ) -> ::core::pin::Pin<
-            &'__return_lifetime mut crate::crubit::test::ContainerNonUnpinItemNonUnpin,
-        >;
+            __this: ::core::pin::Pin<
+                &'__this mut crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+            >,
+            __param_0: &'__param_0 crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ContainerNonUnpinItemNonUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::crubit::test::ContainerNonUnpinItemNonUnpin>,
+        pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinD1Ev<
+            '__this,
+        >(
+            __this: ::core::pin::Pin<
+                &'__this mut crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+            >,
         );
         pub(crate) unsafe fn __rust_thunk___ZNK6crubit4test29ContainerNonUnpinItemNonUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: &crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+            __this: &'__this crate::crubit::test::ContainerNonUnpinItemNonUnpin,
             index: ::ffi_11::c_uint,
-        ) -> &'__return_lifetime crate::crubit::test::ItemNonUnpin;
+        ) -> &'__this crate::crubit::test::ItemNonUnpin;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test29ContainerNonUnpinItemNonUnpinixEj<
-            '__return_lifetime,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&mut crate::crubit::test::ContainerNonUnpinItemNonUnpin>,
+            __this: ::core::pin::Pin<
+                &'__this mut crate::crubit::test::ContainerNonUnpinItemNonUnpin,
+            >,
             index: ::ffi_11::c_uint,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::crubit::test::ItemNonUnpin>;
+        ) -> ::core::pin::Pin<&'__this mut crate::crubit::test::ItemNonUnpin>;
         pub(crate) unsafe fn __rust_thunk___ZN6crubit4test14ContainerValueC1Ev(
             __this: *mut ::core::ffi::c_void,
         );

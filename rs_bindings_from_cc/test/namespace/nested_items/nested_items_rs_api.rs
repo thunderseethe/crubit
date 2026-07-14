@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/namespace/nested_items:nested_items
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod same {
     #[inline(always)]
     pub fn AFunction() -> ::ffi_11::c_int {
@@ -25,6 +24,7 @@ pub mod same {
 // namespace same
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "4Same"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Same
 pub struct Same {
@@ -37,13 +37,9 @@ unsafe impl ::cxx::ExternType for Same {
     type Kind = ::cxx::kind::Trivial;
 }
 impl Same {
-    /// # Safety
-    ///
-    /// The caller must ensure that the following unsafe arguments are not misused by the function:
-    /// * `__this`: raw pointer
     #[inline(always)]
-    pub unsafe fn Method(__this: *mut Self) -> ::ffi_11::c_int {
-        unsafe { self::same_items::Method(__this) }
+    pub fn Method<'__this>(&'__this mut self) -> ::ffi_11::c_int {
+        unsafe { self::same_items::Method(self) }
     }
 }
 
@@ -59,15 +55,12 @@ impl Default for Same {
 }
 
 pub mod same_items {
-    /// # Safety
-    ///
-    /// The caller must ensure that the following unsafe arguments are not misused by the function:
-    /// * `__this`: raw pointer
     #[inline(always)]
-    pub(crate) unsafe fn Method(__this: *mut crate::Same) -> ::ffi_11::c_int {
+    pub(crate) fn Method<'__this>(__this: &'__this mut crate::Same) -> ::ffi_11::c_int {
         unsafe { crate::detail::__rust_thunk___ZN4Same6MethodEv(__this) }
     }
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N4Same10NestedItemE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=Same :: NestedItem
     pub struct NestedItem {
@@ -80,13 +73,9 @@ pub mod same_items {
         type Kind = ::cxx::kind::Trivial;
     }
     impl NestedItem {
-        /// # Safety
-        ///
-        /// The caller must ensure that the following unsafe arguments are not misused by the function:
-        /// * `__this`: raw pointer
         #[inline(always)]
-        pub unsafe fn NestedItemFunction(__this: *mut Self) -> ::ffi_11::c_int {
-            unsafe { self::nested_item::NestedItemFunction(__this) }
+        pub fn NestedItemFunction<'__this>(&'__this mut self) -> ::ffi_11::c_int {
+            unsafe { self::nested_item::NestedItemFunction(self) }
         }
     }
 
@@ -102,13 +91,9 @@ pub mod same_items {
     }
 
     pub mod nested_item {
-        /// # Safety
-        ///
-        /// The caller must ensure that the following unsafe arguments are not misused by the function:
-        /// * `__this`: raw pointer
         #[inline(always)]
-        pub(crate) unsafe fn NestedItemFunction(
-            __this: *mut crate::same_items::NestedItem,
+        pub(crate) fn NestedItemFunction<'__this>(
+            __this: &'__this mut crate::same_items::NestedItem,
         ) -> ::ffi_11::c_int {
             unsafe {
                 crate::detail::__rust_thunk___ZN4Same10NestedItem18NestedItemFunctionEv(__this)
@@ -118,6 +103,7 @@ pub mod same_items {
 
     #[repr(transparent)]
     #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
+    #[cfi_encoding = "N4Same10NestedEnumE"]
     ///CRUBIT_ANNOTATE: cpp_type=Same :: NestedEnum
     pub struct NestedEnum(::ffi_11::c_int);
     impl NestedEnum {
@@ -138,6 +124,7 @@ pub mod same_items {
 
 pub mod foo {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N3foo3FooE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=foo :: Foo
     pub struct Foo {
@@ -163,6 +150,7 @@ pub mod foo {
 
     pub mod foo {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N3foo3Foo3fooE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=foo :: Foo :: foo
         pub struct foo {
@@ -198,6 +186,7 @@ pub mod foo {
                 unsafe { crate::detail::__rust_thunk___ZN3foo3Foo3foo9BFunctionEv() }
             }
             #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+            #[cfi_encoding = "N3foo3Foo3foo4ItemE"]
             #[repr(C)]
             ///CRUBIT_ANNOTATE: cpp_type=foo :: Foo :: foo :: Item
             pub struct Item {
@@ -229,6 +218,7 @@ pub mod foo {
 // namespace foo
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "8OuterCpp"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=OuterCpp
 pub struct OuterRustName {
@@ -254,6 +244,7 @@ impl Default for OuterRustName {
 
 pub mod outer_rust_name {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N8OuterCpp5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=OuterCpp :: Inner
     pub struct Inner {
@@ -287,11 +278,11 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN4Same10NestedItemC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN4Same10NestedItem18NestedItemFunctionEv(
-            __this: *mut crate::same_items::NestedItem,
+        pub(crate) unsafe fn __rust_thunk___ZN4Same10NestedItem18NestedItemFunctionEv<'__this>(
+            __this: &'__this mut crate::same_items::NestedItem,
         ) -> ::ffi_11::c_int;
-        pub(crate) unsafe fn __rust_thunk___ZN4Same6MethodEv(
-            __this: *mut crate::Same,
+        pub(crate) unsafe fn __rust_thunk___ZN4Same6MethodEv<'__this>(
+            __this: &'__this mut crate::Same,
         ) -> ::ffi_11::c_int;
         pub(crate) unsafe fn __rust_thunk___ZN3foo3FooC1Ev(__this: *mut ::core::ffi::c_void);
         pub(crate) unsafe fn __rust_thunk___ZN3foo3Foo3fooC1Ev(__this: *mut ::core::ffi::c_void);

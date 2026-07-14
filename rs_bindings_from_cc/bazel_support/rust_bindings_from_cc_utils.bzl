@@ -60,7 +60,7 @@ def generate_and_compile_bindings(
       header_includes: A list of flags to be passed to the command line with "-include".
       action_inputs: A depset of inputs to the bindings generating action.
       target_args: A depset of strings, each one representing mapping of target to
-                        its per-target arguments (headers, features) in json format.
+                        its per-target arguments (headers, features, crate name) in json format.
       extra_rs_srcs: list[tuple[file, str]]: Additional source file and module path pairs for the Rust crate.
       unstable_rust_features: list[str]: List of unstable rustc features to enable via `#![feature(...)]`.
       deps_for_cc_file: list[CcInfo]: CcInfos needed by the generated C++ source file.
@@ -270,6 +270,9 @@ bindings_attrs = {
     ),
     "_globally_enabled_features": attr.label(
         default = "//common/bazel_support:globally_enabled_features",
+    ),
+    "_template_blocklist_path_regex": attr.label(
+        default = "//common/bazel_support:template_blocklist_path_regex",
     ),
     "_verbose_log_targets": attr.label(
         default = "//common/bazel_support:verbose_log_targets",

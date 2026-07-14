@@ -5,9 +5,8 @@
 //! Types and deserialization logic for IR. See docs in
 //! `rs_bindings_from_cc/ir.h` for more
 //! information.
-
 use arc_anyhow::{bail, ensure, Context, Error, Result};
-use code_gen_utils::make_rs_ident;
+use code_gen_utils::{make_rs_ident, try_make_rs_ident};
 use crubit_feature::CrubitFeature;
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
@@ -16,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::cell::OnceCell;
 use std::cmp::Ordering;
 use std::collections::hash_map::{Entry, HashMap};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -78,8 +77,8 @@ where
 
 /// Deserialize `IR` from JSON bytes.
 pub fn deserialize_ir(bytes: &[u8]) -> Result<IR> {
-    let flat_ir = serde_json::from_slice(bytes)?;
-    Ok(make_ir(flat_ir))
+    let tree_ir = serde_json::from_slice(bytes)?;
+    Ok(make_ir(tree_ir))
 }
 
 /// Create a testing `IR` instance from given parts. This function does not use
@@ -88,7 +87,6 @@ pub fn make_ir_from_parts<CrubitFeatures>(
     items: Vec<Item>,
     public_headers: Vec<HeaderName>,
     current_target: BazelLabel,
-    top_level_item_ids: BTreeMap<BazelLabel, Vec<ItemId>>,
     crate_root_path: Option<Rc<str>>,
     crubit_features: BTreeMap<BazelLabel, CrubitFeatures>,
     reexported_namespaces: Vec<Rc<str>>,
@@ -96,11 +94,19 @@ pub fn make_ir_from_parts<CrubitFeatures>(
 where
     CrubitFeatures: Into<flagset::FlagSet<CrubitFeature>>,
 {
-    make_ir(FlatIR {
+    // To avoid rewiring tests as part of migrating to nested IR, automatically populate the roots
+    // of the tree from the flat list of items.
+    let mut top_level_items: BTreeMap<BazelLabel, Vec<Item>> = BTreeMap::new();
+    for item in &items {
+        if item.enclosing_item_id().is_none() {
+            let target = item.owning_target().unwrap_or_else(|| current_target.clone());
+            top_level_items.entry(target).or_default().push(item.clone());
+        }
+    }
+
+    make_ir(TreeIR {
         public_headers,
         current_target,
-        items,
-        top_level_item_ids,
         crate_root_path,
         crubit_features: crubit_features
             .into_iter()
@@ -109,31 +115,102 @@ where
             })
             .collect(),
         reexported_namespaces,
+        crate_names: BTreeMap::new(),
         unstable_rust_features: vec![],
-        top_level_items: BTreeMap::new(),
+        top_level_items,
     })
 }
 
-fn make_ir_impl(flat_ir: FlatIR) -> IR {
-    let mut used_decl_ids = HashMap::new();
-    for item in &flat_ir.items {
-        if let Some(existing_decl) = used_decl_ids.insert(item.id(), item) {
-            panic!("Duplicate decl_id found in {:?} and {:?}", existing_decl, item);
+/// A pre-order depth-first search iterator over the nested IR tree.
+/// Preserves C++ declaration order and allows bindings generator components (e.g., `has_bindings`)
+/// that expect a flat list of items to work in-place on the nested IR without a full rewrite.
+pub struct ItemsIterator<'a> {
+    stack: Vec<&'a Item>,
+    visited: HashSet<ItemId>,
+}
+
+impl<'a> ItemsIterator<'a> {
+    fn new(mut stack: Vec<&'a Item>) -> Self {
+        // Reverse so we pop roots in their original order.
+        stack.reverse();
+        Self { stack, visited: HashSet::new() }
+    }
+}
+
+impl<'a> Iterator for ItemsIterator<'a> {
+    type Item = &'a Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(item) = self.stack.pop() {
+            let id = item.id();
+            if !self.visited.insert(id) {
+                continue;
+            }
+            match item {
+                Item::Record(record) => {
+                    self.stack.extend(record.children.iter().rev());
+                }
+                Item::Namespace(ns) => {
+                    self.stack.extend(ns.children.iter().rev());
+                }
+                _ => {}
+            }
+            return Some(item);
+        }
+        None
+    }
+}
+
+// Read-only traversal to populate the lookup cache with deserialized items.
+fn populate_item_id_to_item(item: &Item, item_id_to_item: &mut HashMap<ItemId, Item>) {
+    match item_id_to_item.entry(item.id()) {
+        Entry::Vacant(vacant) => {
+            vacant.insert(item.clone());
+        }
+        Entry::Occupied(occupied) => {
+            if occupied.get() != item {
+                panic!("Duplicate decl_id found in {:?} and {:?}", occupied.get(), item);
+            }
         }
     }
-    let item_id_to_item_idx = flat_ir
-        .items
-        .iter()
-        .enumerate()
-        .map(|(idx, item)| (item.id(), idx))
-        .collect::<HashMap<_, _>>();
+    match item {
+        Item::Record(record) => {
+            for child in &record.children {
+                populate_item_id_to_item(child, item_id_to_item);
+            }
+        }
+        Item::Namespace(ns) => {
+            for child in &ns.children {
+                populate_item_id_to_item(child, item_id_to_item);
+            }
+        }
+        _ => {}
+    }
+}
+
+pub fn make_ir(tree_ir: TreeIR) -> IR {
+    let mut item_id_to_item = HashMap::new();
+
+    for items in tree_ir.top_level_items.values() {
+        for item in items {
+            populate_item_id_to_item(item, &mut item_id_to_item);
+        }
+    }
+
+    let ordered_items =
+        ItemsIterator::new(tree_ir.top_level_items.values().flat_map(|v| v.iter()).collect());
 
     let mut lifetimes: HashMap<LifetimeId, LifetimeName> = HashMap::new();
-    for item in &flat_ir.items {
+    let mut namespace_id_to_number_of_reopened_namespaces: HashMap<ItemId, usize> = HashMap::new();
+    let mut reopened_namespace_id_to_idx: HashMap<ItemId, usize> = HashMap::new();
+    let mut function_name_to_functions: HashMap<UnqualifiedIdentifier, Vec<Rc<Func>>> =
+        HashMap::new();
+
+    for item in ordered_items {
         let lifetime_params = match item {
-            Item::Record(record) => &record.lifetime_params,
-            Item::Func(func) => &func.lifetime_params,
-            _ => continue,
+            Item::Record(record) => &record.lifetime_params[..],
+            Item::Func(func) => &func.lifetime_params[..],
+            _ => &[],
         };
         for lifetime in lifetime_params {
             match lifetimes.entry(lifetime.id) {
@@ -141,8 +218,8 @@ fn make_ir_impl(flat_ir: FlatIR) -> IR {
                     panic!(
                         "Duplicate use of lifetime ID {:?} in item {item:?} for names: '{}, '{}",
                         lifetime.id,
-                        &occupied.get().name,
-                        &lifetime.name
+                        occupied.get().name,
+                        lifetime.name
                     )
                 }
                 Entry::Vacant(vacant) => {
@@ -150,41 +227,25 @@ fn make_ir_impl(flat_ir: FlatIR) -> IR {
                 }
             }
         }
-    }
-    let mut namespace_id_to_number_of_reopened_namespaces = HashMap::new();
-    let mut reopened_namespace_id_to_idx = HashMap::new();
 
-    flat_ir
-        .items
-        .iter()
-        .filter_map(|item| match item {
-            Item::Namespace(ns) if ns.owning_target == flat_ir.current_target => {
-                Some((ns.canonical_namespace_id, ns.id))
-            }
-            _ => None,
-        })
-        .for_each(|(canonical_id, id)| {
+        if let Item::Namespace(ns) = item
+            && ns.owning_target == tree_ir.current_target
+        {
+            let canonical_id = ns.canonical_namespace_id;
             let current_count =
                 *namespace_id_to_number_of_reopened_namespaces.entry(canonical_id).or_insert(0);
-            reopened_namespace_id_to_idx.insert(id, current_count);
+            reopened_namespace_id_to_idx.insert(ns.id, current_count);
             namespace_id_to_number_of_reopened_namespaces.insert(canonical_id, current_count + 1);
-        });
+        }
 
-    let mut function_name_to_functions = HashMap::<UnqualifiedIdentifier, Vec<Rc<Func>>>::new();
-    flat_ir
-        .items
-        .iter()
-        .filter_map(|item| match item {
-            Item::Func(func) => Some(func),
-            _ => None,
-        })
-        .for_each(|f| {
-            function_name_to_functions.entry(f.rs_name.clone()).or_default().push(f.clone());
-        });
+        if let Item::Func(func) = item {
+            function_name_to_functions.entry(func.rs_name.clone()).or_default().push(func.clone());
+        }
+    }
 
     IR {
-        flat_ir,
-        item_id_to_item_idx,
+        tree_ir,
+        item_id_to_item,
         lifetimes,
         namespace_id_to_number_of_reopened_namespaces,
         reopened_namespace_id_to_idx,
@@ -192,29 +253,16 @@ fn make_ir_impl(flat_ir: FlatIR) -> IR {
     }
 }
 
-// TODO(b/523265360): Implement tree-traversal equivalent of make_ir
-fn make_ir_from_tree(flat_ir: FlatIR) -> IR {
-    // For now, this is a no-op fallback to the flat IR logic.
-    make_ir_impl(flat_ir)
-}
-
-pub fn make_ir(flat_ir: FlatIR) -> IR {
-    let use_nested_ir = flat_ir
-        .crubit_features
-        .get(&flat_ir.current_target)
-        .is_some_and(|features| features.0.contains(CrubitFeature::UseNestedIr));
-
-    if use_nested_ir {
-        return make_ir_from_tree(flat_ir);
-    }
-
-    make_ir_impl(flat_ir)
-}
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct HeaderName {
-    pub name: Rc<str>,
+    pub(crate) name: Rc<str>,
+}
+
+impl HeaderName {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Deserialize)]
@@ -225,23 +273,70 @@ pub struct LifetimeId(pub i32);
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LifetimeName {
-    pub name: Rc<str>,
-    pub id: LifetimeId,
+    pub(crate) name: Rc<str>,
+    pub(crate) id: LifetimeId,
+}
+
+impl LifetimeName {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn id(&self) -> LifetimeId {
+        self.id
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CcType {
-    pub variant: CcTypeVariant,
-    pub is_const: bool,
-    pub unknown_attr: Rc<str>,
+    pub(crate) variant: CcTypeVariant,
+    pub(crate) is_const: bool,
+    pub(crate) unknown_attr: Rc<str>,
     // An ordered list of lifetime variable names applied to this type. It is valid for the same
     // name to appear multiple times.
     #[serde(default)]
-    pub explicit_lifetimes: Vec<Rc<str>>,
+    pub(crate) explicit_lifetimes: Vec<Rc<str>>,
 }
 
 impl CcType {
+    pub fn new(
+        variant: CcTypeVariant,
+        is_const: bool,
+        unknown_attr: impl Into<Rc<str>>,
+        explicit_lifetimes: Vec<Rc<str>>,
+    ) -> Self {
+        Self { variant, is_const, unknown_attr: unknown_attr.into(), explicit_lifetimes }
+    }
+
+    pub fn variant(&self) -> &CcTypeVariant {
+        &self.variant
+    }
+
+    pub fn variant_mut(&mut self) -> &mut CcTypeVariant {
+        &mut self.variant
+    }
+
+    pub fn is_const(&self) -> bool {
+        self.is_const
+    }
+
+    pub fn set_is_const(&mut self, is_const: bool) {
+        self.is_const = is_const;
+    }
+
+    pub fn unknown_attr(&self) -> &str {
+        &self.unknown_attr
+    }
+
+    pub fn explicit_lifetimes(&self) -> &[Rc<str>] {
+        &self.explicit_lifetimes
+    }
+
+    pub fn explicit_lifetimes_mut(&mut self) -> &mut Vec<Rc<str>> {
+        &mut self.explicit_lifetimes
+    }
+
     pub fn is_unit_type(&self) -> bool {
         matches!(&self.variant, CcTypeVariant::Primitive(Primitive::Void))
     }
@@ -293,9 +388,43 @@ pub enum PointerTypeKind {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PointerType {
-    pub kind: PointerTypeKind,
-    pub lifetime: Option<LifetimeId>,
-    pub pointee_type: Rc<CcType>,
+    pub(crate) kind: PointerTypeKind,
+    pub(crate) lifetime: Option<LifetimeId>,
+    pub(crate) pointee_type: Rc<CcType>,
+}
+
+impl PointerType {
+    pub fn new(
+        kind: PointerTypeKind,
+        lifetime: Option<LifetimeId>,
+        pointee_type: Rc<CcType>,
+    ) -> Self {
+        Self { kind, lifetime, pointee_type }
+    }
+
+    pub fn kind(&self) -> PointerTypeKind {
+        self.kind
+    }
+
+    pub fn pointee_type(&self) -> &CcType {
+        &self.pointee_type
+    }
+
+    pub fn lifetime(&self) -> Option<LifetimeId> {
+        self.lifetime
+    }
+
+    pub fn set_kind(&mut self, kind: PointerTypeKind) {
+        self.kind = kind;
+    }
+
+    pub fn set_pointee_type(&mut self, pointee_type: Rc<CcType>) {
+        self.pointee_type = pointee_type;
+    }
+
+    pub fn set_lifetime(&mut self, lifetime: Option<LifetimeId>) {
+        self.lifetime = lifetime;
+    }
 }
 
 /// Generates an enum type that implements `Deserialize`, which parses the stringified contents of
@@ -380,10 +509,13 @@ define_typed_tokens_enum! {
         Int = {int},
         Long = {long},
         LongLong = {long long},
+        Int128 = {__int128},
         UnsignedShort = {unsigned short},
         UnsignedInt = {unsigned int},
         UnsignedLong = {unsigned long},
         UnsignedLongLong = {unsigned long long},
+        UnsignedInt128 = {unsigned __int128},
+
         Char16T = {char16_t},
         Char32T = {char32_t},
         PtrdiffT = {ptrdiff_t},
@@ -549,10 +681,14 @@ impl TypeWithDeclId for CcType {
 #[derive(PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Identifier {
-    pub identifier: Rc<str>,
+    pub(crate) identifier: Rc<str>,
 }
 
 impl Identifier {
+    pub fn new(identifier: impl Into<Rc<str>>) -> Self {
+        Self { identifier: identifier.into() }
+    }
+
     pub fn as_str(&self) -> &str {
         &self.identifier
     }
@@ -585,17 +721,35 @@ impl PartialEq<&str> for Identifier {
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IntegerConstant {
-    pub is_negative: bool,
-    pub wrapped_value: u64,
+    pub(crate) is_negative: bool,
+    pub(crate) wrapped_value: u64,
+}
+
+impl IntegerConstant {
+    pub fn is_negative(&self) -> bool {
+        self.is_negative
+    }
+
+    pub fn wrapped_value(&self) -> u64 {
+        self.wrapped_value
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Operator {
-    pub name: Rc<str>,
+    pub(crate) name: Rc<str>,
 }
 
 impl Operator {
+    pub fn new(name: impl Into<Rc<str>>) -> Self {
+        Self { name: name.into() }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn cc_name(&self) -> String {
         let separator = match self.name.chars().next() {
             Some(c) if c.is_alphabetic() => " ",
@@ -647,9 +801,13 @@ impl ToTokens for LifetimeId {
 /// A Bazel label, e.g. `//foo:bar`.
 #[derive(Debug, Eq, Clone, Deserialize)]
 #[serde(transparent)]
-pub struct BazelLabel(pub Rc<str>);
+pub struct BazelLabel(pub(crate) Rc<str>);
 
 impl BazelLabel {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     /// Returns the target name. E.g. `bar` for `//foo:bar`.
     pub fn target_name(&self) -> &str {
         if let Some((_package, target_name)) = self.0.split_once(':') {
@@ -717,8 +875,6 @@ impl BazelLabel {
         result
     }
 
-    /// Private helper function for simplifying PartialEq, PartialOrd, and Hash implementations
-    /// to ensure that //foo:bar and //foo/bar:bar are considered identical.
     fn components(&self) -> (&str, &str) {
         (self.target_name(), self.package_name())
     }
@@ -836,25 +992,43 @@ pub enum ReferenceQualification {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InstanceMethodMetadata {
-    pub reference: ReferenceQualification,
-    pub is_const: bool,
-    pub is_virtual: bool,
+    pub(crate) reference: ReferenceQualification,
+    pub(crate) is_const: bool,
+    pub(crate) is_virtual: bool,
+}
+
+impl InstanceMethodMetadata {
+    pub fn new(reference: ReferenceQualification, is_const: bool, is_virtual: bool) -> Self {
+        Self { reference, is_const, is_virtual }
+    }
+
+    pub fn reference(&self) -> ReferenceQualification {
+        self.reference
+    }
+
+    pub fn is_const(&self) -> bool {
+        self.is_const
+    }
+
+    pub fn is_virtual(&self) -> bool {
+        self.is_virtual
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FuncParam {
     #[serde(rename(deserialize = "type"))]
-    pub type_: CcType,
-    pub identifier: Identifier,
+    pub(crate) type_: CcType,
+    pub(crate) identifier: Identifier,
     /// A list of parameter indexes attached to this parameter by Clang's lifetime_capture_by.
     /// In `f(x, y)`, `x` is parameter 0 and y is parameter 1. In the member function
     /// `S::f(x, y)`, `this` is parameter 0, `x` is 1, and `y` is 2.
     #[serde(default)]
-    pub clang_lifetime_capture_by: Vec<i32>,
+    pub(crate) clang_lifetime_capture_by: Vec<i32>,
     /// True if this parameter was annotated with Clang's lifetimebound.
     #[serde(default)]
-    pub clang_lifetimebound: bool,
+    pub(crate) clang_lifetimebound: bool,
     /// A human-readable list of attributes that Crubit doesn't understand.
     ///
     /// Because attributes can change the behavior or semantics of function
@@ -863,10 +1037,50 @@ pub struct FuncParam {
     ///
     /// One notable example is `lifetimebound`, which we might expect to map
     /// to Rust lifetimes.
-    pub unknown_attr: Option<Rc<str>>,
+    pub(crate) unknown_attr: Option<Rc<str>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+impl FuncParam {
+    pub fn new(
+        type_: CcType,
+        identifier: Identifier,
+        clang_lifetime_capture_by: Vec<i32>,
+        clang_lifetimebound: bool,
+        unknown_attr: Option<Rc<str>>,
+    ) -> Self {
+        Self { type_, identifier, clang_lifetime_capture_by, clang_lifetimebound, unknown_attr }
+    }
+
+    pub fn type_(&self) -> &CcType {
+        &self.type_
+    }
+
+    pub fn type_mut(&mut self) -> &mut CcType {
+        &mut self.type_
+    }
+
+    pub fn set_type(&mut self, type_: CcType) {
+        self.type_ = type_;
+    }
+
+    pub fn identifier(&self) -> &Identifier {
+        &self.identifier
+    }
+
+    pub fn clang_lifetime_capture_by(&self) -> &[i32] {
+        &self.clang_lifetime_capture_by
+    }
+
+    pub fn clang_lifetimebound(&self) -> bool {
+        self.clang_lifetimebound
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub enum SafetyAnnotation {
     DisableUnsafe,
@@ -877,49 +1091,49 @@ pub enum SafetyAnnotation {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Func {
-    pub cc_name: UnqualifiedIdentifier,
-    pub rs_name: UnqualifiedIdentifier,
-    pub unique_name: Rc<str>,
-    pub owning_target: BazelLabel,
-    pub mangled_name: Rc<str>,
-    pub doc_comment: Option<Rc<str>>,
-    pub return_type: CcType,
-    pub params: Vec<FuncParam>,
+    pub(crate) cc_name: UnqualifiedIdentifier,
+    pub(crate) rs_name: UnqualifiedIdentifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) mangled_name: Rc<str>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+    pub(crate) return_type: CcType,
+    pub(crate) params: Vec<FuncParam>,
     /// For tests and internal use only.
     ///
     /// Prefer to reconstruct the lifetime params from the parameter types, as
     /// needed. This allows new parameters and lifetimes to be added that were
     /// not originally part of the IR.
-    pub lifetime_params: Vec<LifetimeName>,
-    pub is_inline: bool,
-    pub instance_method_metadata: Option<InstanceMethodMetadata>,
-    pub is_extern_c: bool,
-    pub is_noreturn: bool,
-    pub is_variadic: bool,
-    pub is_consteval: bool,
+    pub(crate) lifetime_params: Vec<LifetimeName>,
+    pub(crate) is_inline: bool,
+    pub(crate) instance_method_metadata: Option<InstanceMethodMetadata>,
+    pub(crate) is_extern_c: bool,
+    pub(crate) is_noreturn: bool,
+    pub(crate) is_variadic: bool,
+    pub(crate) is_consteval: bool,
     /// The `[[nodiscard("...")]]` string. If `[[nodiscard]]`, then the empty
     /// string is used.
-    pub nodiscard: Option<Rc<str>>,
+    pub(crate) nodiscard: Option<Rc<str>>,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     /// A human-readable list of attributes that Crubit doesn't understand.
     ///
     /// Because attributes can change the behavior or semantics of functions in
     /// fairly significant ways, and in ways that may affect interop, we
     /// default-closed and do not expose functions with unknown attributes.
-    pub unknown_attr: Option<Rc<str>>,
-    pub has_c_calling_convention: bool,
-    pub is_member_or_descendant_of_class_template: bool,
-    pub safety_annotation: SafetyAnnotation,
-    pub source_loc: Rc<str>,
-    pub id: ItemId,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) has_c_calling_convention: bool,
+    pub(crate) is_member_or_descendant_of_class_template: bool,
+    pub(crate) safety_annotation: SafetyAnnotation,
+    pub(crate) source_loc: Rc<str>,
+    pub(crate) id: ItemId,
     /// The enclosing item ID.
     ///
     /// If this is a free function, then this will be None or a namespace. If this is
     /// a member function, it will be a record type in C++, but might be an
     /// `ExistingRustType` if it was renamed.
-    pub enclosing_item_id: Option<ItemId>,
+    pub(crate) enclosing_item_id: Option<ItemId>,
 
     /// If this function was declared as a `friend` inside of a record
     /// definition, this ItemId refers to the record containing the `friend`
@@ -927,12 +1141,203 @@ pub struct Func {
     ///
     /// The record pointed to by `ItemId` must then be ADL-visible in order to
     /// invoke this function.
-    pub adl_enclosing_record: Option<ItemId>,
-    pub must_bind: bool,
+    pub(crate) adl_enclosing_record: Option<ItemId>,
+    pub(crate) must_bind: bool,
 
     // Lifetime variable names bound by this function.
     #[serde(default)]
-    pub lifetime_inputs: Vec<Rc<str>>,
+    pub(crate) lifetime_inputs: Vec<Rc<str>>,
+}
+
+impl Func {
+    pub fn cc_name(&self) -> &UnqualifiedIdentifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &UnqualifiedIdentifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn mangled_name(&self) -> &str {
+        &self.mangled_name
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    pub fn return_type(&self) -> &CcType {
+        &self.return_type
+    }
+
+    pub fn return_type_mut(&mut self) -> &mut CcType {
+        &mut self.return_type
+    }
+
+    pub fn set_return_type(&mut self, return_type: CcType) {
+        self.return_type = return_type;
+    }
+
+    pub fn params(&self) -> &[FuncParam] {
+        &self.params
+    }
+
+    pub fn params_mut(&mut self) -> &mut Vec<FuncParam> {
+        &mut self.params
+    }
+
+    pub fn lifetime_params(&self) -> &[LifetimeName] {
+        &self.lifetime_params
+    }
+
+    pub fn is_inline(&self) -> bool {
+        self.is_inline
+    }
+
+    pub fn instance_method_metadata(&self) -> Option<&InstanceMethodMetadata> {
+        self.instance_method_metadata.as_ref()
+    }
+
+    pub fn is_instance_method(&self) -> bool {
+        self.instance_method_metadata.is_some()
+    }
+
+    pub fn is_extern_c(&self) -> bool {
+        self.is_extern_c
+    }
+
+    pub fn is_noreturn(&self) -> bool {
+        self.is_noreturn
+    }
+
+    pub fn is_variadic(&self) -> bool {
+        self.is_variadic
+    }
+
+    pub fn is_consteval(&self) -> bool {
+        self.is_consteval
+    }
+
+    pub fn nodiscard(&self) -> Option<&str> {
+        self.nodiscard.as_deref()
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn has_c_calling_convention(&self) -> bool {
+        self.has_c_calling_convention
+    }
+
+    pub fn is_member_or_descendant_of_class_template(&self) -> bool {
+        self.is_member_or_descendant_of_class_template
+    }
+
+    pub fn safety_annotation(&self) -> SafetyAnnotation {
+        self.safety_annotation
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn adl_enclosing_record(&self) -> Option<ItemId> {
+        self.adl_enclosing_record
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn lifetime_inputs(&self) -> &[Rc<str>] {
+        &self.lifetime_inputs
+    }
+
+    pub fn lifetime_inputs_mut(&mut self) -> &mut Vec<Rc<str>> {
+        &mut self.lifetime_inputs
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        cc_name: UnqualifiedIdentifier,
+        rs_name: UnqualifiedIdentifier,
+        unique_name: Rc<str>,
+        owning_target: BazelLabel,
+        mangled_name: Rc<str>,
+        doc_comment: Option<Rc<str>>,
+        return_type: CcType,
+        params: Vec<FuncParam>,
+        lifetime_params: Vec<LifetimeName>,
+        is_inline: bool,
+        instance_method_metadata: Option<InstanceMethodMetadata>,
+        is_extern_c: bool,
+        is_noreturn: bool,
+        is_variadic: bool,
+        is_consteval: bool,
+        nodiscard: Option<Rc<str>>,
+        deprecated: Option<Rc<str>>,
+        unknown_attr: Option<Rc<str>>,
+        has_c_calling_convention: bool,
+        is_member_or_descendant_of_class_template: bool,
+        safety_annotation: SafetyAnnotation,
+        source_loc: Rc<str>,
+        id: ItemId,
+        enclosing_item_id: Option<ItemId>,
+        adl_enclosing_record: Option<ItemId>,
+        must_bind: bool,
+        lifetime_inputs: Vec<Rc<str>>,
+    ) -> Self {
+        Self {
+            cc_name,
+            rs_name,
+            unique_name,
+            owning_target,
+            mangled_name,
+            doc_comment,
+            return_type,
+            params,
+            lifetime_params,
+            is_inline,
+            instance_method_metadata,
+            is_extern_c,
+            is_noreturn,
+            is_variadic,
+            is_consteval,
+            nodiscard,
+            deprecated,
+            unknown_attr,
+            has_c_calling_convention,
+            is_member_or_descendant_of_class_template,
+            safety_annotation,
+            source_loc,
+            id,
+            enclosing_item_id,
+            adl_enclosing_record,
+            must_bind,
+            lifetime_inputs,
+        }
+    }
 }
 
 impl GenericItem for Func {
@@ -963,12 +1368,6 @@ impl GenericItem for Func {
     }
 }
 
-impl Func {
-    pub fn is_instance_method(&self) -> bool {
-        self.instance_method_metadata.is_some()
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Deserialize)]
 pub enum AccessSpecifier {
     Public,
@@ -979,33 +1378,128 @@ pub enum AccessSpecifier {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Field {
-    pub rust_identifier: Option<Identifier>,
-    pub cpp_identifier: Option<Identifier>,
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) rust_identifier: Option<Identifier>,
+    pub(crate) cpp_identifier: Option<Identifier>,
+    pub(crate) doc_comment: Option<Rc<str>>,
     #[serde(rename(deserialize = "type"))]
-    pub type_: CcType,
-    pub access: AccessSpecifier,
-    pub offset: usize,
-    pub size: usize,
+    pub(crate) type_: CcType,
+    pub(crate) access: AccessSpecifier,
+    pub(crate) offset: usize,
+    pub(crate) size: usize,
 
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Result<Option<Rc<str>>, String>,
+    pub(crate) unknown_attr: Result<Option<Rc<str>>, String>,
 
-    pub is_no_unique_address: bool,
-    pub is_bitfield: bool,
+    pub(crate) is_no_unique_address: bool,
+    pub(crate) is_bitfield: bool,
 
     // TODO(kinuko): Consider removing this, it is a duplicate of the same information
     // in `Record`.
-    pub is_inheritable: bool,
-    pub is_mutable: bool,
+    pub(crate) is_inheritable: bool,
+    pub(crate) is_mutable: bool,
 
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+impl Field {
+    pub fn rust_identifier(&self) -> Option<&Identifier> {
+        self.rust_identifier.as_ref()
+    }
+
+    pub fn cpp_identifier(&self) -> Option<&Identifier> {
+        self.cpp_identifier.as_ref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    pub fn type_(&self) -> &CcType {
+        &self.type_
+    }
+
+    pub fn type_mut(&mut self) -> &mut CcType {
+        &mut self.type_
+    }
+
+    pub fn set_type(&mut self, type_: CcType) {
+        self.type_ = type_;
+    }
+
+    pub fn access(&self) -> AccessSpecifier {
+        self.access
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn unknown_attr(&self) -> &Result<Option<Rc<str>>, String> {
+        &self.unknown_attr
+    }
+
+    pub fn is_no_unique_address(&self) -> bool {
+        self.is_no_unique_address
+    }
+
+    pub fn is_bitfield(&self) -> bool {
+        self.is_bitfield
+    }
+
+    pub fn is_inheritable(&self) -> bool {
+        self.is_inheritable
+    }
+
+    pub fn is_mutable(&self) -> bool {
+        self.is_mutable
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        rust_identifier: Option<Identifier>,
+        cpp_identifier: Option<Identifier>,
+        doc_comment: Option<Rc<str>>,
+        type_: CcType,
+        access: AccessSpecifier,
+        offset: usize,
+        size: usize,
+        unknown_attr: Result<Option<Rc<str>>, String>,
+        is_no_unique_address: bool,
+        is_bitfield: bool,
+        is_inheritable: bool,
+        is_mutable: bool,
+        deprecated: Option<Rc<str>>,
+    ) -> Self {
+        Self {
+            rust_identifier,
+            cpp_identifier,
+            doc_comment,
+            type_,
+            access,
+            offset,
+            size,
+            unknown_attr,
+            is_no_unique_address,
+            is_bitfield,
+            is_inheritable,
+            is_mutable,
+            deprecated,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum SpecialMemberFunc {
     Trivial,
     NontrivialMembers,
@@ -1016,27 +1510,100 @@ pub enum SpecialMemberFunc {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BaseClass {
-    pub base_record_id: ItemId,
-    pub offset: Option<i64>,
+    pub(crate) base_record_id: ItemId,
+    pub(crate) offset: Option<i64>,
+}
+
+impl BaseClass {
+    pub fn base_record_id(&self) -> ItemId {
+        self.base_record_id
+    }
+
+    pub fn offset(&self) -> Option<i64> {
+        self.offset
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IncompleteRecord {
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
     /// A human-readable list of attributes that Crubit doesn't understand.
     ///
     /// Because attributes can change the behavior or semantics of types in
     /// fairly significant ways, and in ways that may affect interop, we
     /// default-closed and do not expose functions with unknown attributes.
-    pub unknown_attr: Option<Rc<str>>,
-    pub record_type: RecordType,
-    pub enclosing_item_id: Option<ItemId>,
-    pub must_bind: bool,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) record_type: RecordType,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) must_bind: bool,
+}
+
+impl IncompleteRecord {
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn record_type(&self) -> RecordType {
+        self.record_type
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        cc_name: Identifier,
+        rs_name: Identifier,
+        unique_name: Rc<str>,
+        id: ItemId,
+        owning_target: BazelLabel,
+        unknown_attr: Option<Rc<str>>,
+        record_type: RecordType,
+        enclosing_item_id: Option<ItemId>,
+        must_bind: bool,
+    ) -> Self {
+        Self {
+            cc_name,
+            rs_name,
+            unique_name,
+            id,
+            owning_target,
+            unknown_attr,
+            record_type,
+            enclosing_item_id,
+            must_bind,
+        }
+    }
 }
 
 impl GenericItem for IncompleteRecord {
@@ -1091,11 +1658,21 @@ impl ToTokens for RecordType {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SizeAlign {
-    pub size: usize,
-    pub alignment: usize,
+    pub(crate) size: usize,
+    pub(crate) alignment: usize,
+}
+
+impl SizeAlign {
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn alignment(&self) -> usize {
+        self.alignment
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Deserialize)]
@@ -1147,10 +1724,24 @@ pub enum TemplateArg {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub struct TemplateSpecialization {
     /// The target containing the template definition
-    pub defining_target: BazelLabel,
+    pub(crate) defining_target: BazelLabel,
 
     /// The kind of template specialization.
-    pub kind: TemplateSpecializationKind,
+    pub(crate) kind: TemplateSpecializationKind,
+}
+
+impl TemplateSpecialization {
+    pub fn defining_target(&self) -> &BazelLabel {
+        &self.defining_target
+    }
+
+    pub fn kind(&self) -> &TemplateSpecializationKind {
+        &self.kind
+    }
+
+    pub fn new_for_testing(defining_target: BazelLabel, kind: TemplateSpecializationKind) -> Self {
+        Self { defining_target, kind }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
@@ -1177,6 +1768,18 @@ pub enum TemplateSpecializationKind {
     },
     /// absl::Span<T>
     AbslSpan {
+        #[serde(rename(deserialize = "element_type"))]
+        raw_element_type: CcType,
+    },
+    /// absl::flat_hash_map<K, V, ...>
+    AbslFlatHashMap {
+        #[serde(rename(deserialize = "key_type"))]
+        raw_key_type: CcType,
+        #[serde(rename(deserialize = "value_type"))]
+        raw_value_type: CcType,
+    },
+    /// absl::flat_hash_set<T, ...>
+    AbslFlatHashSet {
         #[serde(rename(deserialize = "element_type"))]
         raw_element_type: CcType,
     },
@@ -1214,73 +1817,376 @@ pub struct OwnedPtrConfig {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Record {
-    pub rs_name: Identifier,
+    pub(crate) rs_name: Identifier,
     /// The C++ name of the record. If the record is a template specialization, the fully qualified
     /// name is used. Otherwise, the only the name of the record is used.
     /// Today, cc_name is only used for debugging, checking for names starting in __, and generating
     /// parent modules for nested items which are disallowed for template specializations in Crubit.
-    pub cc_name: Identifier,
-    pub unique_name: Rc<str>,
+    pub(crate) cc_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
 
     /// Mangled record names are used to 1) provide valid Rust identifiers for
     /// C++ template specializations, and 2) help build unique names for virtual
     /// upcast thunks.
-    pub mangled_cc_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
-    pub template_specialization: Option<TemplateSpecialization>,
+    pub(crate) mangled_cc_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) template_specialization: Option<TemplateSpecialization>,
     /// A human-readable list of attributes that Crubit doesn't understand.
     ///
     /// Because attributes can change the behavior or semantics of types in
     /// fairly significant ways, and in ways that may affect interop, we
     /// default-closed and do not expose functions with unknown attributes.
-    pub unknown_attr: Option<Rc<str>>,
-    pub doc_comment: Option<Rc<str>>,
-    pub bridge_type: Option<BridgeType>,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+    pub(crate) bridge_type: Option<BridgeType>,
     #[serde(default)]
-    pub owned_ptr_config: Option<OwnedPtrConfig>,
-    pub source_loc: Rc<str>,
-    pub unambiguous_public_bases: Vec<BaseClass>,
-    pub fields: Vec<Field>,
-    pub lifetime_params: Vec<LifetimeName>,
-    pub size_align: SizeAlign,
-    pub trait_derives: TraitDerives,
-    pub is_derived_class: bool,
-    pub override_alignment: bool,
-    pub safety_annotation: SafetyAnnotation,
-    pub copy_constructor: SpecialMemberFunc,
-    pub move_constructor: SpecialMemberFunc,
-    pub destructor: SpecialMemberFunc,
-    pub is_trivial_abi: bool,
-    pub is_inheritable: bool,
-    pub is_abstract: bool,
+    pub(crate) owned_ptr_config: Option<OwnedPtrConfig>,
+    pub(crate) source_loc: Rc<str>,
+    pub(crate) unambiguous_public_bases: Vec<BaseClass>,
+    pub(crate) fields: Vec<Field>,
+    pub(crate) lifetime_params: Vec<LifetimeName>,
+    pub(crate) size_align: SizeAlign,
+    pub(crate) trait_derives: TraitDerives,
+    pub(crate) is_derived_class: bool,
+    pub(crate) override_alignment: bool,
+    pub(crate) safety_annotation: SafetyAnnotation,
+    pub(crate) copy_constructor: SpecialMemberFunc,
+    pub(crate) move_constructor: SpecialMemberFunc,
+    pub(crate) destructor: SpecialMemberFunc,
+    pub(crate) is_trivial_abi: bool,
+    pub(crate) is_inheritable: bool,
+    pub(crate) is_abstract: bool,
     /// The `[[nodiscard("...")]]` string. If `[[nodiscard]]`, then the empty
     /// string is used.
-    pub nodiscard: Option<Rc<str>>,
-    pub record_type: RecordType,
-    pub is_aggregate: bool,
-    pub is_canonical_alias: bool,
-    pub child_item_ids: Vec<ItemId>,
-    pub enclosing_item_id: Option<ItemId>,
-    pub must_bind: bool,
+    pub(crate) nodiscard: Option<Rc<str>>,
+    pub(crate) record_type: RecordType,
+    pub(crate) is_aggregate: bool,
+    pub(crate) is_canonical_alias: bool,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) must_bind: bool,
     /// Whether this type has an overload of `operator delete`.
-    pub overloads_operator_delete: bool,
-    pub has_private_or_deleted_operator_delete: bool,
+    pub(crate) overloads_operator_delete: bool,
+    pub(crate) has_private_or_deleted_operator_delete: bool,
     // Lifetime variable names bound by this record.
     #[serde(default)]
-    pub lifetime_inputs: Vec<Rc<str>>,
-    pub detected_formatter: bool,
+    pub(crate) lifetime_inputs: Vec<Rc<str>>,
+    pub(crate) impl_debug: bool,
+    pub(crate) detected_formatter: bool,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     /// Whether this type is annotated as thread-safe (CRUBIT_THREAD_SAFE).
     #[serde(default)]
-    pub is_thread_safe: bool,
+    pub(crate) is_thread_safe: bool,
     #[serde(default)]
-    pub is_explicit_class_template_instantiation_definition: bool,
+    pub(crate) is_explicit_class_template_instantiation_definition: bool,
     #[serde(default)]
-    pub children: Vec<Item>,
+    pub(crate) children: Vec<Item>,
+}
+
+impl Record {
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn set_rs_name(&mut self, rs_name: Identifier) {
+        self.rs_name = rs_name;
+    }
+
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn set_cc_name(&mut self, cc_name: Identifier) {
+        self.cc_name = cc_name;
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn mangled_cc_name(&self) -> &str {
+        &self.mangled_cc_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn template_specialization(&self) -> Option<&TemplateSpecialization> {
+        self.template_specialization.as_ref()
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    pub fn bridge_type(&self) -> Option<&BridgeType> {
+        self.bridge_type.as_ref()
+    }
+
+    pub fn owned_ptr_config(&self) -> Option<&OwnedPtrConfig> {
+        self.owned_ptr_config.as_ref()
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn unambiguous_public_bases(&self) -> &[BaseClass] {
+        &self.unambiguous_public_bases
+    }
+
+    pub fn fields(&self) -> &[Field] {
+        &self.fields
+    }
+
+    pub fn fields_mut(&mut self) -> &mut Vec<Field> {
+        &mut self.fields
+    }
+
+    pub fn lifetime_params(&self) -> &[LifetimeName] {
+        &self.lifetime_params
+    }
+
+    pub fn size_align(&self) -> SizeAlign {
+        self.size_align
+    }
+
+    pub fn trait_derives(&self) -> &TraitDerives {
+        &self.trait_derives
+    }
+
+    pub fn is_derived_class(&self) -> bool {
+        self.is_derived_class
+    }
+
+    pub fn override_alignment(&self) -> bool {
+        self.override_alignment
+    }
+
+    pub fn override_alignment_mut(&mut self) -> &mut bool {
+        &mut self.override_alignment
+    }
+
+    pub fn safety_annotation(&self) -> SafetyAnnotation {
+        self.safety_annotation
+    }
+
+    pub fn copy_constructor(&self) -> SpecialMemberFunc {
+        self.copy_constructor
+    }
+
+    pub fn move_constructor(&self) -> SpecialMemberFunc {
+        self.move_constructor
+    }
+
+    pub fn destructor(&self) -> SpecialMemberFunc {
+        self.destructor
+    }
+
+    pub fn is_trivial_abi(&self) -> bool {
+        self.is_trivial_abi
+    }
+
+    pub fn is_inheritable(&self) -> bool {
+        self.is_inheritable
+    }
+
+    pub fn is_abstract(&self) -> bool {
+        self.is_abstract
+    }
+
+    pub fn nodiscard(&self) -> Option<&str> {
+        self.nodiscard.as_deref()
+    }
+
+    pub fn record_type(&self) -> RecordType {
+        self.record_type
+    }
+
+    pub fn is_aggregate(&self) -> bool {
+        self.is_aggregate
+    }
+
+    pub fn is_canonical_alias(&self) -> bool {
+        self.is_canonical_alias
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn overloads_operator_delete(&self) -> bool {
+        self.overloads_operator_delete
+    }
+
+    pub fn has_private_or_deleted_operator_delete(&self) -> bool {
+        self.has_private_or_deleted_operator_delete
+    }
+
+    pub fn lifetime_inputs(&self) -> &[Rc<str>] {
+        &self.lifetime_inputs
+    }
+
+    pub fn lifetime_inputs_mut(&mut self) -> &mut Vec<Rc<str>> {
+        &mut self.lifetime_inputs
+    }
+
+    pub fn impl_debug(&self) -> bool {
+        self.impl_debug
+    }
+
+    pub fn impl_debug_mut(&mut self) -> &mut bool {
+        &mut self.impl_debug
+    }
+
+    pub fn detected_formatter(&self) -> bool {
+        self.detected_formatter
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn is_thread_safe(&self) -> bool {
+        self.is_thread_safe
+    }
+
+    pub fn is_explicit_class_template_instantiation_definition(&self) -> bool {
+        self.is_explicit_class_template_instantiation_definition
+    }
+
+    pub fn children(&self) -> &[Item] {
+        &self.children
+    }
+
+    pub fn children_mut(&mut self) -> &mut Vec<Item> {
+        &mut self.children
+    }
+
+    pub fn set_children(&mut self, children: Vec<Item>) {
+        self.children = children;
+    }
+
+    pub fn set_is_trivial_abi(&mut self, is_trivial_abi: bool) {
+        self.is_trivial_abi = is_trivial_abi;
+    }
+
+    pub fn set_copy_constructor(&mut self, copy_constructor: SpecialMemberFunc) {
+        self.copy_constructor = copy_constructor;
+    }
+
+    pub fn set_destructor(&mut self, destructor: SpecialMemberFunc) {
+        self.destructor = destructor;
+    }
+
+    pub fn set_id(&mut self, id: ItemId) {
+        self.id = id;
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        rs_name: Identifier,
+        cc_name: Identifier,
+        unique_name: Rc<str>,
+        mangled_cc_name: Rc<str>,
+        id: ItemId,
+        owning_target: BazelLabel,
+        template_specialization: Option<TemplateSpecialization>,
+        unknown_attr: Option<Rc<str>>,
+        doc_comment: Option<Rc<str>>,
+        bridge_type: Option<BridgeType>,
+        owned_ptr_config: Option<OwnedPtrConfig>,
+        source_loc: Rc<str>,
+        unambiguous_public_bases: Vec<BaseClass>,
+        fields: Vec<Field>,
+        lifetime_params: Vec<LifetimeName>,
+        size_align: SizeAlign,
+        trait_derives: TraitDerives,
+        is_derived_class: bool,
+        override_alignment: bool,
+        safety_annotation: SafetyAnnotation,
+        copy_constructor: SpecialMemberFunc,
+        move_constructor: SpecialMemberFunc,
+        destructor: SpecialMemberFunc,
+        is_trivial_abi: bool,
+        is_inheritable: bool,
+        is_abstract: bool,
+        nodiscard: Option<Rc<str>>,
+        record_type: RecordType,
+        is_aggregate: bool,
+        is_canonical_alias: bool,
+        enclosing_item_id: Option<ItemId>,
+        must_bind: bool,
+        overloads_operator_delete: bool,
+        has_private_or_deleted_operator_delete: bool,
+        lifetime_inputs: Vec<Rc<str>>,
+        impl_debug: bool,
+        detected_formatter: bool,
+        deprecated: Option<Rc<str>>,
+        is_thread_safe: bool,
+        is_explicit_class_template_instantiation_definition: bool,
+        children: Vec<Item>,
+    ) -> Self {
+        Self {
+            rs_name,
+            cc_name,
+            unique_name,
+            mangled_cc_name,
+            id,
+            owning_target,
+            template_specialization,
+            unknown_attr,
+            doc_comment,
+            bridge_type,
+            owned_ptr_config,
+            source_loc,
+            unambiguous_public_bases,
+            fields,
+            lifetime_params,
+            size_align,
+            trait_derives,
+            is_derived_class,
+            override_alignment,
+            safety_annotation,
+            copy_constructor,
+            move_constructor,
+            destructor,
+            is_trivial_abi,
+            is_inheritable,
+            is_abstract,
+            nodiscard,
+            record_type,
+            is_aggregate,
+            is_canonical_alias,
+            enclosing_item_id,
+            must_bind,
+            overloads_operator_delete,
+            has_private_or_deleted_operator_delete,
+            lifetime_inputs,
+            impl_debug,
+            detected_formatter,
+            deprecated,
+            is_thread_safe,
+            is_explicit_class_template_instantiation_definition,
+            children,
+        }
+    }
 }
 
 impl GenericItem for Record {
@@ -1318,7 +2224,7 @@ impl Record {
     /// by value and have their memory directly mutated by Rust using
     /// memcpy-like assignment/swap.
     ///
-    /// Described in more detail at: docs/unpin
+    /// Described in more detail at: docs/design/unpin.md
     pub fn is_unpin(&self) -> bool {
         self.is_trivial_abi
     }
@@ -1455,24 +2361,78 @@ impl Record {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Constant {
-    pub value: IntegerConstant,
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
-    pub source_loc: Rc<str>,
-    pub unknown_attr: Option<Rc<str>>,
-    pub enclosing_item_id: Option<ItemId>,
+    pub(crate) value: IntegerConstant,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) source_loc: Rc<str>,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) enclosing_item_id: Option<ItemId>,
     #[serde(rename(deserialize = "type"))]
-    pub type_: CcType,
-    pub must_bind: bool,
+    pub(crate) type_: CcType,
+    pub(crate) must_bind: bool,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     #[serde(default)]
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+}
+
+impl Constant {
+    pub fn value(&self) -> IntegerConstant {
+        self.value
+    }
+
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn type_(&self) -> &CcType {
+        &self.type_
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
 }
 
 impl GenericItem for Constant {
@@ -1502,25 +2462,79 @@ impl GenericItem for Constant {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalVar {
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
-    pub source_loc: Rc<str>,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) source_loc: Rc<str>,
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Option<Rc<str>>,
-    pub enclosing_item_id: Option<ItemId>,
-    pub mangled_name: Option<Rc<str>>,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) mangled_name: Option<Rc<str>>,
     #[serde(rename(deserialize = "type"))]
-    pub type_: CcType,
-    pub must_bind: bool,
+    pub(crate) type_: CcType,
+    pub(crate) must_bind: bool,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     #[serde(default)]
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+}
+
+impl GlobalVar {
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn mangled_name(&self) -> Option<&str> {
+        self.mangled_name.as_deref()
+    }
+
+    pub fn type_(&self) -> &CcType {
+        &self.type_
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
 }
 
 impl GenericItem for GlobalVar {
@@ -1550,34 +2564,140 @@ impl GenericItem for GlobalVar {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Enum {
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
-    pub source_loc: Rc<str>,
-    pub underlying_type: CcType,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) mangled_cc_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) source_loc: Rc<str>,
+    pub(crate) underlying_type: CcType,
     /// The enumerators. If None, this is a forward-declared (opaque) enum.
     ///
     /// That is, the difference between `enum X : int {};` and `enum X : int;`
     /// is that the former has `Some(vec![])` for the enumerators, while the
     /// latter has `None`.
-    pub enumerators: Option<Vec<Enumerator>>,
+    pub(crate) enumerators: Option<Vec<Enumerator>>,
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Option<Rc<str>>,
-    pub enclosing_item_id: Option<ItemId>,
-    pub must_bind: bool,
-    pub detected_formatter: bool,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) must_bind: bool,
+    pub(crate) detected_formatter: bool,
     /// The `[[nodiscard("...")]]` string. If `[[nodiscard]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub nodiscard: Option<Rc<str>>,
+    pub(crate) nodiscard: Option<Rc<str>>,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     #[serde(default)]
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+}
+
+impl Enum {
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn mangled_cc_name(&self) -> &str {
+        &self.mangled_cc_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn underlying_type(&self) -> &CcType {
+        &self.underlying_type
+    }
+
+    pub fn enumerators(&self) -> Option<&[Enumerator]> {
+        self.enumerators.as_deref()
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn detected_formatter(&self) -> bool {
+        self.detected_formatter
+    }
+
+    pub fn nodiscard(&self) -> Option<&str> {
+        self.nodiscard.as_deref()
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        cc_name: Identifier,
+        rs_name: Identifier,
+        unique_name: Rc<str>,
+        mangled_cc_name: Rc<str>,
+        id: ItemId,
+        owning_target: BazelLabel,
+        source_loc: Rc<str>,
+        underlying_type: CcType,
+        enumerators: Option<Vec<Enumerator>>,
+        unknown_attr: Option<Rc<str>>,
+        enclosing_item_id: Option<ItemId>,
+        must_bind: bool,
+        detected_formatter: bool,
+        nodiscard: Option<Rc<str>>,
+        deprecated: Option<Rc<str>>,
+        doc_comment: Option<Rc<str>>,
+    ) -> Self {
+        Self {
+            cc_name,
+            rs_name,
+            unique_name,
+            mangled_cc_name,
+            id,
+            owning_target,
+            source_loc,
+            underlying_type,
+            enumerators,
+            unknown_attr,
+            enclosing_item_id,
+            must_bind,
+            detected_formatter,
+            nodiscard,
+            deprecated,
+            doc_comment,
+        }
+    }
 }
 
 impl GenericItem for Enum {
@@ -1607,40 +2727,157 @@ impl GenericItem for Enum {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Enumerator {
-    pub identifier: Identifier,
-    pub value: IntegerConstant,
+    pub(crate) identifier: Identifier,
+    pub(crate) value: IntegerConstant,
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Option<Rc<str>>,
+    pub(crate) unknown_attr: Option<Rc<str>>,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     #[serde(default)]
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
+}
+
+impl Enumerator {
+    pub fn identifier(&self) -> &Identifier {
+        &self.identifier
+    }
+
+    pub fn value(&self) -> IntegerConstant {
+        self.value
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TypeAlias {
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub owning_target: BazelLabel,
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) doc_comment: Option<Rc<str>>,
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Option<Rc<str>>,
-    pub underlying_type: CcType,
-    pub source_loc: Rc<str>,
-    pub enclosing_item_id: Option<ItemId>,
-    pub must_bind: bool,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) underlying_type: CcType,
+    pub(crate) source_loc: Rc<str>,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) must_bind: bool,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     // Lifetime variable names bound by this type alias.
     #[serde(default)]
-    pub lifetime_inputs: Vec<Rc<str>>,
+    pub(crate) lifetime_inputs: Vec<Rc<str>>,
+}
+
+impl TypeAlias {
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn underlying_type(&self) -> &CcType {
+        &self.underlying_type
+    }
+
+    pub fn underlying_type_mut(&mut self) -> &mut CcType {
+        &mut self.underlying_type
+    }
+
+    pub fn source_loc(&self) -> &str {
+        &self.source_loc
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn lifetime_inputs(&self) -> &[Rc<str>] {
+        &self.lifetime_inputs
+    }
+
+    pub fn lifetime_inputs_mut(&mut self) -> &mut Vec<Rc<str>> {
+        &mut self.lifetime_inputs
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        cc_name: Identifier,
+        rs_name: Identifier,
+        unique_name: Rc<str>,
+        id: ItemId,
+        owning_target: BazelLabel,
+        doc_comment: Option<Rc<str>>,
+        unknown_attr: Option<Rc<str>>,
+        underlying_type: CcType,
+        source_loc: Rc<str>,
+        enclosing_item_id: Option<ItemId>,
+        must_bind: bool,
+        deprecated: Option<Rc<str>>,
+        lifetime_inputs: Vec<Rc<str>>,
+    ) -> Self {
+        Self {
+            cc_name,
+            rs_name,
+            unique_name,
+            id,
+            owning_target,
+            doc_comment,
+            unknown_attr,
+            underlying_type,
+            source_loc,
+            enclosing_item_id,
+            must_bind,
+            deprecated,
+            lifetime_inputs,
+        }
+    }
 }
 
 impl GenericItem for TypeAlias {
@@ -1748,27 +2985,71 @@ impl Display for UnsupportedItemKind {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UnsupportedItemPath {
-    pub ident: UnqualifiedIdentifier,
-    pub enclosing_item_id: Option<ItemId>,
+    pub(crate) ident: UnqualifiedIdentifier,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+}
+
+impl UnsupportedItemPath {
+    pub fn ident(&self) -> &UnqualifiedIdentifier {
+        &self.ident
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UnsupportedItem {
-    pub name: Rc<str>,
-    pub unique_name: Option<Rc<str>>,
-    pub kind: UnsupportedItemKind,
-    pub path: Option<UnsupportedItemPath>,
+    pub(crate) name: Rc<str>,
+    pub(crate) unique_name: Option<Rc<str>>,
+    pub(crate) kind: UnsupportedItemKind,
+    pub(crate) path: Option<UnsupportedItemPath>,
     errors: Vec<Rc<FormattedError>>,
-    pub source_loc: Option<Rc<str>>,
-    pub id: ItemId,
-    pub must_bind: bool,
-    pub defining_target: Option<BazelLabel>,
+    pub(crate) source_loc: Option<Rc<str>>,
+    pub(crate) id: ItemId,
+    pub(crate) must_bind: bool,
+    pub(crate) defining_target: Option<BazelLabel>,
 
     /// Stores either one natively generated [`arc_anyhow::Error`] or the
     /// memoized result of converting `errors`.
     #[serde(skip)]
     cause: IgnoredField<OnceCell<Vec<Error>>>,
+}
+
+impl UnsupportedItem {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn unique_name(&self) -> Option<&str> {
+        self.unique_name.as_deref()
+    }
+
+    pub fn kind(&self) -> UnsupportedItemKind {
+        self.kind
+    }
+
+    pub fn path(&self) -> Option<&UnsupportedItemPath> {
+        self.path.as_ref()
+    }
+
+    pub fn source_loc(&self) -> Option<&str> {
+        self.source_loc.as_deref()
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn defining_target(&self) -> Option<&BazelLabel> {
+        self.defining_target.as_ref()
+    }
 }
 
 impl GenericItem for UnsupportedItem {
@@ -1841,9 +3122,23 @@ impl UnsupportedItem {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Comment {
-    pub text: Rc<str>,
-    pub id: ItemId,
-    pub must_bind: bool,
+    pub(crate) text: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) must_bind: bool,
+}
+
+impl Comment {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
 }
 
 impl GenericItem for Comment {
@@ -1873,27 +3168,83 @@ impl GenericItem for Comment {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Namespace {
-    pub cc_name: Identifier,
-    pub rs_name: Identifier,
-    pub unique_name: Rc<str>,
-    pub id: ItemId,
-    pub canonical_namespace_id: ItemId,
+    pub(crate) cc_name: Identifier,
+    pub(crate) rs_name: Identifier,
+    pub(crate) unique_name: Rc<str>,
+    pub(crate) id: ItemId,
+    pub(crate) canonical_namespace_id: ItemId,
     /// A human-readable list of attributes that Crubit doesn't understand.
-    pub unknown_attr: Option<Rc<str>>,
-    pub owning_target: BazelLabel,
-    #[serde(default)]
-    pub child_item_ids: Vec<ItemId>,
-    pub enclosing_item_id: Option<ItemId>,
-    pub is_inline: bool,
-    pub must_bind: bool,
+    pub(crate) unknown_attr: Option<Rc<str>>,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) enclosing_item_id: Option<ItemId>,
+    pub(crate) is_inline: bool,
+    pub(crate) must_bind: bool,
     /// The `[[deprecated("...")]]` string. If `[[deprecated]]`, then the empty
     /// string is used.
     #[serde(default)]
-    pub deprecated: Option<Rc<str>>,
+    pub(crate) deprecated: Option<Rc<str>>,
     #[serde(default)]
-    pub doc_comment: Option<Rc<str>>,
+    pub(crate) doc_comment: Option<Rc<str>>,
     #[serde(default)]
-    pub children: Vec<Item>,
+    pub(crate) children: Vec<Item>,
+}
+
+impl Namespace {
+    pub fn cc_name(&self) -> &Identifier {
+        &self.cc_name
+    }
+
+    pub fn rs_name(&self) -> &Identifier {
+        &self.rs_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn canonical_namespace_id(&self) -> ItemId {
+        self.canonical_namespace_id
+    }
+
+    pub fn unknown_attr(&self) -> Option<&str> {
+        self.unknown_attr.as_deref()
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn enclosing_item_id(&self) -> Option<ItemId> {
+        self.enclosing_item_id
+    }
+
+    pub fn is_inline(&self) -> bool {
+        self.is_inline
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn deprecated(&self) -> Option<&str> {
+        self.deprecated.as_deref()
+    }
+
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
+    }
+
+    pub fn children(&self) -> &[Item] {
+        &self.children
+    }
+
+    pub fn set_children(&mut self, children: Vec<Item>) {
+        self.children = children;
+    }
 }
 
 impl GenericItem for Namespace {
@@ -1923,10 +3274,28 @@ impl GenericItem for Namespace {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UseMod {
-    pub path: Rc<str>,
-    pub mod_name: Identifier,
-    pub id: ItemId,
-    pub must_bind: bool,
+    pub(crate) path: Rc<str>,
+    pub(crate) mod_name: Identifier,
+    pub(crate) id: ItemId,
+    pub(crate) must_bind: bool,
+}
+
+impl UseMod {
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
+    pub fn mod_name(&self) -> &Identifier {
+        &self.mod_name
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
 }
 
 impl GenericItem for UseMod {
@@ -1963,17 +3332,87 @@ pub struct ExistingRustType {
     /// The name of the existing Rust type.
     /// Note that it may contain interpolated type parameters, like `RustType<{T}>`.
     /// This means that it's incorrect to directly parse as an Ident.
-    pub rs_name: Rc<str>,
-    pub cc_name: Rc<str>,
-    pub unique_name: Rc<str>,
+    pub(crate) rs_name: Rc<str>,
+    pub(crate) cc_name: Rc<str>,
+    pub(crate) unique_name: Rc<str>,
     /// The template arguments on this instance of the type instantiation (empty is no template
     /// arguments). This list parallels `template_arg_names`.
-    pub template_args: Vec<TemplateArg>,
-    pub owning_target: BazelLabel,
-    pub size_align: Option<SizeAlign>,
-    pub is_same_abi: bool,
-    pub id: ItemId,
-    pub must_bind: bool,
+    pub(crate) template_args: Vec<TemplateArg>,
+    pub(crate) owning_target: BazelLabel,
+    pub(crate) size_align: Option<SizeAlign>,
+    pub(crate) is_same_abi: bool,
+    pub(crate) id: ItemId,
+    pub(crate) must_bind: bool,
+    pub(crate) impl_debug: bool,
+}
+
+impl ExistingRustType {
+    pub fn rs_name(&self) -> &str {
+        &self.rs_name
+    }
+
+    pub fn cc_name(&self) -> &str {
+        &self.cc_name
+    }
+
+    pub fn unique_name(&self) -> &str {
+        &self.unique_name
+    }
+
+    pub fn template_args(&self) -> &[TemplateArg] {
+        &self.template_args
+    }
+
+    pub fn owning_target(&self) -> &BazelLabel {
+        &self.owning_target
+    }
+
+    pub fn size_align(&self) -> Option<&SizeAlign> {
+        self.size_align.as_ref()
+    }
+
+    pub fn is_same_abi(&self) -> bool {
+        self.is_same_abi
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+
+    pub fn must_bind(&self) -> bool {
+        self.must_bind
+    }
+
+    pub fn impl_debug(&self) -> bool {
+        self.impl_debug
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_for_testing(
+        rs_name: Rc<str>,
+        cc_name: Rc<str>,
+        unique_name: Rc<str>,
+        template_args: Vec<TemplateArg>,
+        owning_target: BazelLabel,
+        size_align: Option<SizeAlign>,
+        is_same_abi: bool,
+        id: ItemId,
+        must_bind: bool,
+        impl_debug: bool,
+    ) -> Self {
+        Self {
+            rs_name,
+            cc_name,
+            unique_name,
+            template_args,
+            owning_target,
+            size_align,
+            is_same_abi,
+            id,
+            must_bind,
+            impl_debug,
+        }
+    }
 }
 
 impl GenericItem for ExistingRustType {
@@ -2271,23 +3710,35 @@ impl<'a> TryFrom<&'a Item> for &'a Rc<ExistingRustType> {
     }
 }
 
-// There's no reason to hide FlatIR or make_ir: deserialize_ir is just make_ir(from_json("ir")),
-// and transforming the json is strictly worse than transforming the ir itself.
+fn deserialize_crate_names<'de, D>(deserializer: D) -> Result<BTreeMap<BazelLabel, Ident>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let map = BTreeMap::<BazelLabel, &str>::deserialize(deserializer)?;
+    map.into_iter()
+        .map(|(key, value)| {
+            let ident = try_make_rs_ident(value).map_err(|_| {
+                serde::de::Error::custom(format!("Invalid crate name identifier {value:?}"))
+            })?;
+            Ok((key, ident))
+        })
+        .collect()
+}
 
+// There's no reason to hide TreeIR or make_ir: deserialize_ir is just make_ir(from_json("ir")),
+// and transforming the json is strictly worse than transforming the ir itself.
 #[derive(PartialEq, Eq, Clone, Deserialize)]
 #[serde(deny_unknown_fields, rename(deserialize = "IR"))]
-pub struct FlatIR {
+pub struct TreeIR {
     #[serde(default)]
     pub public_headers: Vec<HeaderName>,
     pub current_target: BazelLabel,
     #[serde(default)]
-    pub items: Vec<Item>,
-    #[serde(default)]
-    pub top_level_item_ids: BTreeMap<BazelLabel, Vec<ItemId>>,
-    #[serde(default)]
     pub crate_root_path: Option<Rc<str>>,
     #[serde(default)]
     pub crubit_features: BTreeMap<BazelLabel, crubit_feature::SerializedCrubitFeatures>,
+    #[serde(default, deserialize_with = "deserialize_crate_names")]
+    pub crate_names: BTreeMap<BazelLabel, Ident>,
     #[serde(default)]
     pub unstable_rust_features: Vec<String>,
     #[serde(default)]
@@ -2299,42 +3750,40 @@ pub struct FlatIR {
 /// A custom debug impl that wraps the HashMap in rustfmt-friendly notation.
 ///
 /// See b/272530008.
-impl Debug for FlatIR {
+impl Debug for TreeIR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // BTreeMap has consistent ordering, unlike HashMap, so it's reasonable to rely on a
         // consistent Debug output.
         struct DebugBTreeMap<T>(pub T);
+
+        // Format as `[ (k, v) ]` instead of `map! { k: v }` because rustfmt fails on macros
+        // with complicated contents (our nested items) which it cannot verify is valid Rust. This
+        // ensures the output is parse-able for rustfmt on test failures. See b/272530008.
         impl<K: Debug, V: Debug> Debug for DebugBTreeMap<&BTreeMap<K, V>> {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                // prefix the map with `map!` so that the output can be fed to rustfmt.
-                // The end result is something like `map! { k1: v1, k2: v2 }`, which reads well.
-                write!(f, "map!")?;
-                Debug::fmt(&self.0, f)
+                f.debug_list().entries(self.0.iter()).finish()
             }
         }
-        // exhaustive-match so we don't forget to add fields to Debug when we add to
-        // FlatIR.
-        let FlatIR {
+        // exhaustive-match so we don't forget to add fields to Debug when we add to TreeIR.
+        let TreeIR {
             public_headers,
             current_target,
-            items,
-            top_level_item_ids,
             crate_root_path,
             crubit_features,
+            crate_names,
             unstable_rust_features,
             reexported_namespaces,
-            // TODO(rrijadi): Use `top_level_items` in `Debug` impl.
-            top_level_items: _,
+            top_level_items,
         } = self;
-        f.debug_struct("FlatIR")
+        f.debug_struct("TreeIR")
             .field("public_headers", public_headers)
             .field("current_target", current_target)
-            .field("items", items)
-            .field("top_level_item_ids", &DebugBTreeMap(top_level_item_ids))
             .field("crate_root_path", crate_root_path)
             .field("crubit_features", &DebugBTreeMap(crubit_features))
+            .field("crate_names", &DebugBTreeMap(crate_names))
             .field("unstable_rust_features", unstable_rust_features)
             .field("reexported_namespaces", reexported_namespaces)
+            .field("top_level_items", &DebugBTreeMap(top_level_items))
             .finish()
     }
 }
@@ -2344,9 +3793,8 @@ impl Debug for FlatIR {
 /// `rs_api_impl.cc` files).
 #[derive(PartialEq, Debug)]
 pub struct IR {
-    flat_ir: FlatIR,
-    // A map from a `decl_id` to an index of an `Item` in the `flat_ir.items` vec.
-    item_id_to_item_idx: HashMap<ItemId, usize>,
+    tree_ir: TreeIR,
+    item_id_to_item: HashMap<ItemId, Item>,
     lifetimes: HashMap<LifetimeId, LifetimeName>,
     namespace_id_to_number_of_reopened_namespaces: HashMap<ItemId, usize>,
     reopened_namespace_id_to_idx: HashMap<ItemId, usize>,
@@ -2354,44 +3802,42 @@ pub struct IR {
 }
 
 impl IR {
-    pub fn flat_ir(&self) -> &FlatIR {
-        &self.flat_ir
+    pub fn tree_ir(&self) -> &TreeIR {
+        &self.tree_ir
     }
 
     pub fn unstable_rust_features(&self) -> &[String] {
-        &self.flat_ir.unstable_rust_features
+        &self.tree_ir.unstable_rust_features
     }
 
-    pub fn item_id_to_item_idx(&self) -> &HashMap<ItemId, usize> {
-        &self.item_id_to_item_idx
+    pub fn get_decl(&self, id: ItemId) -> Option<&Item> {
+        self.item_id_to_item.get(&id)
+    }
+
+    pub fn items(&self) -> impl Iterator<Item = &Item> + '_ {
+        let roots = self.tree_ir.top_level_items.values().flat_map(|v| v.iter());
+        ItemsIterator::new(roots.collect())
     }
 
     pub fn lifetimes(&self) -> impl Iterator<Item = (&LifetimeId, &LifetimeName)> {
         self.lifetimes.iter()
     }
 
-    pub fn items(&self) -> impl Iterator<Item = &Item> {
-        self.flat_ir.items.iter()
+    /// Returns the top-level items of a target.
+    pub fn top_level_items_in_target(&self, target: &BazelLabel) -> &[Item] {
+        self.tree_ir.top_level_items.get(target).map(|v| v.as_slice()).unwrap_or_default()
     }
 
-    pub fn top_level_item_ids_in_target(&self, target: &BazelLabel) -> &[ItemId] {
-        &self.flat_ir.top_level_item_ids[target]
-    }
-
-    pub fn top_level_item_ids(&self) -> &[ItemId] {
-        self.top_level_item_ids_in_target(self.current_target())
-    }
-
-    pub fn items_mut(&mut self) -> impl Iterator<Item = &mut Item> {
-        self.flat_ir.items.iter_mut()
+    pub fn top_level_items(&self) -> &[Item] {
+        self.top_level_items_in_target(self.current_target())
     }
 
     pub fn reexported_namespaces(&self) -> &[Rc<str>] {
-        &self.flat_ir.reexported_namespaces
+        &self.tree_ir.reexported_namespaces
     }
 
     pub fn public_headers(&self) -> impl Iterator<Item = &HeaderName> {
-        self.flat_ir.public_headers.iter()
+        self.tree_ir.public_headers.iter()
     }
 
     pub fn functions(&self) -> impl Iterator<Item = &Rc<Func>> {
@@ -2464,10 +3910,15 @@ impl IR {
         *target == *self.current_target()
     }
 
+    /// Returns the custom crate name for the given `target` if it was explicitly specified.
+    pub fn crate_name(&self, target: &BazelLabel) -> Option<Ident> {
+        self.tree_ir.crate_names.get(target).cloned()
+    }
+
     /// Returns the Crubit features enabled for the given `target`.
     #[must_use]
     pub fn target_crubit_features(&self, target: &BazelLabel) -> flagset::FlagSet<CrubitFeature> {
-        self.flat_ir.crubit_features.get(target).cloned().unwrap_or_default().0
+        self.tree_ir.crubit_features.get(target).cloned().unwrap_or_default().0
     }
 
     /// Returns a mutable reference to the Crubit features enabled for the given
@@ -2483,11 +3934,11 @@ impl IR {
         // TODO(jeanpierreda): migrate to raw_entry_mut when stable.
         // (target is taken by reference exactly because ideally this function would use
         // the raw entry API.)
-        &mut self.flat_ir.crubit_features.entry(target.clone()).or_default().0
+        &mut self.tree_ir.crubit_features.entry(target.clone()).or_default().0
     }
 
     pub fn current_target(&self) -> &BazelLabel {
-        &self.flat_ir.current_target
+        &self.tree_ir.current_target
     }
 
     // Returns the standard Debug print string for the `flat_ir`. The reason why we
@@ -2497,8 +3948,8 @@ impl IR {
     // chokes on HashMaps. Therefore this method.
     //
     // Used for `token_stream_matchers`, do not use for anything else.
-    pub fn flat_ir_debug_print(&self) -> String {
-        format!("{:?}", self.flat_ir)
+    pub fn tree_ir_debug_print(&self) -> String {
+        format!("{:?}", self.tree_ir)
     }
 
     pub fn get_lifetime(&self, lifetime_id: LifetimeId) -> Option<&LifetimeName> {
@@ -2526,7 +3977,7 @@ impl IR {
     }
 
     pub fn crate_root_path(&self) -> Option<Rc<str>> {
-        self.flat_ir.crate_root_path.clone()
+        self.tree_ir.crate_root_path.clone()
     }
 
     pub fn crate_root_path_tokens(&self) -> TokenStream {
@@ -2552,7 +4003,11 @@ pub fn rs_imported_crate_name(owning_target: &BazelLabel, ir: &IR) -> Option<Ide
     if ir.is_current_target(owning_target) {
         None
     } else {
-        let owning_crate = make_rs_ident(&owning_target.target_name_escaped());
+        let owning_crate = if let Some(custom_name) = ir.crate_name(owning_target) {
+            custom_name
+        } else {
+            make_rs_ident(&owning_target.target_name_escaped())
+        };
         Some(owning_crate)
     }
 }
@@ -2589,18 +4044,17 @@ mod tests {
         }
         "#;
         let ir = deserialize_ir(input.as_bytes()).unwrap();
-        let expected = FlatIR {
+        let expected = TreeIR {
             public_headers: vec![HeaderName { name: "foo/bar.h".into() }],
             current_target: "//foo:bar".into(),
-            top_level_item_ids: BTreeMap::new(),
-            items: vec![],
             crate_root_path: None,
             crubit_features: Default::default(),
+            crate_names: BTreeMap::new(),
             unstable_rust_features: vec![],
             reexported_namespaces: vec![],
             top_level_items: BTreeMap::new(),
         };
-        assert_eq!(ir.flat_ir, expected);
+        assert_eq!(ir.tree_ir, expected);
     }
 
     #[gtest]
@@ -2725,5 +4179,176 @@ mod tests {
             BazelLabel::from("//foo_bar:baz").convert_to_cc_identifier(),
             BazelLabel::from("//foo/bar:baz").convert_to_cc_identifier()
         );
+    }
+
+    #[gtest]
+    fn test_make_ir_happy_path() {
+        let proto = protobuf::proto!(ir_rust_proto::IRProto {
+            current_target: "//foo:bar",
+            top_level_items: [(
+                "//foo:bar",
+                __ {
+                    items: [__ {
+                        namespace_decl: __ {
+                            cc_name: __ { identifier: "nsA" },
+                            rs_name: __ { identifier: "nsA" },
+                            unique_name: "nsA",
+                            id: 1,
+                            canonical_namespace_id: 1,
+                            owning_target: "//foo:bar",
+                            is_inline: false,
+                            must_bind: false,
+                            children: [__ {
+                                namespace_decl: __ {
+                                    cc_name: __ { identifier: "nsB" },
+                                    rs_name: __ { identifier: "nsB" },
+                                    unique_name: "nsB",
+                                    id: 2,
+                                    canonical_namespace_id: 2,
+                                    owning_target: "//foo:bar",
+                                    is_inline: false,
+                                    must_bind: false,
+                                    children: [__ {
+                                        comment: __ { text: "hello", id: 3, must_bind: false }
+                                    }]
+                                }
+                            }]
+                        }
+                    }]
+                }
+            )]
+        });
+        let ir = proto_to_ir(proto.as_view()).unwrap();
+
+        let ids: Vec<_> = ir.items().map(|item| item.id().0).collect();
+        assert_eq!(ids, vec![1, 2, 3]);
+    }
+
+    #[gtest]
+    fn test_make_ir_redeclarations() {
+        let proto = protobuf::proto!(ir_rust_proto::IRProto {
+            current_target: "//foo:bar",
+            top_level_items: [(
+                "//foo:bar",
+                __ {
+                    items: [
+                        __ {
+                            namespace_decl: __ {
+                                cc_name: __ { identifier: "ns1" },
+                                rs_name: __ { identifier: "ns1" },
+                                unique_name: "ns1",
+                                id: 100,
+                                canonical_namespace_id: 100,
+                                owning_target: "//foo:bar",
+                                is_inline: false,
+                                must_bind: false,
+                                children: [__ {
+                                    comment: __ { text: "hello", id: 200, must_bind: false }
+                                }]
+                            }
+                        },
+                        __ {
+                            namespace_decl: __ {
+                                cc_name: __ { identifier: "ns1" },
+                                rs_name: __ { identifier: "ns1" },
+                                unique_name: "ns1",
+                                id: 101,
+                                canonical_namespace_id: 100,
+                                owning_target: "//foo:bar",
+                                is_inline: false,
+                                must_bind: false,
+                                children: [__ {
+                                    comment: __ { text: "hello", id: 200, must_bind: false }
+                                }]
+                            }
+                        }
+                    ]
+                }
+            )]
+        });
+        let ir = proto_to_ir(proto.as_view()).unwrap();
+
+        let comment_items: Vec<_> = ir.items().filter(|item| item.id() == ItemId(200)).collect();
+
+        assert_eq!(comment_items.len(), 1);
+    }
+
+    #[gtest]
+    fn test_proto_crate_names() {
+        let proto = protobuf::proto!(ir_rust_proto::IRProto {
+            current_target: "//foo:bar",
+            crate_names: [("//dep:target", "custom_crate")]
+        });
+        let ir = proto_to_ir(proto.as_view()).unwrap();
+        assert_eq!(
+            ir.crate_name(&"//dep:target".into()).map(|i| i.to_string()),
+            Some("custom_crate".to_string())
+        );
+    }
+
+    #[gtest]
+    fn test_proto_crate_names_invalid_ident() {
+        let proto = protobuf::proto!(ir_rust_proto::IRProto {
+            current_target: "//foo:bar",
+            crate_names: [("//dep:target", "invalid*crate")]
+        });
+        let result = proto_to_ir(proto.as_view());
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("Invalid crate name identifier: \"invalid*crate\""),
+            "error: {}",
+            err_msg
+        );
+    }
+
+    #[gtest]
+    fn test_crate_names_deserialization_invalid_ident() {
+        let input = r#"
+        {
+            "public_headers": [],
+            "current_target": "//foo:bar",
+            "crate_names": {
+                "//dep:target": "invalid*crate"
+            }
+        }
+        "#;
+        let result = deserialize_ir(input.as_bytes());
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("Invalid crate name identifier \"invalid*crate\""),
+            "error: {}",
+            err_msg
+        );
+    }
+
+    #[gtest]
+    fn test_rs_imported_crate_name_with_custom_name() {
+        let input = r#"
+        {
+            "public_headers": [],
+            "current_target": "//foo:bar",
+            "crate_names": {
+                "//dep:target": "custom_crate"
+            }
+        }
+        "#;
+        let ir = deserialize_ir(input.as_bytes()).unwrap();
+        let crate_ident = rs_imported_crate_name(&"//dep:target".into(), &ir).unwrap();
+        assert_eq!(crate_ident.to_string(), "custom_crate");
+    }
+
+    #[gtest]
+    fn test_rs_imported_crate_name_without_custom_name() {
+        let input = r#"
+        {
+            "public_headers": [],
+            "current_target": "//foo:bar"
+        }
+        "#;
+        let ir = deserialize_ir(input.as_bytes()).unwrap();
+        let crate_ident = rs_imported_crate_name(&"//dep:target".into(), &ir).unwrap();
+        assert_eq!(crate_ident.to_string(), "target");
     }
 }

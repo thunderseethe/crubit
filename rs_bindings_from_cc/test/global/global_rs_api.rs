@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/global:global
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 unsafe extern "C" {
     pub static mut extern_int: ::ffi_11::c_int;
 }
@@ -89,6 +88,7 @@ pub mod foo {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18StructWithAnonEnum"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=StructWithAnonEnum
 pub struct StructWithAnonEnum {

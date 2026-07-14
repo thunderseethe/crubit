@@ -10,11 +10,10 @@
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[inline(always)]
 pub fn return_value() -> ::ffi_11::c_int {
     unsafe { crate::detail::__rust_thunk___Z12return_valuev() }
@@ -88,25 +87,6 @@ pub fn multiply_with_keyword_named_parameters(
             __param_0, __param_1, __param_2,
         )
     }
-}
-
-// LLVM identifiers use the `\\01` prefix to suppress mangling:
-// https://llvm.org/docs/LangRef.html#identifiers
-// Test that we can import functions that have such names.
-// If `__USER_LABEL_PREFIX__` is non-empty, the Clang mangler adds the `\\01`
-// prefix; otherwise, we add it here ourselves.
-
-#[inline(always)]
-pub fn llvm_no_mangle_marker() -> ::ffi_11::c_int {
-    unsafe { crate::detail::__rust_thunk___llvm_no_mangle_marker() }
-}
-
-/// Test that we can import functions whose `__asm` name contains a dollar sign.
-/// For example, the Apple SDKs use dollar signs in their symbol versioning
-/// macros (e.g. `__DARWIN_EXTSN()`).
-#[inline(always)]
-pub fn asm_name_with_dollar_sign() -> ::ffi_11::c_int {
-    unsafe { crate::detail::__rust_thunk__asm_u36_name_u36_with_u36_dollar_u36_sign() }
 }
 
 /// https://cdecl.org/?q=int+%28*get_multiply_function%28%29%29%28int%2C+int%29:
@@ -183,11 +163,6 @@ mod detail {
             __param_0: ::ffi_11::c_int,
             __param_1: ::ffi_11::c_int,
             __param_2: ::ffi_11::c_int,
-        ) -> ::ffi_11::c_int;
-        #[link_name = "\u{1}_llvm_no_mangle_marker"]
-        pub(crate) unsafe fn __rust_thunk___llvm_no_mangle_marker() -> ::ffi_11::c_int;
-        #[link_name = "asm$name$with$dollar$sign"]
-        pub(crate) unsafe fn __rust_thunk__asm_u36_name_u36_with_u36_dollar_u36_sign(
         ) -> ::ffi_11::c_int;
         #[link_name = "_Z32get_pointer_to_multiply_functionv"]
         pub(crate) unsafe fn __rust_thunk___Z32get_pointer_to_multiply_functionv(

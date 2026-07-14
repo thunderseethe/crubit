@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/templates/type_alias_access_rule:type_alias_access_rule
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: class `A` could not be bound
 //   Class templates are not yet supported
 
@@ -24,6 +23,7 @@
 /// * Document why the following public unsafe fields of this type cannot be misused by callee:
 ///   * `a_`: Rust type is unknown; safety requirements cannot be automatically generated: Unsupported type 'A<B::PrivateMember>': Failed to create bindings for template specialization type A<PrivateMember>: Type 'struct B::PrivateMember' uses non-public declaration 'B::PrivateMember', which cannot be spelled in C++ by generated code.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "1B"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=:: B
 pub struct B {

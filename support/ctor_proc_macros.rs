@@ -195,8 +195,8 @@ fn derive_move_and_assign_via_copy_impl(
 /// `project_pin_type!(foo::T)` is the name of the type returned by
 /// `foo::T::project_pin()`.
 ///
-/// If `foo::T` is not `#[recursively_pinned]`, then this returns the name it
-/// would have used, but is essentially useless.
+/// If `foo::T` is not `#[recursively_pinned]`, or it specifies a custom name using
+/// `project_pin=...` then this returns the name it would have used, but is essentially useless.
 #[proc_macro]
 pub fn project_pin_type(name: TokenStream) -> TokenStream {
     project_type_impl(name, project_pin_ident)
@@ -209,8 +209,8 @@ fn project_pin_ident(ident: &Ident) -> Ident {
 /// `project_ref_type!(foo::T)` is the name of the type returned by
 /// `foo::T::project_ref()`.
 ///
-/// If `foo::T` is not `#[recursively_pinned]`, then this returns the name it
-/// would have used, but is essentially useless.
+/// If `foo::T` is not `#[recursively_pinned]`, or it specifies a custom name using
+/// `project_ref=...`, then this returns the name it would have used, but is essentially useless.
 #[proc_macro]
 pub fn project_ref_type(name: TokenStream) -> TokenStream {
     project_type_impl(name, project_ref_ident)
@@ -259,20 +259,20 @@ fn project_method_impl(
     input: &syn::DeriveInput,
     method_name: proc_macro2::TokenStream,
     mut_: proc_macro2::TokenStream,
-    project_ident: fn(&Ident) -> Ident,
-) -> syn::Result<proc_macro2::TokenStream> {
+    type_name: Ident,
+) -> syn::Result<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let is_fieldless = match &input.data {
         syn::Data::Struct(data) => data.fields.is_empty(),
         syn::Data::Enum(e) => e.variants.iter().all(|variant| variant.fields.is_empty()),
         syn::Data::Union(_) => {
-            return Ok(quote! {});
+            return Ok((quote! {}, quote! {}));
         }
     };
 
     let mut projected = input.clone();
     // TODO(jeanpierreda): check attributes for repr(packed)
     projected.attrs.clear();
-    projected.ident = project_ident(&projected.ident);
+    projected.ident = type_name;
 
     let lifetime = if is_fieldless {
         quote! {}
@@ -349,23 +349,58 @@ fn project_method_impl(
         }
     }
 
-    let (input_impl_generics, input_type_generics, input_where_clause) =
-        input.generics.split_for_impl();
-    let (_, projected_generics, _) = projected.generics.split_for_impl();
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+    enum ProjectVis {
+        Private,
+        Crate,
+        Public,
+    }
 
-    Ok(quote! {
-        #projected
+    let classify_vis = |vis: &syn::Visibility| -> ProjectVis {
+        match vis {
+            syn::Visibility::Public(_) => ProjectVis::Public,
+            syn::Visibility::Inherited => ProjectVis::Private,
+            syn::Visibility::Restricted(r) if r.path.is_ident("self") => ProjectVis::Private,
+            syn::Visibility::Restricted(_) => ProjectVis::Crate,
+        }
+    };
 
-        impl #input_impl_generics #input_ident #input_type_generics #input_where_clause {
-            #[must_use]
-            pub fn #method_name<#lifetime>(self: ::core::pin::Pin<& #lifetime #mut_ Self>) -> #projected_ident #projected_generics {
-                unsafe {
-                    let from = ::core::pin::Pin::into_inner_unchecked(self);
-                    #project_body
+    let mut max_vis = ProjectVis::Private;
+    match &input.data {
+        syn::Data::Struct(data) => {
+            for field in &data.fields {
+                max_vis = max_vis.max(classify_vis(&field.vis));
+            }
+        }
+        syn::Data::Enum(e) => {
+            for variant in &e.variants {
+                for field in &variant.fields {
+                    max_vis = max_vis.max(classify_vis(&field.vis));
                 }
             }
         }
-    })
+        syn::Data::Union(_) => {}
+    }
+
+    let vis_tokens = match max_vis {
+        ProjectVis::Private => quote! {},
+        ProjectVis::Crate => quote! { pub(crate) },
+        ProjectVis::Public => quote! { pub },
+    };
+
+    let (_, projected_generics, _) = projected.generics.split_for_impl();
+
+    let method = quote! {
+        #[must_use]
+        #vis_tokens fn #method_name<#lifetime>(self: ::core::pin::Pin<& #lifetime #mut_ Self>) -> #projected_ident #projected_generics {
+            unsafe {
+                let from = ::core::pin::Pin::into_inner_unchecked(self);
+                #project_body
+            }
+        }
+    };
+
+    Ok((quote! {#projected}, method))
 }
 
 /// Adds a new lifetime to `generics`, returning the quoted lifetime name.
@@ -392,6 +427,8 @@ enum RecursivelyPinnedArg {
     PinnedDrop,
     MaybeUnpin,
     RenamedCrate(Ident),
+    ProjectRef(Ident),
+    ProjectPin(Ident),
 }
 
 impl Parse for RecursivelyPinnedArg {
@@ -405,12 +442,23 @@ impl Parse for RecursivelyPinnedArg {
             if ident == "Unpin" {
                 return Ok(RecursivelyPinnedArg::MaybeUnpin);
             }
-        } else if input.parse::<Ident>()? == "PinnedDrop" {
-            return Ok(RecursivelyPinnedArg::PinnedDrop);
+        } else {
+            let ident: Ident = input.parse()?;
+            if ident == "PinnedDrop" {
+                return Ok(RecursivelyPinnedArg::PinnedDrop);
+            } else if ident == "project_ref" {
+                let _: Token![=] = input.parse()?;
+                let new_name: Ident = input.parse()?;
+                return Ok(RecursivelyPinnedArg::ProjectRef(new_name));
+            } else if ident == "project_pin" {
+                let _: Token![=] = input.parse()?;
+                let new_name: Ident = input.parse()?;
+                return Ok(RecursivelyPinnedArg::ProjectPin(new_name));
+            }
         }
         Err(syn::Error::new(
             input.span(),
-            format!("unexpected argument: expected PinnedDrop, `?Unpin`, or crate=..., but got: {input}"),
+            format!("unexpected argument: expected PinnedDrop, `?Unpin`, `project_ref=...`, `project_pin=...`, or crate=..., but got: {input}"),
         ))
     }
 }
@@ -420,6 +468,8 @@ struct RecursivelyPinnedArgs {
     is_pinned_drop: bool,
     is_maybe_unpin: bool,
     renamed_crate: Option<Ident>,
+    project_ref: Option<Ident>,
+    project_pin: Option<Ident>,
 }
 
 impl Parse for RecursivelyPinnedArgs {
@@ -439,6 +489,12 @@ impl Parse for RecursivelyPinnedArgs {
                 }
                 RecursivelyPinnedArg::RenamedCrate(ident) => {
                     result.renamed_crate = Some(ident);
+                }
+                RecursivelyPinnedArg::ProjectRef(ident) => {
+                    result.project_ref = Some(ident);
+                }
+                RecursivelyPinnedArg::ProjectPin(ident) => {
+                    result.project_pin = Some(ident);
                 }
             }
         }
@@ -519,8 +575,8 @@ fn forbid_initialization_fields(fields: &mut syn::Fields, ctor: &Ident) {
     }
 }
 
-/// `#[recursively_pinned]` pins every field, similar to `#[pin_project]`, and
-/// marks the struct `!Unpin`.
+/// `#[recursively_pinned]` pins every field, and marks the struct `!Unpin`. The fields are
+/// available via pin projection accessors, similar to `#[pin_project]`.
 ///
 /// Example:
 ///
@@ -624,6 +680,24 @@ fn forbid_initialization_fields(fields: &mut syn::Fields, ctor: &Ident) {
 /// }
 /// ```
 ///
+/// ### `project_ref=<ident>` and `project_pin=<ident>`
+///
+/// By default, the projection types are named `__CrubitProjectRef<StructName>` and
+/// `__CrubitProjectPin<StructName>`. You can customize these names by passing
+/// `project_ref=...` and/or `project_pin=...` to `#[recursively_pinned]`.
+///
+/// For example:
+///
+/// ```
+/// #[recursively_pinned(project_ref=MyRef, project_pin=MyPin)]
+/// struct S {
+///   field: i32,
+/// }
+/// ```
+///
+/// This is analogous to `#[pin_project(project=MyPin, project_ref=MyRef)]` (or
+/// `#[pin_project(project=MyPin)]` if only customizing one).
+///
 /// ## Direct initialization
 ///
 /// Use the `ctor!` macro to instantiate recursively pinned types. For example:
@@ -698,10 +772,18 @@ fn recursively_pinned_impl(
     let ctor = args.renamed_crate.unwrap_or(Ident::new("ctor", Span::call_site()));
     let mut input = syn::parse2::<syn::DeriveInput>(item)?;
 
-    let project_pin_impl =
-        project_method_impl(&input, quote! {project_pin}, quote! {mut}, project_pin_ident)?;
-    let project_ref_impl =
-        project_method_impl(&input, quote! {project_ref}, quote! {}, project_ref_ident)?;
+    let (project_pin_type, project_pin_method) = project_method_impl(
+        &input,
+        quote! {project_pin},
+        quote! {mut},
+        args.project_pin.unwrap_or_else(|| project_pin_ident(&input.ident)),
+    )?;
+    let (project_ref_type, project_ref_method) = project_method_impl(
+        &input,
+        quote! {project_ref},
+        quote! {},
+        args.project_ref.unwrap_or_else(|| project_ref_ident(&input.ident)),
+    )?;
     let name = input.ident.clone();
 
     // Create two copies of input: one (public) has a private field that can't be
@@ -749,10 +831,22 @@ fn recursively_pinned_impl(
         }
     };
 
+    let project_methods_impl = if project_pin_method.is_empty() && project_ref_method.is_empty() {
+        quote! {}
+    } else {
+        quote! {
+            impl #input_impl_generics #name #input_type_generics #input_where_clause {
+                #project_pin_method
+                #project_ref_method
+            }
+        }
+    };
+
     Ok(quote! {
         #input
-        #project_pin_impl
-        #project_ref_impl
+        #project_pin_type
+        #project_ref_type
+        #project_methods_impl
 
         #drop_impl
         #unpin_impl
@@ -776,7 +870,7 @@ fn recursively_pinned_impl(
 mod test {
     use super::*;
     use googletest::gtest;
-    use token_stream_matchers::assert_rs_matches;
+    use token_stream_matchers::{assert_rs_matches, assert_rs_not_matches};
 
     /// Essentially a change detector, but handy for debugging.
     ///
@@ -881,5 +975,78 @@ mod test {
 
         // The remaining features of the generated output are better tested via
         // real tests that exercise the code.
+    }
+
+    mod project_pin_visibility {
+        use super::*;
+        #[gtest]
+        fn test_fieldless() {
+            let definition = recursively_pinned_impl(quote! {}, quote! { struct S; }).unwrap();
+            assert_rs_matches!(definition, quote! { fn project_pin });
+            assert_rs_matches!(definition, quote! { fn project_ref });
+        }
+
+        #[gtest]
+        fn test_private() {
+            let definition =
+                recursively_pinned_impl(quote! {}, quote! { struct S { x: i32, y: i32 } }).unwrap();
+            assert_rs_matches!(definition, quote! { fn project_pin });
+        }
+
+        #[gtest]
+        fn test_public() {
+            let definition =
+                recursively_pinned_impl(quote! {}, quote! { struct S { pub x: i32, pub y: i32 } })
+                    .unwrap();
+            assert_rs_matches!(definition, quote! { pub fn project_pin });
+        }
+
+        #[gtest]
+        fn test_mixed_private() {
+            let definition =
+                recursively_pinned_impl(quote! {}, quote! { struct S { pub x: i32, y: i32 } })
+                    .unwrap();
+            assert_rs_matches!(definition, quote! { pub fn project_pin });
+        }
+
+        #[gtest]
+        fn test_mixed_pub_self() {
+            let definition = recursively_pinned_impl(
+                quote! {},
+                quote! { struct S { pub x: i32, pub(self) y: i32 } },
+            )
+            .unwrap();
+            assert_rs_matches!(definition, quote! { pub fn project_pin });
+        }
+
+        #[gtest]
+        fn test_mixed_pub_super() {
+            let definition = recursively_pinned_impl(
+                quote! {},
+                quote! { struct S { pub x: i32, pub(super) y: i32 } },
+            )
+            .unwrap();
+            assert_rs_matches!(definition, quote! { pub fn project_pin });
+        }
+
+        #[gtest]
+        fn test_mixed_pub_crate() {
+            let definition = recursively_pinned_impl(
+                quote! {},
+                quote! { struct S { pub x: i32, pub(crate) y: i32 } },
+            )
+            .unwrap();
+            assert_rs_matches!(definition, quote! { pub fn project_pin });
+        }
+
+        #[gtest]
+        fn test_mixed_pub_crate_private() {
+            let definition = recursively_pinned_impl(
+                quote! {},
+                quote! { struct S { pub(crate) x: i32, y: i32 } },
+            )
+            .unwrap();
+            assert_rs_matches!(definition, quote! { pub(crate) fn project_pin });
+        }
     }
 }

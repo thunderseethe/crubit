@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/wrapper/impl_ctor:impl_ctor
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "10Nontrivial"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Nontrivial
 pub struct Nontrivial {
@@ -84,7 +84,10 @@ impl<'__unelided> ::ctor::CtorNew<(::ctor::RvalueReference<'__unelided, Self>,)>
 
 impl ::ctor::Assign<::ctor::RvalueReference<'_, Self>> for Nontrivial {
     #[inline(always)]
-    fn assign(self: ::core::pin::Pin<&mut Self>, __param_0: ::ctor::RvalueReference<'_, Self>) {
+    fn assign<'__this>(
+        self: ::core::pin::Pin<&'__this mut Self>,
+        __param_0: ::ctor::RvalueReference<'_, Self>,
+    ) {
         unsafe {
             crate::detail::__rust_thunk___ZN10NontrivialaSEOS_(self, __param_0);
         }
@@ -93,7 +96,7 @@ impl ::ctor::Assign<::ctor::RvalueReference<'_, Self>> for Nontrivial {
 
 impl ::ctor::PinnedDrop for Nontrivial {
     #[inline(always)]
-    unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+    unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
         unsafe { crate::detail::__rust_thunk___ZN10NontrivialD1Ev(self) }
     }
 }
@@ -133,12 +136,12 @@ mod detail {
             __this: *mut ::core::ffi::c_void,
             __param_0: ::ctor::RvalueReference<'__unelided, crate::Nontrivial>,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN10NontrivialaSEOS_<'__return_lifetime>(
-            __this: ::core::pin::Pin<&mut crate::Nontrivial>,
+        pub(crate) unsafe fn __rust_thunk___ZN10NontrivialaSEOS_<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::Nontrivial>,
             __param_0: ::ctor::RvalueReference<'_, crate::Nontrivial>,
-        ) -> ::core::pin::Pin<&'__return_lifetime mut crate::Nontrivial>;
-        pub(crate) unsafe fn __rust_thunk___ZN10NontrivialD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::Nontrivial>,
+        ) -> ::core::pin::Pin<&'__this mut crate::Nontrivial>;
+        pub(crate) unsafe fn __rust_thunk___ZN10NontrivialD1Ev<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::Nontrivial>,
         );
         pub(crate) unsafe fn __rust_thunk___Z6Createv(__return: *mut ::core::ffi::c_void);
         pub(crate) unsafe fn __rust_thunk___Z4Read10Nontrivial(

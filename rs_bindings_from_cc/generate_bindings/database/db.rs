@@ -12,8 +12,80 @@ use error_report::{ErrorReporting, ReportFatalError};
 use heck::ToSnakeCase;
 use ir::{BazelLabel, CcType, Enum, Field, Func, GenericItem, Record, UnqualifiedIdentifier, IR};
 use proc_macro2::Ident;
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Arguments, Display};
 use std::rc::Rc;
+
+#[derive(Default)]
+struct InternerImpl {
+    buf: String,
+    interned: HashSet<Rc<str>>,
+}
+
+impl InternerImpl {
+    fn intern(&mut self, args: Arguments<'_>) -> Rc<str> {
+        use std::fmt::Write as _;
+        self.buf.write_fmt(args).unwrap();
+        let rc = if let Some(interned) = self.interned.get(self.buf.as_str()) {
+            Rc::clone(interned)
+        } else {
+            let rc = Rc::from(self.buf.as_str());
+            self.interned.insert(Rc::clone(&rc));
+            rc
+        };
+
+        // If we just allocated something massive, free up the memory.
+        self.buf.truncate(1024);
+        self.buf.shrink_to_fit();
+
+        // And then clear for next use.
+        self.buf.clear();
+        rc
+    }
+}
+
+/// A basic string interner that hands out `Rc<str>` handles to keep lifetimes simple.
+///
+/// Note that this type is just a big memory leak until it drops, but since Crubit builds up
+/// everything once before finishing, this is to be expected.
+///
+/// To intern a string, use `intern!(interner, "string {}", args)`.
+#[derive(Default)]
+pub struct Interner {
+    imp: RefCell<InternerImpl>,
+}
+
+impl Interner {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Interns a `format_args!()` value and hands it back as an `Rc<str>`.
+    ///
+    /// Don't call this function directly, use `intern!(interner, ...)` instead.
+    pub fn intern(&self, args: Arguments<'_>) -> Rc<str> {
+        self.imp.borrow_mut().intern(args)
+    }
+}
+
+/// Interns a `format_args!()` value and hands it back as an `Rc<str>`.
+///
+/// # Examples
+///
+/// ```
+/// let interner = Interner::new();
+/// for i in 0..10 {
+///     process(intern!(interner, "thing_{}", i % 2));
+/// }
+/// // "thing_0" and "thing_1" will be allocated once each.
+/// ```
+#[macro_export]
+macro_rules! intern {
+    ($interner:expr, $($args:tt)*) => {
+        $interner.intern(::core::format_args!($($args)*))
+    };
+}
 
 #[derive(Clone)]
 pub struct CodegenFunctions {
@@ -47,6 +119,9 @@ memoized::query_group! {
 
         #[input]
         fn codegen_functions(&self) -> CodegenFunctions;
+
+        #[input]
+        fn interner(&self) -> &'db Interner;
 
         #[break_cycles_with = None]
         /// Returns whether the given Rust type is an unsafe type, such as a raw pointer.
@@ -159,6 +234,16 @@ memoized::query_group! {
         ///
         /// Implementation: rs_bindings_from_cc/generate_bindings/has_bindings.rs?q=function:resolve_names
         fn resolve_names(&self, parent: Rc<Record>) -> Result<Rc<HashMap<Rc<str>, ResolvedName>>>;
+
+        /// Counts how many functions have the given mangled name.
+        /// Returns a map from a mangled name to the number of times it occurs in the IR.
+        ///
+        /// This is used to detect duplicate mangled names (which may currently
+        /// result in conflicting thunk names and build errors, unless such
+        /// bindings are skipped).
+        ///
+        /// Implementation: rs_bindings_from_cc/generate_bindings/generate_function.rs?q=function:mangled_name_counts
+        fn mangled_name_counts(&self) -> Rc<HashMap<Rc<str>, usize>>;
     }
 }
 
@@ -206,6 +291,13 @@ impl<'db> BindingsGenerator<'db> {
         }
     }
 
+    /// Returns true if `func` has a conflicting mangled name.
+    pub fn has_conflicting_mangled_name(&self, func: &ir::Func) -> bool {
+        let conflicts_counter =
+            self.mangled_name_counts().get(func.mangled_name()).copied().unwrap_or(0);
+        conflicts_counter > 1
+    }
+
     /// Returns the `Visibility` of the `rs_type_kind` in the given `library`.
     pub fn type_visibility(
         &self,
@@ -240,17 +332,17 @@ impl<'db> BindingsGenerator<'db> {
         let item = self.find_untyped_decl(item_id);
         match item {
             ir::Item::Func(f) => {
-                if let Some(parent_id) = f.enclosing_item_id
-                    && let Ok(record) = self.find_decl::<std::rc::Rc<ir::Record>>(parent_id)
+                if let Some(parent_id) = f.enclosing_item_id()
+                    && let Ok(record) = self.find_decl::<Rc<ir::Record>>(parent_id)
                 {
-                    return self.defining_target(record.id);
+                    return self.defining_target(record.id());
                 }
                 None
             }
             ir::Item::Record(r) => {
-                r.template_specialization.as_ref().map(|ts| ts.defining_target.clone())
+                r.template_specialization().as_ref().map(|ts| ts.defining_target().clone())
             }
-            ir::Item::UnsupportedItem(ui) => ui.defining_target.clone(),
+            ir::Item::UnsupportedItem(ui) => ui.defining_target().cloned(),
             _ => None,
         }
     }
@@ -258,20 +350,20 @@ impl<'db> BindingsGenerator<'db> {
     /// The name of the item, readable by programmers.
     ///
     /// For example, `void Foo();` should have name `Foo`.
-    pub fn debug_name(&self, item_id: ir::ItemId) -> std::rc::Rc<str> {
+    pub fn debug_name(&self, item_id: ir::ItemId) -> Rc<str> {
         let item = self.find_untyped_decl(item_id);
-        let (id, name) = match item {
+        let (id, name): (ir::ItemId, Rc<str>) = match item {
             ir::Item::Func(f) => {
-                let mut name = self.namespace_qualifier_from_id(f.id).format_for_cc_debug();
-                let record_name = || -> Option<std::rc::Rc<str>> {
-                    if let Some(parent_id) = f.enclosing_item_id {
+                let mut name = self.namespace_qualifier_from_id(f.id()).format_for_cc_debug();
+                let record_name = || -> Option<Rc<str>> {
+                    if let Some(parent_id) = f.enclosing_item_id() {
                         match self.find_untyped_decl(parent_id) {
                             ir::Item::ExistingRustType(existing_rust_type) => {
-                                Some(existing_rust_type.cc_name.clone())
+                                Some(Rc::from(existing_rust_type.cc_name()))
                             }
-                            ir::Item::Record(record) => Some(record.cc_name.identifier.clone()),
+                            ir::Item::Record(record) => Some(Rc::from(record.cc_name().as_str())),
                             ir::Item::IncompleteRecord(record) => {
-                                Some(record.cc_name.identifier.clone())
+                                Some(Rc::from(record.cc_name().as_str()))
                             }
                             _ => None,
                         }
@@ -279,9 +371,9 @@ impl<'db> BindingsGenerator<'db> {
                         None
                     }
                 };
-                match &f.cc_name {
+                match f.cc_name() {
                     ir::UnqualifiedIdentifier::Identifier(id) => {
-                        name.push_str(&id.identifier);
+                        name.push_str(id.as_str());
                     }
                     ir::UnqualifiedIdentifier::Operator(op) => {
                         name.push_str(&op.cc_name());
@@ -301,34 +393,39 @@ impl<'db> BindingsGenerator<'db> {
                         name.push_str("operator [conversion]");
                     }
                 }
-                return name.into();
+                return intern!(self.interner(), "{name}");
             }
             ir::Item::Comment(c) => {
-                return format!(
+                return intern!(
+                    self.interner(),
                     "<[internal] comment at {}>",
                     c.source_loc().as_deref().unwrap_or("<unknown loc>")
-                )
-                .into()
+                );
             }
             ir::Item::UseMod(u) => {
-                return format!("<[internal] use mod {}::* = {}>", u.mod_name, u.path).into()
+                return intern!(
+                    self.interner(),
+                    "<[internal] use mod {}::* = {}>",
+                    u.mod_name(),
+                    u.path()
+                );
             }
-            ir::Item::UnsupportedItem(ui) => return ui.name.clone(),
-            ir::Item::ExistingRustType(e) => (e.id, e.cc_name.clone()),
-            ir::Item::Namespace(n) => (n.id, n.cc_name.identifier.clone()),
-            ir::Item::IncompleteRecord(r) => (r.id, r.cc_name.identifier.clone()),
-            ir::Item::Record(r) => (r.id, r.cc_name.identifier.clone()),
-            ir::Item::Enum(e) => (e.id, e.cc_name.identifier.clone()),
-            ir::Item::Constant(c) => (c.id, c.cc_name.identifier.clone()),
-            ir::Item::GlobalVar(g) => (g.id, g.cc_name.identifier.clone()),
-            ir::Item::TypeAlias(t) => (t.id, t.cc_name.identifier.clone()),
+            ir::Item::UnsupportedItem(ui) => return Rc::from(ui.name()),
+            ir::Item::ExistingRustType(e) => (e.id(), Rc::from(e.cc_name())),
+            ir::Item::Namespace(n) => (n.id(), Rc::from(n.cc_name().as_str())),
+            ir::Item::IncompleteRecord(r) => (r.id(), Rc::from(r.cc_name().as_str())),
+            ir::Item::Record(r) => (r.id(), Rc::from(r.cc_name().as_str())),
+            ir::Item::Enum(e) => (e.id(), Rc::from(e.cc_name().as_str())),
+            ir::Item::Constant(c) => (c.id(), Rc::from(c.cc_name().as_str())),
+            ir::Item::GlobalVar(g) => (g.id(), Rc::from(g.cc_name().as_str())),
+            ir::Item::TypeAlias(t) => (t.id(), Rc::from(t.cc_name().as_str())),
         };
         let qualifier = self.namespace_qualifier_from_id(id).format_for_cc_debug();
-        return format! {"{qualifier}{name}"}.into();
+        return intern!(self.interner(), "{qualifier}{name}");
     }
 
     pub fn cc_type_debug_name(&self, cc_type: &CcType) -> String {
-        let base_name = match &cc_type.variant {
+        let base_name = match cc_type.variant() {
             ir::CcTypeVariant::Primitive(p) => match p {
                 ir::Primitive::Bool => "bool",
                 ir::Primitive::Void => "void",
@@ -341,10 +438,13 @@ impl<'db> BindingsGenerator<'db> {
                 ir::Primitive::Int => "int",
                 ir::Primitive::Long => "long",
                 ir::Primitive::LongLong => "long long",
+                ir::Primitive::Int128 => "__int128",
                 ir::Primitive::UnsignedShort => "unsigned short",
                 ir::Primitive::UnsignedInt => "unsigned int",
                 ir::Primitive::UnsignedLong => "unsigned long",
                 ir::Primitive::UnsignedLongLong => "unsigned long long",
+                ir::Primitive::UnsignedInt128 => "unsigned __int128",
+
                 ir::Primitive::Char16T => "char16_t",
                 ir::Primitive::Char32T => "char32_t",
                 ir::Primitive::PtrdiffT => "ptrdiff_t",
@@ -374,14 +474,14 @@ impl<'db> BindingsGenerator<'db> {
             }
             .to_string(),
             ir::CcTypeVariant::Pointer(ptr) => {
-                let ptr_str = match ptr.kind {
+                let ptr_str = match ptr.kind() {
                     ir::PointerTypeKind::LValueRef => "&",
                     ir::PointerTypeKind::RValueRef => "&&",
                     ir::PointerTypeKind::Nullable
                     | ir::PointerTypeKind::NonNull
                     | ir::PointerTypeKind::Owned => "*",
                 };
-                let pointee_name = self.cc_type_debug_name(&ptr.pointee_type);
+                let pointee_name = self.cc_type_debug_name(ptr.pointee_type());
                 format!("{pointee_name}{ptr_str}")
             }
             ir::CcTypeVariant::FuncPointer { .. } => "function pointer".to_string(),
@@ -389,8 +489,8 @@ impl<'db> BindingsGenerator<'db> {
             ir::CcTypeVariant::Error(err) => format!("<error: {}>", err.message),
         };
 
-        if cc_type.is_const {
-            if matches!(cc_type.variant, ir::CcTypeVariant::Pointer(_)) {
+        if cc_type.is_const() {
+            if matches!(cc_type.variant(), ir::CcTypeVariant::Pointer(_)) {
                 format!("{} const", base_name)
             } else {
                 format!("const {}", base_name)
@@ -428,10 +528,11 @@ impl<'db> BindingsGenerator<'db> {
         path: Option<ir::UnsupportedItemPath>,
         message: &'static str,
     ) -> ir::UnsupportedItem {
+        let message = intern!(self.interner(), "{message}");
         self.new_unsupported_item(
             item,
             path,
-            Some(Rc::new(ir::FormattedError { fmt: message.into(), message: message.into() })),
+            Some(Rc::new(ir::FormattedError { fmt: Rc::clone(&message), message })),
             None,
             item.must_bind(),
         )
@@ -453,9 +554,7 @@ impl<'db> BindingsGenerator<'db> {
             name,
             id: item.id().as_u64(),
             unique_name: item.unique_name(),
-            defining_target: self
-                .defining_target(item.id())
-                .map(|ir::BazelLabel(label)| std::rc::Rc::clone(&label)),
+            defining_target: self.defining_target(item.id()).map(|label| label.as_str().into()),
         }
     }
 
@@ -499,11 +598,8 @@ impl<'db> BindingsGenerator<'db> {
 
     #[track_caller]
     pub fn find_untyped_decl(&self, decl_id: ir::ItemId) -> &'db ir::Item {
-        let Some(idx) = self.ir().item_id_to_item_idx().get(&decl_id) else {
-            panic!("Couldn't find decl_id {:?} in the IR:\n{:#?}", decl_id, self.ir().flat_ir())
-        };
-        let Some(item) = self.ir().flat_ir().items.get(*idx) else {
-            panic!("Couldn't find an item at idx {} in IR:\n{:#?}", idx, self.ir().flat_ir())
+        let Some(item) = self.ir().get_decl(decl_id) else {
+            panic!("Couldn't find decl_id {:?} in the IR:\n{:#?}", decl_id, self.ir().tree_ir())
         };
         item
     }
@@ -526,8 +622,8 @@ impl<'db> BindingsGenerator<'db> {
         while let Some(parent_id) = enclosing_item_id {
             match self.find_untyped_decl(parent_id) {
                 ir::Item::Namespace(ns) => {
-                    namespaces.push(ns.rs_name.identifier.clone());
-                    enclosing_item_id = ns.enclosing_item_id;
+                    namespaces.push(Rc::from(ns.rs_name().as_str()));
+                    enclosing_item_id = ns.enclosing_item_id();
                 }
                 ir::Item::Record(parent_record) => {
                     assert!(
@@ -537,17 +633,18 @@ impl<'db> BindingsGenerator<'db> {
                     let module_name =
                         self.record_to_associated_module_name(parent_record.clone()).unwrap();
                     nested_records.push((
-                        module_name.to_string().into(),
-                        parent_record.cc_name.identifier.clone(),
+                        intern!(self.interner(), "{module_name}"),
+                        Rc::from(parent_record.cc_name().as_str()),
                     ));
-                    enclosing_item_id = parent_record.enclosing_item_id;
+                    enclosing_item_id = parent_record.enclosing_item_id();
                 }
                 ir::Item::ExistingRustType(rust_type) => {
                     assert!(
                         namespaces.is_empty(),
                         "An existing rust type was listed as the enclosing item for a namespace, this is a bug."
                     );
-                    nested_records.push((rust_type.rs_name.clone(), rust_type.cc_name.clone()));
+                    nested_records
+                        .push((Rc::from(rust_type.rs_name()), Rc::from(rust_type.cc_name())));
                     // The cc_name and rs_name are fully qualified already.
                     enclosing_item_id = None;
                 }
@@ -576,7 +673,7 @@ impl<'db> BindingsGenerator<'db> {
         &self,
         record: Rc<Record>,
     ) -> Result<proc_macro2::Ident> {
-        let record_name: &str = record.rs_name.as_str();
+        let record_name: &str = record.rs_name().as_str();
         let snake_case_name = record_name.to_snake_case();
         // Add an `_items` suffix to distinguish the module name if the record name is already snake-case,
         // then distinguish by adding `_` suffixes until we find a name that is not in use.
@@ -589,7 +686,7 @@ impl<'db> BindingsGenerator<'db> {
         let resolved_names = self.resolve_names(record.clone())?;
         let is_used = |n: &str| match resolved_names.get(n) {
             Some(ResolvedName::RecordNestedItems { parent_records_that_map_to_this_name }) => {
-                !parent_records_that_map_to_this_name.contains(&record.id)
+                !parent_records_that_map_to_this_name.contains(&record.id())
             }
             Some(_) => true,
             None => false,

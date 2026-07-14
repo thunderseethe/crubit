@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/golden:nested_types_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "3Foo"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Foo
 pub struct Foo {
@@ -41,6 +41,7 @@ impl Default for Foo {
 
 pub mod foo {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N3Foo3BarE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=Foo :: Bar
     pub struct Bar {
@@ -66,6 +67,7 @@ pub mod foo {
 
     pub mod bar {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N3Foo3Bar3BazE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=Foo :: Bar :: Baz
         pub struct Baz {
@@ -92,6 +94,7 @@ pub mod foo {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18already_snake_case"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=already_snake_case
 pub struct already_snake_case {
@@ -117,6 +120,7 @@ impl Default for already_snake_case {
 
 pub mod already_snake_case_items {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N18already_snake_case5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=already_snake_case :: Inner
     pub struct Inner {
@@ -144,6 +148,7 @@ pub mod already_snake_case_items {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "25ConflictingSnakeCaseNames"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=ConflictingSnakeCaseNames
 pub struct ConflictingSnakeCaseNames {
@@ -169,6 +174,7 @@ impl Default for ConflictingSnakeCaseNames {
 
 pub mod conflicting_snake_case_names {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N25ConflictingSnakeCaseNames5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=ConflictingSnakeCaseNames :: Inner
     pub struct Inner {
@@ -196,6 +202,7 @@ pub mod conflicting_snake_case_names {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "26ConflictingSnakeCaseNames_"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=ConflictingSnakeCaseNames_
 pub struct ConflictingSnakeCaseNames_ {
@@ -223,6 +230,7 @@ impl Default for ConflictingSnakeCaseNames_ {
 
 pub mod conflicting_snake_case_names_items {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N26ConflictingSnakeCaseNames_5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=ConflictingSnakeCaseNames_ :: Inner
     pub struct Inner {
@@ -250,6 +258,7 @@ pub mod conflicting_snake_case_names_items {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "21OnlyOneHasNestedItems"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=OnlyOneHasNestedItems
 pub struct OnlyOneHasNestedItems {
@@ -275,6 +284,7 @@ impl Default for OnlyOneHasNestedItems {
 
 pub mod only_one_has_nested_items {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N21OnlyOneHasNestedItems5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=OnlyOneHasNestedItems :: Inner
     pub struct Inner {
@@ -302,6 +312,7 @@ pub mod only_one_has_nested_items {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "22OnlyOneHasNestedItems_"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=OnlyOneHasNestedItems_
 pub struct OnlyOneHasNestedItems_ {
@@ -328,6 +339,7 @@ impl Default for OnlyOneHasNestedItems_ {
 // no nested items
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "19SameNameAsNamespace"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=SameNameAsNamespace
 pub struct SameNameAsNamespace {
@@ -353,6 +365,7 @@ impl Default for SameNameAsNamespace {
 
 pub mod same_name_as_namespace_items {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19SameNameAsNamespace5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=SameNameAsNamespace :: Inner
     pub struct Inner {
@@ -383,6 +396,7 @@ pub mod same_name_as_namespace_items {
 
 pub mod same_name_as_namespace {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N22same_name_as_namespace3FooE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=same_name_as_namespace :: Foo
     pub struct Foo {
@@ -409,6 +423,7 @@ pub mod same_name_as_namespace {
     }
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N22same_name_as_namespace3BarE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=same_name_as_namespace :: Bar
     pub struct Bar {
@@ -439,6 +454,7 @@ pub mod same_name_as_namespace {
 
 pub mod no_longer_top_level {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level18already_snake_caseE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: already_snake_case
     pub struct already_snake_case {
@@ -466,6 +482,7 @@ pub mod no_longer_top_level {
 
     pub mod already_snake_case_items {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level18already_snake_case5InnerE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: already_snake_case :: Inner
         pub struct Inner {
@@ -491,6 +508,7 @@ pub mod no_longer_top_level {
     }
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level25ConflictingSnakeCaseNamesE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: ConflictingSnakeCaseNames
     pub struct ConflictingSnakeCaseNames {
@@ -516,6 +534,7 @@ pub mod no_longer_top_level {
 
     pub mod conflicting_snake_case_names {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level25ConflictingSnakeCaseNames5InnerE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: ConflictingSnakeCaseNames :: Inner
         pub struct Inner {
@@ -541,6 +560,7 @@ pub mod no_longer_top_level {
     }
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level26ConflictingSnakeCaseNames_E"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: ConflictingSnakeCaseNames_
     pub struct ConflictingSnakeCaseNames_ {
@@ -566,6 +586,7 @@ pub mod no_longer_top_level {
 
     pub mod conflicting_snake_case_names_items {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level26ConflictingSnakeCaseNames_5InnerE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: ConflictingSnakeCaseNames_ :: Inner
         pub struct Inner {
@@ -591,6 +612,7 @@ pub mod no_longer_top_level {
     }
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level21OnlyOneHasNestedItemsE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: OnlyOneHasNestedItems
     pub struct OnlyOneHasNestedItems {
@@ -618,6 +640,7 @@ pub mod no_longer_top_level {
 
     pub mod only_one_has_nested_items {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level21OnlyOneHasNestedItems5InnerE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: OnlyOneHasNestedItems :: Inner
         pub struct Inner {
@@ -643,6 +666,7 @@ pub mod no_longer_top_level {
     }
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level22OnlyOneHasNestedItems_E"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: OnlyOneHasNestedItems_
     pub struct OnlyOneHasNestedItems_ {
@@ -671,6 +695,7 @@ pub mod no_longer_top_level {
     // no nested items
 
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N19no_longer_top_level19SameNameAsNamespaceE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: SameNameAsNamespace
     pub struct SameNameAsNamespace {
@@ -698,6 +723,7 @@ pub mod no_longer_top_level {
 
     pub mod same_name_as_namespace_items {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level19SameNameAsNamespace5InnerE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: SameNameAsNamespace :: Inner
         pub struct Inner {
@@ -726,6 +752,7 @@ pub mod no_longer_top_level {
 
     pub mod same_name_as_namespace {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level22same_name_as_namespace3FooE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: same_name_as_namespace :: Foo
         pub struct Foo {
@@ -750,6 +777,7 @@ pub mod no_longer_top_level {
         }
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N19no_longer_top_level22same_name_as_namespace3BarE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=no_longer_top_level :: same_name_as_namespace :: Bar
         pub struct Bar {
@@ -780,6 +808,7 @@ pub mod no_longer_top_level {
 // namespace no_longer_top_level
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "23ContainsForwardDeclared"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=ContainsForwardDeclared
 pub struct ContainsForwardDeclared {
@@ -805,6 +834,7 @@ impl Default for ContainsForwardDeclared {
 
 pub mod contains_forward_declared {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N23ContainsForwardDeclared6NestedE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=ContainsForwardDeclared :: Nested
     pub struct Nested {

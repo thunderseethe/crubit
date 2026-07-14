@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/golden:template_instantiation_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: class `TS` could not be bound
 //   Class templates are not yet supported
 
@@ -29,6 +28,7 @@ pub fn RTS() -> crate::__CcTemplateInst2TSIiE {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "__CcTemplateInst2TSIiE"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TS < int >
 pub struct __CcTemplateInst2TSIiE {
@@ -36,37 +36,14 @@ pub struct __CcTemplateInst2TSIiE {
 }
 impl !Send for __CcTemplateInst2TSIiE {}
 impl !Sync for __CcTemplateInst2TSIiE {}
-impl __CcTemplateInst2TSIiE {
-    /// # Safety
-    ///
-    /// The caller must ensure that the following unsafe arguments are not misused by the function:
-    /// * `__this`: raw pointer
-    #[inline(always)]
-    pub unsafe fn f(__this: *mut Self) {
-        unsafe { self::cc_template_inst2_ts_ii_e::f(__this) }
-    }
-}
 
 impl Default for __CcTemplateInst2TSIiE {
     #[inline(always)]
     fn default() -> Self {
         let mut tmp = ::core::mem::MaybeUninit::<Self>::zeroed();
         unsafe {
-            crate::detail::__rust_thunk___ZN2TSIiEC1Ev__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2fgolden_3atemplate_5finstantiation_5fcc(&raw mut tmp as*mut _);
+            crate::detail::__rust_thunk__20ba560a__ZN2TSIiEC1Ev(&raw mut tmp as *mut _);
             tmp.assume_init()
-        }
-    }
-}
-
-pub mod cc_template_inst2_ts_ii_e {
-    /// # Safety
-    ///
-    /// The caller must ensure that the following unsafe arguments are not misused by the function:
-    /// * `__this`: raw pointer
-    #[inline(always)]
-    pub(crate) unsafe fn f(__this: *mut crate::__CcTemplateInst2TSIiE) {
-        unsafe {
-            crate::detail::__rust_thunk___ZN2TSIiE1fEv__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2fgolden_3atemplate_5finstantiation_5fcc(__this)
         }
     }
 }
@@ -76,12 +53,7 @@ mod detail {
     use super::*;
     unsafe extern "C" {
         pub(crate) unsafe fn __rust_thunk___Z3RTSv(__return: *mut ::core::ffi::c_void);
-        pub(crate) unsafe fn __rust_thunk___ZN2TSIiEC1Ev__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2fgolden_3atemplate_5finstantiation_5fcc(
-            __this: *mut ::core::ffi::c_void,
-        );
-        pub(crate) unsafe fn __rust_thunk___ZN2TSIiE1fEv__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2fgolden_3atemplate_5finstantiation_5fcc(
-            __this: *mut crate::__CcTemplateInst2TSIiE,
-        );
+        pub(crate) unsafe fn __rust_thunk__20ba560a__ZN2TSIiEC1Ev(__this: *mut ::core::ffi::c_void);
     }
 }
 

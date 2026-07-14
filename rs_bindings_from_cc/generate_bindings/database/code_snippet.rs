@@ -7,7 +7,7 @@
 use crate::db::BindingsGenerator;
 use crate::rs_snippet::{LifetimeOptions, PrimitiveName, RsTypeKind};
 use arc_anyhow::{Error, Result};
-use code_gen_utils::{expect_format_cc_type_name, make_rs_ident, CcInclude};
+use code_gen_utils::{format_nonportable_cc_type_name, make_rs_ident, CcInclude};
 use crubit_feature::CrubitFeature;
 use error_report::{anyhow, bail, ensure};
 use ffi_types::FfiU8SliceBox;
@@ -182,7 +182,7 @@ pub fn missing_feature_descriptions(db: &BindingsGenerator, item: &Item) -> Resu
         | Item::UseMod { .. } => {}
 
         Item::Func(func) => {
-            if func.rs_name == UnqualifiedIdentifier::Destructor {
+            if *func.rs_name() == UnqualifiedIdentifier::Destructor {
                 // We support destructors in supported even though they use some features we
                 // don't generally support with that feature set, because in this
                 // particular case, it's safe.
@@ -190,42 +190,42 @@ pub fn missing_feature_descriptions(db: &BindingsGenerator, item: &Item) -> Resu
                     missing_features.push("destructors".to_string());
                 }
             } else {
-                for param in &func.params {
-                    if let Some(missing) = missing_features_of_cc_type(param.type_.clone()) {
+                for param in func.params() {
+                    if let Some(missing) = missing_features_of_cc_type(param.type_().clone()) {
                         missing_features.push(join_missing_with_context(
                             &format!(
                                 "Unsupported parameter type `{} {}`",
-                                db.cc_type_debug_name(&param.type_),
-                                param.identifier
+                                db.cc_type_debug_name(param.type_()),
+                                param.identifier()
                             ),
                             &missing,
                         ));
                     }
                 }
-                if let Some(missing) = missing_features_of_cc_type(func.return_type.clone()) {
+                if let Some(missing) = missing_features_of_cc_type(func.return_type().clone()) {
                     missing_features.push(join_missing_with_context(
                         &format!(
                             "Unsupported return type `{}`",
-                            db.cc_type_debug_name(&func.return_type)
+                            db.cc_type_debug_name(func.return_type())
                         ),
                         &missing,
                     ));
                 }
                 if !have_feature(CrubitFeature::Experimental) {
-                    if !func.has_c_calling_convention {
+                    if !func.has_c_calling_convention() {
                         missing_features.push("non-C calling convention".to_string());
                     }
-                    if func.is_variadic {
+                    if func.is_variadic() {
                         missing_features.push("variadic function".to_string());
                     }
-                    if func.is_noreturn {
+                    if func.is_noreturn() {
                         missing_features.push("[[noreturn]] attribute".to_string());
                     }
-                    for param in &func.params {
-                        if let Some(unknown_attr) = &param.unknown_attr {
+                    for param in func.params() {
+                        if let Some(unknown_attr) = param.unknown_attr() {
                             missing_features.push(format!(
                                 "crubit.rs/errors/unknown_attribute: param {param} has unknown attribute(s): {unknown_attr}",
-                                param = &param.identifier.identifier
+                                param = param.identifier().as_str()
                             ));
                         }
                     }
@@ -467,7 +467,8 @@ pub fn integer_constant_to_token_stream(
             underlying_type.display(db),
         )
     };
-    let IntegerConstant { is_negative, wrapped_value } = integer_constant;
+    let is_negative = integer_constant.is_negative();
+    let wrapped_value = integer_constant.wrapped_value();
     Ok(if underlying_type.is_bool() {
         if wrapped_value == 0 {
             quote! {false}
@@ -521,6 +522,7 @@ pub fn generated_items_to_tokens<'db>(
                     recursively_pinned_attr,
                     must_use_attr,
                     deprecated_attr,
+                    cfi_encoding_attr,
                     align,
                     internally_mutable_unknown_fields,
                     crubit_annotation,
@@ -670,6 +672,7 @@ pub fn generated_items_to_tokens<'db>(
                     #recursively_pinned_attr
                     #must_use_attr
                     #deprecated_attr
+                    #cfi_encoding_attr
                     #[repr(#(#repr_attrs),*)]
                     #crubit_annotation
                     #visibility #struct_or_union #ident #type_param_tokens {
@@ -781,7 +784,7 @@ pub fn generated_items_to_tokens<'db>(
                     db.find_decl::<Rc<Namespace>>(id).expect("should always be a namespace");
                 let is_last_reopened_namespace_in_this_target = db
                     .ir()
-                    .is_last_reopened_namespace(id, current_namespace.canonical_namespace_id)
+                    .is_last_reopened_namespace(id, current_namespace.canonical_namespace_id())
                     .expect("should always be a namespace");
 
                 if !is_last_reopened_namespace_in_this_target {
@@ -793,7 +796,7 @@ pub fn generated_items_to_tokens<'db>(
                 // canonical namespace id.
 
                 let Some(GeneratedItem::CanonicalNamespace { items, deprecated_attr }) =
-                    generated_items.get(&current_namespace.canonical_namespace_id)
+                    generated_items.get(&current_namespace.canonical_namespace_id())
                 else {
                     panic!("the entry we generated for the canonical namespace should be a GeneratedItem::CanonicalNamespace");
                 };
@@ -801,9 +804,9 @@ pub fn generated_items_to_tokens<'db>(
                 let namespace_tokens = generated_items_to_token_stream(generated_items, db, items);
 
                 let canonical_namespace: &Rc<ir::Namespace> = db
-                    .find_decl(current_namespace.canonical_namespace_id)
-                    .unwrap_or_else(|_| panic!("Namespace canonical_namespace_id {:?} not found as a valid Namespace item.", current_namespace.canonical_namespace_id));
-                let name = make_rs_ident(&canonical_namespace.rs_name.identifier);
+                    .find_decl(current_namespace.canonical_namespace_id())
+                    .unwrap_or_else(|_| panic!("Namespace canonical_namespace_id {:?} not found as a valid Namespace item.", current_namespace.canonical_namespace_id()));
+                let name = make_rs_ident(canonical_namespace.rs_name().as_str());
 
                 quote! {
                     #deprecated_attr
@@ -814,7 +817,7 @@ pub fn generated_items_to_tokens<'db>(
                 }
                 .to_tokens(tokens);
 
-                if canonical_namespace.is_inline {
+                if canonical_namespace.is_inline() {
                     // TODO(b/308949532): Skip re-export if the canonical module is empty
                     // (transitively).
                     quote! {
@@ -1015,6 +1018,7 @@ pub struct Record {
     pub recursively_pinned_attr: Option<RecursivelyPinnedAttr>,
     pub must_use_attr: Option<MustUseAttr>,
     pub deprecated_attr: Option<DeprecatedAttr>,
+    pub cfi_encoding_attr: CfiEncodingAttr,
     pub align: Option<usize>,
     pub internally_mutable_unknown_fields: bool,
     pub crubit_annotation: DocCommentAttr,
@@ -1069,7 +1073,7 @@ pub enum UpcastImplBody {
 
 #[derive(Clone, Debug)]
 pub struct DisplayImpl {
-    pub type_name: Ident,
+    pub type_name: TokenStream,
     pub fmt_fn_name: Ident,
 }
 
@@ -1152,6 +1156,18 @@ impl ToTokens for DeprecatedAttr {
             message => quote! { #[deprecated = #message] },
         }
         .to_tokens(tokens);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CfiEncodingAttr(pub Rc<str>);
+
+impl ToTokens for CfiEncodingAttr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        if !self.0.is_empty() {
+            let encoding = self.0.as_ref();
+            quote! { #[cfi_encoding = #encoding] }.to_tokens(tokens);
+        }
     }
 }
 
@@ -1369,6 +1385,7 @@ flagset::flags! {
         allocator_api,
         arbitrary_self_types,
         cfg_sanitize,
+        cfi_encoding,
         custom_inner_attributes,
         impl_trait_in_assoc_type,
         negative_impls,
@@ -1382,6 +1399,7 @@ impl ToTokens for Feature {
             Feature::allocator_api => quote! { allocator_api },
             Feature::arbitrary_self_types => quote! { arbitrary_self_types },
             Feature::cfg_sanitize => quote! { cfg_sanitize },
+            Feature::cfi_encoding => quote! { cfi_encoding },
             Feature::custom_inner_attributes => quote! { custom_inner_attributes },
             Feature::impl_trait_in_assoc_type => quote! { impl_trait_in_assoc_type },
             Feature::negative_impls => quote! { negative_impls },
@@ -1638,7 +1656,8 @@ impl ToTokens for ThunkImpl {
                 let size = Literal::usize_unsuffixed(*size);
                 let alignment = Literal::usize_unsuffixed(*alignment);
 
-                let record_ident = expect_format_cc_type_name(record_ident.as_ref());
+                let record_ident = format_nonportable_cc_type_name(record_ident.as_ref())
+                    .expect("parsed Record has invalid type name");
                 quote! {
                     static_assert(#sizeof_impl(#tag_kind #namespace_qualifier #record_ident) == #size);
                     static_assert(alignof(#tag_kind #namespace_qualifier #record_ident) == #alignment);

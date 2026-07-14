@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/golden:deprecated_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[deprecated]
 #[inline(always)]
 pub fn deprecated_function() {
@@ -29,6 +28,7 @@ pub fn deprecated_function_with_message() {
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
 #[deprecated]
+#[cfi_encoding = "16DeprecatedStruct"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedStruct
 pub struct DeprecatedStruct {
@@ -54,6 +54,7 @@ impl Default for DeprecatedStruct {
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
 #[deprecated = "old"]
+#[cfi_encoding = "27DeprecatedStructWithMessage"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedStructWithMessage
 pub struct DeprecatedStructWithMessage {
@@ -82,6 +83,7 @@ impl Default for DeprecatedStructWithMessage {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
 #[deprecated]
+#[cfi_encoding = "14DeprecatedEnum"]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedEnum
 pub struct DeprecatedEnum(::ffi_11::c_uint);
 impl DeprecatedEnum {}
@@ -99,6 +101,7 @@ impl From<DeprecatedEnum> for ::ffi_11::c_uint {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
 #[deprecated = "old"]
+#[cfi_encoding = "25DeprecatedEnumWithMessage"]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedEnumWithMessage
 pub struct DeprecatedEnumWithMessage(::ffi_11::c_uint);
 impl DeprecatedEnumWithMessage {}
@@ -135,6 +138,7 @@ pub mod DeprecatedNamespaceWithMessage {
 
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
+#[cfi_encoding = "21DeprecatedEnumerators"]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedEnumerators
 pub struct DeprecatedEnumerators(::ffi_11::c_uint);
 impl DeprecatedEnumerators {
@@ -163,6 +167,7 @@ pub type DeprecatedUsing = ::ffi_11::c_int;
 pub type DeprecatedUsingWithMessage = ::ffi_11::c_int;
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "16DeprecatedFields"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DeprecatedFields
 pub struct DeprecatedFields {

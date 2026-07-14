@@ -156,12 +156,14 @@ fn test_recursively_pinned_fieldless_tuple_struct() {
 fn test_recursively_pinned_in_module() {
     mod submodule {
         #[::ctor::recursively_pinned]
-        pub struct S;
+        pub struct S {
+            pub x: i32,
+        }
     }
     let _: ::ctor::project_pin_type!(submodule::S) =
-        ::ctor::emplace!(::ctor::ctor!(submodule::S)).as_mut().project_pin();
+        ::ctor::emplace!(::ctor::ctor!(submodule::S { x: 0 })).as_mut().project_pin();
     let _: ::ctor::project_ref_type!(submodule::S) =
-        ::ctor::emplace!(::ctor::ctor!(submodule::S)).as_ref().project_ref();
+        ::ctor::emplace!(::ctor::ctor!(submodule::S { x: 0 })).as_ref().project_ref();
 }
 
 #[gtest]
@@ -324,4 +326,28 @@ fn test_maybe_unpin() {
 
     // And it can actually be constructed.
     let _ = ::ctor::emplace!(::ctor::ctor!(S { x: 42 }));
+}
+
+#[gtest]
+fn test_recursively_pinned_custom_project_ref() {
+    #[::ctor::recursively_pinned(project_ref = CustomRef)]
+    struct S {
+        x: i32,
+    }
+    let b = ::ctor::emplace!(::ctor::ctor!(S { x: 42 }));
+    let _: ::std::pin::Pin<&i32> = b.as_ref().project_ref().x;
+    // Verify that CustomRef is the type.
+    let _: CustomRef = b.as_ref().project_ref();
+}
+
+#[gtest]
+fn test_recursively_pinned_custom_project_pin() {
+    #[::ctor::recursively_pinned(project_pin = CustomPin)]
+    struct S {
+        x: i32,
+    }
+    let mut b = ::ctor::emplace!(::ctor::ctor!(S { x: 42 }));
+    let _: ::std::pin::Pin<&mut i32> = b.as_mut().project_pin().x;
+    // Verify that CustomPin is the type.
+    let _: CustomPin = b.as_mut().project_pin();
 }

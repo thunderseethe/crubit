@@ -2,29 +2,31 @@
 // Exceptions. See /LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use crate::generate_function_thunk::replace_all_regions_with_static;
+use crate::generate_function_thunk::{make_thunk_name, replace_all_regions_with_static, ThunkKind};
 use crate::generate_struct_and_union::{
     generate_associated_item, generate_relocating_ctor, has_type_or_const_vars,
     scalar_value_to_string,
 };
 use crate::generate_unsupported_def;
-use arc_anyhow::{bail, Error, Result};
+use arc_anyhow::{bail, Result};
 use code_gen_utils::{escape_non_identifier_chars, CcInclude};
 use database::code_snippet::{
     ApiSnippets, CcPrerequisites, CcSnippet, EnumSpecializationKind, FormattedTy,
-    RsStdEnumSpecialization, RsStdSpecializationArgs, RsStdTemplateSpecialization,
-    TemplateSpecialization, TraitImplTemplateSpecialization,
+    NegativeAutoTraitImplTemplateSpecialization, RsStdEnumSpecialization, RsStdSpecializationArgs,
+    RsStdTemplateSpecialization, TemplateSpecialization, TraitImplTemplateSpecialization,
 };
 use database::{BindingsGenerator, StaticMethodMode, TypeLocation};
 use error_report::anyhow;
 use itertools::Itertools;
 use proc_macro2::Literal;
 use proc_macro2::TokenStream;
-use query_compiler::{get_layout, post_analysis_typing_env};
+use query_compiler::{self, get_layout, post_analysis_typing_env};
 use quote::{format_ident, quote};
 #[rustversion::nightly]
 use rustc_abi::LayoutData;
 use rustc_abi::{Layout, VariantIdx};
+use rustc_hir::def::DefKind;
+use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::layout::PrimitiveExt;
 #[rustversion::since(2026-04-22)]
 use rustc_middle::ty::Flags;
@@ -215,13 +217,7 @@ fn parse_tuple_template_specialization<'tcx>(
     let tcx = db.tcx();
     let element_tys = types
         .iter()
-        .map(|ty| {
-            FormattedTy::try_from_ty(
-                replace_all_regions_with_static(tcx, ty),
-                TypeLocation::Other,
-                db,
-            )
-        })
+        .map(|ty| FormattedTy::try_from_ty(ty, TypeLocation::Field, db))
         .collect::<Result<Vec<_>>>()
         .ok()?;
 
@@ -230,11 +226,11 @@ fn parse_tuple_template_specialization<'tcx>(
         let mut prereqs = CcPrerequisites::default();
         let element_tys_cc = element_tys
             .iter()
-            .map(|ty| ty.for_cc.clone().into_tokens(&mut prereqs))
+            .map(|ty| {
+                prereqs.forward_declare_type(ty.ty);
+                ty.for_cc.clone().into_tokens(&mut prereqs)
+            })
             .collect::<Vec<_>>();
-        for ty in types.iter() {
-            prereqs.forward_declare_type(ty);
-        }
         CcSnippet { tokens: quote! { rs_std::Tuple<#(#element_tys_cc),*> }, prereqs }
     };
     Some(Ok(RsStdTemplateSpecialization {
@@ -296,38 +292,32 @@ impl<'tcx> OptionApiGenerator<'tcx> {
         };
 
         let tag_method_main_api = tag_method.main_api.into_tokens(&mut prereqs);
+        let full_self_ty = quote! { rs_std::Option<#arg_ty> };
+
         let main_api = CcSnippet {
             tokens: quote! {
-                using base_type = rs_std::OptionBase<rs_std::Option<#arg_ty>, #arg_ty>;
+                using base_type = rs_std::OptionBase<#full_self_ty, #arg_ty>;
                 constexpr Option() = default;
                 constexpr Option(::std::nullopt_t) noexcept;
                 constexpr Option& operator=(::std::nullopt_t) noexcept;
 
                 template <typename U>
-                  requires(!std::is_base_of_v<Option, std::decay_t<U>> &&
-                           !std::is_same_v<std::decay_t<U>, ::std::nullopt_t> &&
-                           !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-                           std::is_constructible_v<#arg_ty, U>)
+                  requires(rs_std::OptionForwardConstructible<Option, #arg_ty, U>)
                 Option(U&& value) noexcept : base_type(::std::forward<U>(value)) {}
 
                 template <typename U>
-                  requires(!std::is_base_of_v<Option, std::decay_t<U>> &&
-                           !std::is_same_v<std::decay_t<U>, ::std::nullopt_t> &&
-                           !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-                           std::is_constructible_v<#arg_ty, U>)
+                  requires(rs_std::OptionForwardConstructible<Option, #arg_ty, U>)
                 Option& operator=(U&& value) noexcept {
                     base_type::operator=(::std::forward<U>(value));
                     return *this;
                 }
 
                 template <typename Opt>
-                  requires(std::is_same_v<std::decay_t<Opt>, ::std::optional<#arg_ty>> &&
-                           !std::is_lvalue_reference_v<Opt>)
+                  requires(rs_std::OptionFromStdOptional<#arg_ty, Opt>)
                 Option(Opt&& value) noexcept : base_type(::std::forward<Opt>(value)) {}
 
                 template <typename Opt>
-                  requires(std::is_same_v<std::decay_t<Opt>, ::std::optional<#arg_ty>> &&
-                           !std::is_lvalue_reference_v<Opt>)
+                  requires(rs_std::OptionFromStdOptional<#arg_ty, Opt>)
                 Option& operator=(Opt&& value) noexcept {
                     base_type::operator=(::std::forward<Opt>(value));
                     return *this;
@@ -373,8 +363,8 @@ impl<'tcx> OptionApiGenerator<'tcx> {
                 #drop_details __NEWLINE__
                 #tag_method_cc_details __NEWLINE__
 
-                inline constexpr rs_std::Option<#arg_ty>::Option(::std::nullopt_t) noexcept : base_type(::std::nullopt) {} __NEWLINE__
-                inline constexpr rs_std::Option<#arg_ty>& rs_std::Option<#arg_ty>::operator=(::std::nullopt_t) noexcept {
+                inline constexpr #full_self_ty::Option(::std::nullopt_t) noexcept : base_type(::std::nullopt) {} __NEWLINE__
+                inline constexpr #full_self_ty& #full_self_ty::operator=(::std::nullopt_t) noexcept {
                     base_type::operator=(::std::nullopt);
                     return *this;
                 } __NEWLINE__
@@ -489,32 +479,25 @@ impl<'tcx> ResultApiGenerator<'tcx> {
         let main_api = CcSnippet {
             tokens: quote! {
             public:
-                using base_type = rs_std::ResultBase<rs_std::Result<#ok_ty_cpp, #err_ty_cpp>, #ok_ty_cpp, #err_ty_cpp>;
+                using base_type = rs_std::ResultBase<#full_self_ty, #ok_ty_cpp, #err_ty_cpp>;
 
                 template <typename U>
-                  requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-                           !rs_std::is_unexpected_v<std::decay_t<U>> &&
-                           !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-                           !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-                           std::is_constructible_v<#ok_ty_cpp, U>)
+                  requires(rs_std::ResultForwardConstructible<Result, #ok_ty_cpp, U>)
                 explicit constexpr Result(U&& ok) noexcept : base_type(::std::forward<U>(ok)) {}
 
                 template <typename U>
-                  requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-                           !rs_std::is_unexpected_v<std::decay_t<U>> &&
-                           !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-                           std::is_constructible_v<#ok_ty_cpp, U>)
+                  requires(rs_std::ResultForwardConstructible<Result, #ok_ty_cpp, U>)
                 constexpr Result& operator=(U&& ok) noexcept {
                     base_type::operator=(::std::forward<U>(ok));
                     return *this;
                 }
 
                 template <typename F>
-                  requires(std::is_constructible_v<#err_ty_cpp, F>)
+                  requires(rs_std::ResultUnexpectedConstructible<#err_ty_cpp, F>)
                 explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept : base_type(::std::move(err)) {}
 
                 template <typename F>
-                  requires(std::is_constructible_v<#err_ty_cpp, F>)
+                  requires(rs_std::ResultUnexpectedConstructible<#err_ty_cpp, F>)
                 constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
                     base_type::operator=(::std::move(err));
                     return *this;
@@ -680,12 +663,8 @@ fn specialize_tuple<'tcx>(
 ) -> ApiSnippets<'tcx> {
     let layout = rs_std.layout;
     let mut prereqs = CcPrerequisites::default();
-    let element_cc_tys = element_tys
-        .iter()
-        .map(|ty| {
-            db.format_ty_for_cc(ty.ty, TypeLocation::Field).unwrap().into_tokens(&mut prereqs)
-        })
-        .collect_vec();
+    let element_cc_tys =
+        element_tys.iter().map(|ty| ty.for_cc.clone().into_tokens(&mut prereqs)).collect_vec();
 
     let tuple_api = TupleApiGenerator {
         db,
@@ -900,15 +879,19 @@ fn specialize_vec<'tcx>(
         .unwrap_or_else(|err| err.explicitly_deleted);
     let relocating_ctor_snippets = generate_relocating_ctor(db, &core.cc_short_name);
 
-    let target_path_mangled_hash = if db.is_golden_test() {
-        "".to_string()
-    } else {
-        format!("{:x}_", tcx.stable_crate_id(db.source_crate_num()))
-    };
-
     let qualified_name = cc_fully_qualified_name.to_string();
     let name = escape_non_identifier_chars(&qualified_name);
-    let drop_thunk_name = format_ident!("__crubit_drop_{}{}", target_path_mangled_hash, name);
+    let drop_trait = tcx.lang_items().drop_trait().expect("Could not find Drop trait");
+    let drop_assoc_fn = tcx
+        .associated_items(drop_trait)
+        .in_definition_order()
+        .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
+        .expect("Drop should have a method");
+    let substs = tcx.mk_args_trait(rs_std.self_ty_rs, std::iter::empty());
+    let drop_thunk_name = format_ident!(
+        "{}",
+        make_thunk_name(db, ThunkKind::TraitMethod { method: drop_assoc_fn, substs })
+    );
 
     let rs_drop = quote! {
         #[unsafe(no_mangle)]
@@ -940,14 +923,14 @@ fn specialize_vec<'tcx>(
 
     let accessors_decl = quote! {
         #inner_ty_cc* data() noexcept;
-        const #inner_ty_cc* data() const noexcept;
+        #inner_ty_cc const* data() const noexcept;
         std::size_t size() const noexcept;
         #inner_ty_cc& operator[](std::size_t index) noexcept;
-        const #inner_ty_cc& operator[](std::size_t index) const noexcept;
+        #inner_ty_cc const& operator[](std::size_t index) const noexcept;
         #inner_ty_cc* begin() noexcept;
-        const #inner_ty_cc* begin() const noexcept;
+        #inner_ty_cc const* begin() const noexcept;
         #inner_ty_cc* end() noexcept;
-        const #inner_ty_cc* end() const noexcept;
+        #inner_ty_cc const* end() const noexcept;
     };
 
     let full_self_ty = quote! { rs_std::Vec<#inner_ty_cc> };
@@ -956,7 +939,7 @@ fn specialize_vec<'tcx>(
             return std::bit_cast<#inner_ty_cc*>(
                 *reinterpret_cast<const std::uintptr_t*>(&storage_[#ptr_offset]));
         }
-        inline const #inner_ty_cc* #full_self_ty::data() const noexcept {
+        inline #inner_ty_cc const* #full_self_ty::data() const noexcept {
             return std::bit_cast<#inner_ty_cc*>(
                 *reinterpret_cast<const std::uintptr_t*>(&storage_[#ptr_offset]));
         }
@@ -968,14 +951,14 @@ fn specialize_vec<'tcx>(
             CRUBIT_CHECK(index < size());
             return data()[index];
         }
-        inline const #inner_ty_cc& #full_self_ty::operator[](std::size_t index) const noexcept {
+        inline #inner_ty_cc const& #full_self_ty::operator[](std::size_t index) const noexcept {
             CRUBIT_CHECK(index < size());
             return data()[index];
         }
         inline #inner_ty_cc* #full_self_ty::begin() noexcept { return data(); }
-        inline const #inner_ty_cc* #full_self_ty::begin() const noexcept { return data(); }
+        inline #inner_ty_cc const* #full_self_ty::begin() const noexcept { return data(); }
         inline #inner_ty_cc* #full_self_ty::end() noexcept { return data() + size(); }
-        inline const #inner_ty_cc* #full_self_ty::end() const noexcept { return data() + size(); }
+        inline #inner_ty_cc const* #full_self_ty::end() const noexcept { return data() + size(); }
     };
 
     let ApiSnippets { main_api, cc_details, rs_details } = [
@@ -1539,11 +1522,11 @@ impl<'tcx> TemplateSpecializationExt<'tcx> for RsStdTemplateSpecialization<'tcx>
 }
 
 /// Collect trait implementations and map them to `TemplateSpecialization::TraitImpl`.
-pub(crate) fn collect_trait_impls<'a, 'tcx>(
-    db: &'a BindingsGenerator<'tcx>,
-) -> impl Iterator<Item = TemplateSpecialization<'tcx>> + use<'a, 'tcx> {
+pub(crate) fn append_trait_impls<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    trait_impls: &mut Vec<TemplateSpecialization<'tcx>>,
+) {
     let tcx = db.tcx();
-    let supported_traits: Vec<DefId> = db.supported_traits().iter().copied().collect();
     // TyCtxt makes it easy to get all the implementations of a trait, but there isn't an easy way
     // to say give me all the trait implementations for this type. This is by design. The compiler
     // lazily determines conformance to traits as needed for types and never computes every trait
@@ -1559,50 +1542,137 @@ pub(crate) fn collect_trait_impls<'a, 'tcx>(
     // specializaitons, which are required to be in an enclosing namespace of the template they
     // specialize. This prevents them from living in the same namespace as our other bindings, as
     // they may implement a trait that is not enclosed by that namespace.
-    supported_traits.into_iter().flat_map(move |trait_def_id| {
-        use rustc_middle::ty::fast_reject::SimplifiedType;
-        tcx.trait_impls_of(trait_def_id)
-            .non_blanket_impls()
-            .into_iter()
-            .filter_map(move |(simple_ty, impl_def_ids)| match simple_ty {
-                SimplifiedType::Adt(did) => {
-                    // Only bind implementations for supported ADTs.
-                    let canonical_name = db.symbol_canonical_name(*did)?;
-                    // We explicitly want to allow ADTs that specify cpp_type.
-                    // These are typically C++ types that have generated Rust bindings.
-                    if canonical_name.unqualified.cpp_type.is_none()
-                        && db.adt_needs_bindings(*did).is_err()
-                    {
-                        return None;
-                    }
-                    let adt_cc_name = canonical_name.format_for_cc(db).ok()?;
-                    Some((adt_cc_name, impl_def_ids))
-                }
-                // TODO: b/457803426 - Support trait implementations for non-adt types.
-                _ => None,
-            })
-            .flat_map(move |(adt_cc_name, impl_def_ids)| {
-                impl_def_ids
-                    .iter()
-                    .copied()
-                    // TODO: b/458768435 - This is technically suboptimal. We could instead only
-                    // query for the impls from this crate, but the logic is complicated by
-                    // supporting LOCAL_CRATE. Revisit once we've migrated to rmetas.
-                    .filter(|impl_def_id| impl_def_id.krate == db.source_crate_num())
-                    .map(move |impl_def_id| {
-                        TemplateSpecialization::TraitImpl(TraitImplTemplateSpecialization {
-                            self_ty_cc_name: adt_cc_name.clone(),
-                            trait_impl: impl_def_id,
-                        })
-                    })
-            })
-    })
+    for &trait_def_id in db.supported_traits().iter() {
+        if tcx.trait_def(trait_def_id).has_auto_impl {
+            append_negative_auto_trait_impls(db, trait_def_id, trait_impls);
+        } else {
+            append_explicit_trait_impls(db, trait_def_id, trait_impls);
+        }
+    }
+}
+
+fn append_explicit_trait_impls<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    trait_def_id: DefId,
+    trait_impls: &mut Vec<TemplateSpecialization<'tcx>>,
+) {
+    let tcx = db.tcx();
+    for (simple_ty, impl_def_ids) in tcx.trait_impls_of(trait_def_id).non_blanket_impls() {
+        let SimplifiedType::Adt(did) = simple_ty else {
+            // TODO: b/457803426 - Support trait implementations for non-adt types.
+            continue;
+        };
+        // Only bind implementations for supported ADTs.
+        let Some(canonical_name) = db.symbol_canonical_name(*did) else {
+            continue;
+        };
+        // We explicitly want to allow ADTs that specify cpp_type.
+        // These are typically C++ types that have generated Rust bindings.
+        if canonical_name.unqualified.cpp_type.is_none() && db.adt_needs_bindings(*did).is_err() {
+            continue;
+        }
+        let Ok(adt_cc_name) = canonical_name.format_for_cc(db) else {
+            continue;
+        };
+        for &impl_def_id in impl_def_ids {
+            // TODO: b/458768435 - This is technically suboptimal. We could instead only
+            // query for the impls from this crate, but the logic is complicated by
+            // supporting LOCAL_CRATE. Revisit once we've migrated to rmetas.
+            if impl_def_id.krate != db.source_crate_num() {
+                continue;
+            }
+            trait_impls.push(TemplateSpecialization::TraitImpl(TraitImplTemplateSpecialization {
+                self_ty_cc_name: adt_cc_name.clone(),
+                trait_impl: impl_def_id,
+            }));
+        }
+    }
+}
+
+fn append_negative_auto_trait_impls<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    trait_id: DefId,
+    trait_impls: &mut Vec<TemplateSpecialization<'tcx>>,
+) {
+    let tcx = db.tcx();
+    for &self_def_id in db.public_paths_by_def_id(db.source_crate_num()).keys() {
+        let (DefKind::Struct | DefKind::Enum | DefKind::Union) = tcx.def_kind(self_def_id) else {
+            continue;
+        };
+
+        if tcx.generics_of(self_def_id).own_params.iter().any(|param| {
+            matches!(
+                param.kind,
+                ty::GenericParamDefKind::Type { .. } | ty::GenericParamDefKind::Const { .. }
+            )
+        }) {
+            continue;
+        }
+        let Some(canonical_name) = db.symbol_canonical_name(self_def_id) else {
+            continue;
+        };
+        if canonical_name.krate_num != db.source_crate_num() {
+            continue;
+        }
+        if canonical_name.unqualified.cpp_type.is_none()
+            && db.adt_needs_bindings(self_def_id).is_err()
+        {
+            continue;
+        }
+        let ty = crate::normalize_ty(
+            tcx,
+            tcx.param_env(self_def_id),
+            tcx.type_of(self_def_id).instantiate_identity(),
+        );
+        if query_compiler::does_type_implement_trait(tcx, ty, trait_id, []) {
+            // If we implement the trait, then there's no need to generate a negative auto trait
+            // impl.
+            continue;
+        }
+        let Ok(self_ty_cc_name) = canonical_name.format_for_cc(db) else {
+            continue;
+        };
+        trait_impls.push(TemplateSpecialization::NegativeAutoTraitImpl(
+            NegativeAutoTraitImplTemplateSpecialization { self_ty_cc_name, self_def_id, trait_id },
+        ));
+    }
+}
+
+// Helper function for generate_trait_impl_specialization and
+// generate_negative_auto_trait_impl_specialization.
+fn add_specialization_prereqs<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    prereqs: &mut CcPrerequisites<'tcx>,
+    def_id: DefId,
+) -> Result<()> {
+    let canonical_name = db.symbol_canonical_name(def_id).expect(
+        "Self type should have a canonical name if we are generating a specialization for it",
+    );
+    // When `self_ty` belongs to the current crate (`source_crate_num()`), we must distinguish
+    // between standard Rust structs (which get a C++ definition in `main_apis`) and mapped C++
+    // types (`cpp_type.is_some()`, whose `main_api` generation is suppressed by Crubit).
+    //
+    // For standard Rust structs, we insert `def_id` into `fwd_decls` to avoid C++ dependency
+    // cycles between a container and its iterator. For mapped C++ types, emitting a forward
+    // declaration in the Rust crate's namespace is incorrect and fails to pull in the real C++
+    // header. Instead, we must explicitly add the annotated `include_path` to prerequisites.
+    if canonical_name.unqualified.cpp_type.is_some() {
+        let attrs = crubit_attr::get_attrs(db.tcx(), def_id)?;
+        for path in &attrs.include_paths {
+            prereqs.includes.insert(CcInclude::from_path(path.as_str()));
+        }
+    } else if canonical_name.krate_num == db.source_crate_num() {
+        prereqs.fwd_decls.insert(def_id);
+    } else {
+        prereqs.depend_on_def(db, def_id)?;
+    }
+    Ok(())
 }
 
 fn generate_trait_impl_specialization<'tcx>(
     db: &BindingsGenerator<'tcx>,
     trait_impl: &TraitImplTemplateSpecialization,
-) -> std::result::Result<ApiSnippets<'tcx>, (DefId, Error)> {
+) -> Result<ApiSnippets<'tcx>> {
     let tcx = db.tcx();
     let impl_def_id = trait_impl.trait_impl;
     let trait_header = tcx.impl_trait_header(impl_def_id);
@@ -1618,7 +1688,7 @@ fn generate_trait_impl_specialization<'tcx>(
     let canonical_trait_name = db.symbol_canonical_name(trait_def_id).expect(
         "symbol_canonical_name was unexpectedly called on a trait without a canonical name",
     );
-    let trait_name = canonical_trait_name.format_for_cc(db).map_err(|err| (impl_def_id, err))?;
+    let trait_name = canonical_trait_name.format_for_cc(db)?;
 
     let mut prereqs = CcPrerequisites::default();
     let trait_args: Vec<_> = trait_ref
@@ -1629,21 +1699,17 @@ fn generate_trait_impl_specialization<'tcx>(
         .filter_map(|arg| arg.as_type())
         .map(|arg| {
             if arg.flags().intersects(has_type_or_const_vars()) {
-                return Err((impl_def_id, anyhow!("Implementation of traits must specify all types to receive bindings.")));
+                bail!("Implementation of traits must specify all types to receive bindings.");
             }
             if arg.walk().any(|arg| arg.as_type().is_some_and(|ty| ty.is_ptr_sized_integral())) {
-                return Err((
-                    impl_def_id,
-                    anyhow!(
-                        "b/491106325 - isize and usize types are not yet supported as trait type arguments."
-                    ),
-                ));
+                bail!(
+                    "b/491106325 - isize and usize types are not yet supported as trait type arguments."
+                );
             }
             db.format_ty_for_cc(arg, TypeLocation::Other)
                 .map(|snippet| snippet.into_tokens(&mut prereqs))
-                .map_err(|err| (impl_def_id, err))
         })
-        .collect::<std::result::Result<Vec<_>, _>>()?;
+        .collect::<Result<Vec<_>>>()?;
 
     let type_args = if trait_args.is_empty() {
         quote! {}
@@ -1653,35 +1719,9 @@ fn generate_trait_impl_specialization<'tcx>(
 
     let trait_name_with_args = quote! { #trait_name #type_args };
 
-    prereqs.depend_on_def(db, trait_def_id).map_err(|err| (impl_def_id, err))?;
+    prereqs.depend_on_def(db, trait_def_id)?;
     if let Some(adt) = trait_ref.self_ty().ty_adt_def() {
-        let def_id = adt.did();
-        let canonical_name = db.symbol_canonical_name(def_id).expect(
-            "Self type should have a canonical name if we are generating a specialization for it",
-        );
-        // When `self_ty` belongs to the current crate (`source_crate_num()`), we must distinguish
-        // between standard Rust structs (which get a C++ definition in `main_apis`) and mapped C++
-        // types (`cpp_type.is_some()`, whose `main_api` generation is suppressed by Crubit).
-        //
-        // For standard Rust structs, we insert `def_id` into `fwd_decls` to avoid C++ dependency
-        // cycles between a container and its iterator. For mapped C++ types, emitting a forward
-        // declaration in the Rust crate's namespace is incorrect and fails to pull in the real C++
-        // header. Instead, we must explicitly add the annotated `include_path` to prerequisites.
-        if canonical_name.unqualified.cpp_type.is_some() {
-            let attrs = crubit_attr::get_attrs(db.tcx(), def_id)
-                .map_err(|err| (impl_def_id, arc_anyhow::Error::from(err)))?;
-            if let Some(path) = attrs.include_path {
-                prereqs.includes.insert(CcInclude::from_path(path.as_str()));
-            } else {
-                // The C++ type is already available (e.g., a fundamental type or from a header
-                // injected globally via command-line flags). No additional #include, forward
-                // declaration, or def dependency is needed.
-            }
-        } else if canonical_name.krate_num == db.source_crate_num() {
-            prereqs.fwd_decls.insert(def_id);
-        } else {
-            prereqs.depend_on_def(db, def_id).map_err(|err| (impl_def_id, err))?;
-        }
+        add_specialization_prereqs(db, &mut prereqs, adt.did())?;
     }
 
     let mut member_function_names = HashSet::new();
@@ -1722,6 +1762,43 @@ fn generate_trait_impl_specialization<'tcx>(
     })
 }
 
+fn generate_negative_auto_trait_impl_specialization<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    negative_auto_trait_impl: &NegativeAutoTraitImplTemplateSpecialization,
+) -> Result<ApiSnippets<'tcx>> {
+    let def_id = negative_auto_trait_impl.self_def_id;
+    let trait_id = negative_auto_trait_impl.trait_id;
+
+    let canonical_trait_name = db.symbol_canonical_name(trait_id).expect(
+        "symbol_canonical_name was unexpectedly called on a trait without a canonical name",
+    );
+    let trait_name = canonical_trait_name.format_for_cc(db)?;
+
+    let mut prereqs = CcPrerequisites::default();
+    prereqs.depend_on_def(db, trait_id)?;
+
+    add_specialization_prereqs(db, &mut prereqs, def_id)?;
+
+    prereqs.includes.insert(db.support_header("rs_std/traits.h"));
+
+    let self_ty_cc_name = &negative_auto_trait_impl.self_ty_cc_name;
+    Ok(ApiSnippets {
+        main_api: CcSnippet {
+            tokens: quote! {
+                __NEWLINE__
+                template<>
+                struct rs_std::impl<#self_ty_cc_name, #trait_name> {
+                    static constexpr bool kIsImplemented = false;
+                };
+                __NEWLINE__
+            },
+            prereqs,
+        },
+        cc_details: Default::default(),
+        rs_details: Default::default(),
+    })
+}
+
 /// Generate a template specialization.
 pub fn generate_template_specialization<'tcx>(
     db: &BindingsGenerator<'tcx>,
@@ -1730,12 +1807,19 @@ pub fn generate_template_specialization<'tcx>(
     let mut snippets = match &specialization {
         TemplateSpecialization::RsStd(rs_std) => rs_std.clone().api_snippets(db),
         TemplateSpecialization::TraitImpl(trait_impl) => {
-            generate_trait_impl_specialization(db, trait_impl).unwrap_or_else(|(def_id, err)| {
-                generate_unsupported_def(db, def_id, err).into_main_api()
+            generate_trait_impl_specialization(db, trait_impl).unwrap_or_else(|err| {
+                generate_unsupported_def(db, trait_impl.trait_impl, err).into_main_api()
             })
         }
+        TemplateSpecialization::NegativeAutoTraitImpl(negative_auto_trait_impl) => {
+            generate_negative_auto_trait_impl_specialization(db, negative_auto_trait_impl)
+                .unwrap_or_else(|err| {
+                    generate_unsupported_def(db, negative_auto_trait_impl.self_def_id, err)
+                        .into_main_api()
+                })
+        }
     };
-    // Because we reuse logic from generate_struct_and_union here, we will add our `self_ty` as a template specialization of it's own specialization creating a depedency cycle.
+    // Because we reuse logic from generate_struct_and_union here, we will add our `self_ty` as a template specialization of its own specialization creating a dependency cycle.
     // We break that loop manually here to avoid that.
     snippets.main_api.prereqs.template_specializations.remove(&specialization);
     snippets

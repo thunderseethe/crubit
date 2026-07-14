@@ -6,20 +6,20 @@
 // //rs_bindings_from_cc/test/golden:unions_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "10EmptyUnion"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=EmptyUnion
 pub union EmptyUnion {
@@ -43,27 +43,8 @@ impl Default for EmptyUnion {
     }
 }
 
-// error: constructor `EmptyUnion::EmptyUnion` could not be bound
-//   Unsupported parameter type `const EmptyUnion& __param_0`:
-//     references are not yet supported
-
-// error: constructor `EmptyUnion::EmptyUnion` could not be bound
-//   Unsupported parameter type `EmptyUnion&& __param_0`:
-//     references are not yet supported
-
-// error: function `EmptyUnion::operator=` could not be bound
-//   Unsupported parameter type `const EmptyUnion& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `EmptyUnion&`:
-//     references are not yet supported
-
-// error: function `EmptyUnion::operator=` could not be bound
-//   Unsupported parameter type `EmptyUnion&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `EmptyUnion&`:
-//     references are not yet supported
-
 #[::ctor::recursively_pinned]
+#[cfi_encoding = "10Nontrivial"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Nontrivial
 pub struct Nontrivial {
@@ -93,15 +74,38 @@ impl ::ctor::CtorNew<()> for Nontrivial {
     }
 }
 
-// error: constructor `Nontrivial::Nontrivial` could not be bound
-//   Unsupported parameter type `Nontrivial&& __param_0`:
-//     references are not yet supported
+impl<'__unelided> ::ctor::CtorNew<::ctor::RvalueReference<'__unelided, Self>> for Nontrivial {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: ::ctor::RvalueReference<'__unelided, Self>) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN10NontrivialC1EOS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    __param_0,
+                );
+            })
+        }
+    }
+}
+impl<'__unelided> ::ctor::CtorNew<(::ctor::RvalueReference<'__unelided, Self>,)> for Nontrivial {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (::ctor::RvalueReference<'__unelided, Self>,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<::ctor::RvalueReference<'__unelided, Self>>>::ctor_new(arg)
+    }
+}
 
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "13UnionToRename"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=UnionToRename
 pub union RenamedUnion {
@@ -125,27 +129,8 @@ impl Default for RenamedUnion {
     }
 }
 
-// error: constructor `UnionToRename::UnionToRename` could not be bound
-//   Unsupported parameter type `const UnionToRename& __param_0`:
-//     references are not yet supported
-
-// error: constructor `UnionToRename::UnionToRename` could not be bound
-//   Unsupported parameter type `UnionToRename&& __param_0`:
-//     references are not yet supported
-
-// error: function `UnionToRename::operator=` could not be bound
-//   Unsupported parameter type `const UnionToRename& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionToRename&`:
-//     references are not yet supported
-
-// error: function `UnionToRename::operator=` could not be bound
-//   Unsupported parameter type `UnionToRename&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionToRename&`:
-//     references are not yet supported
-
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "44TriviallyCopyableButNontriviallyDestructible"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TriviallyCopyableButNontriviallyDestructible
 pub struct TriviallyCopyableButNontriviallyDestructible {
@@ -158,19 +143,47 @@ unsafe impl ::cxx::ExternType for TriviallyCopyableButNontriviallyDestructible {
     type Kind = ::cxx::kind::Opaque;
 }
 
-// error: function `TriviallyCopyableButNontriviallyDestructible::operator=` could not be bound
-//   Unsupported parameter type `const TriviallyCopyableButNontriviallyDestructible& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TriviallyCopyableButNontriviallyDestructible&`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for TriviallyCopyableButNontriviallyDestructible {
+    #[inline(always)]
+    fn assign<'__this>(self: ::core::pin::Pin<&'__this mut Self>, __param_0: &'__param_0 Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleaSERKS_(
+                self, __param_0,
+            );
+        }
+    }
+}
 
-// error: constructor `TriviallyCopyableButNontriviallyDestructible::TriviallyCopyableButNontriviallyDestructible` could not be bound
-//   Unsupported parameter type `const TriviallyCopyableButNontriviallyDestructible& __param_0`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self>
+    for TriviallyCopyableButNontriviallyDestructible
+{
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleC1ERKS_(__crubit_dest as*mut::core::ffi::c_void,__param_0);
+            })
+        }
+    }
+}
+impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)>
+    for TriviallyCopyableButNontriviallyDestructible
+{
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
+    }
+}
 
 impl ::ctor::PinnedDrop for TriviallyCopyableButNontriviallyDestructible {
     #[inline(always)]
-    unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+    unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
         unsafe {
             crate::detail::__rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleD1Ev(self)
         }
@@ -182,6 +195,7 @@ impl ::ctor::PinnedDrop for TriviallyCopyableButNontriviallyDestructible {
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "13NonEmptyUnion"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=NonEmptyUnion
 pub union NonEmptyUnion {
@@ -208,31 +222,12 @@ impl Default for NonEmptyUnion {
     }
 }
 
-// error: constructor `NonEmptyUnion::NonEmptyUnion` could not be bound
-//   Unsupported parameter type `const NonEmptyUnion& __param_0`:
-//     references are not yet supported
-
-// error: constructor `NonEmptyUnion::NonEmptyUnion` could not be bound
-//   Unsupported parameter type `NonEmptyUnion&& __param_0`:
-//     references are not yet supported
-
-// error: function `NonEmptyUnion::operator=` could not be bound
-//   Unsupported parameter type `const NonEmptyUnion& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `NonEmptyUnion&`:
-//     references are not yet supported
-
-// error: function `NonEmptyUnion::operator=` could not be bound
-//   Unsupported parameter type `NonEmptyUnion&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `NonEmptyUnion&`:
-//     references are not yet supported
-
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[::ctor::recursively_pinned]
+#[cfi_encoding = "12NonCopyUnion"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=NonCopyUnion
 pub union NonCopyUnion {
@@ -250,6 +245,7 @@ unsafe impl ::cxx::ExternType for NonCopyUnion {
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
+#[cfi_encoding = "13NonCopyUnion2"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=NonCopyUnion2
 pub union NonCopyUnion2 {
@@ -264,25 +260,59 @@ unsafe impl ::cxx::ExternType for NonCopyUnion2 {
     type Kind = ::cxx::kind::Trivial;
 }
 
-// error: constructor `NonCopyUnion2::NonCopyUnion2` could not be bound
-//   Unsupported parameter type `const NonCopyUnion2& __param_0`:
-//     references are not yet supported
+#[diagnostic::on_unimplemented(
+    message = "binding generation for function failed\n`NonCopyUnion2` can't be used by-value because it has a non-public or deleted destructor"
+)]
+pub trait BindingFailedFor_ZN13NonCopyUnion2C1ERKS_ {}
+impl Clone for NonCopyUnion2
+where
+    for<'error> &'error (): BindingFailedFor_ZN13NonCopyUnion2C1ERKS_,
+{
+    #[inline(always)]
+    fn clone<'__param_0>(&'__param_0 self) -> Self {
+        #![allow(unused_variables)]
+        unreachable!(
+            "This impl can never be instantiated. \
+                    If this message appears at runtime, please report a crubit.rs-bug."
+        )
+    }
+}
 
-// error: constructor `NonCopyUnion2::NonCopyUnion2` could not be bound
-//   Unsupported parameter type `NonCopyUnion2&& __param_0`:
-//     references are not yet supported
+#[diagnostic::on_unimplemented(
+    message = "binding generation for function failed\n`NonCopyUnion2` can't be used by-value because it has a non-public or deleted destructor"
+)]
+pub trait BindingFailedFor_ZN13NonCopyUnion2C1EOS_ {}
+impl From<::ctor::RvalueReference<'_, Self>> for NonCopyUnion2
+where
+    for<'error> &'error (): BindingFailedFor_ZN13NonCopyUnion2C1EOS_,
+{
+    #[inline(always)]
+    fn from(args: ::ctor::RvalueReference<'_, Self>) -> Self {
+        #![allow(unused_variables)]
+        unreachable!(
+            "This impl can never be instantiated. \
+                    If this message appears at runtime, please report a crubit.rs-bug."
+        )
+    }
+}
 
-// error: function `NonCopyUnion2::operator=` could not be bound
-//   Unsupported parameter type `const NonCopyUnion2& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `NonCopyUnion2&`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::UnpinAssign<&'__param_0 Self> for NonCopyUnion2 {
+    #[inline(always)]
+    fn unpin_assign<'__this>(&'__this mut self, __param_0: &'__param_0 Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13NonCopyUnion2aSERKS_(self, __param_0);
+        }
+    }
+}
 
-// error: function `NonCopyUnion2::operator=` could not be bound
-//   Unsupported parameter type `NonCopyUnion2&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `NonCopyUnion2&`:
-//     references are not yet supported
+impl ::ctor::UnpinAssign<::ctor::RvalueReference<'_, Self>> for NonCopyUnion2 {
+    #[inline(always)]
+    fn unpin_assign<'__this>(&'__this mut self, __param_0: ::ctor::RvalueReference<'_, Self>) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13NonCopyUnion2aSEOS_(self, __param_0);
+        }
+    }
+}
 
 /// # Safety
 ///
@@ -291,6 +321,7 @@ unsafe impl ::cxx::ExternType for NonCopyUnion2 {
 /// * Document why the following public unsafe fields of this type cannot be misused by callee:
 ///   * `constant_array_field_not_yet_supported`: Rust type is unknown; safety requirements cannot be automatically generated: Unsupported type 'char[42]': Unsupported clang::Type class 'ConstantArray'
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "20UnionWithOpaqueField"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=UnionWithOpaqueField
 pub union UnionWithOpaqueField {
@@ -316,27 +347,8 @@ impl Default for UnionWithOpaqueField {
     }
 }
 
-// error: constructor `UnionWithOpaqueField::UnionWithOpaqueField` could not be bound
-//   Unsupported parameter type `const UnionWithOpaqueField& __param_0`:
-//     references are not yet supported
-
-// error: constructor `UnionWithOpaqueField::UnionWithOpaqueField` could not be bound
-//   Unsupported parameter type `UnionWithOpaqueField&& __param_0`:
-//     references are not yet supported
-
-// error: function `UnionWithOpaqueField::operator=` could not be bound
-//   Unsupported parameter type `const UnionWithOpaqueField& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionWithOpaqueField&`:
-//     references are not yet supported
-
-// error: function `UnionWithOpaqueField::operator=` could not be bound
-//   Unsupported parameter type `UnionWithOpaqueField&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionWithOpaqueField&`:
-//     references are not yet supported
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "21TrivialButInheritable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TrivialButInheritable
 pub struct TrivialButInheritable {
@@ -360,31 +372,12 @@ impl Default for TrivialButInheritable {
     }
 }
 
-// error: constructor `TrivialButInheritable::TrivialButInheritable` could not be bound
-//   Unsupported parameter type `const TrivialButInheritable& __param_0`:
-//     references are not yet supported
-
-// error: constructor `TrivialButInheritable::TrivialButInheritable` could not be bound
-//   Unsupported parameter type `TrivialButInheritable&& __param_0`:
-//     references are not yet supported
-
-// error: function `TrivialButInheritable::operator=` could not be bound
-//   Unsupported parameter type `const TrivialButInheritable& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TrivialButInheritable&`:
-//     references are not yet supported
-
-// error: function `TrivialButInheritable::operator=` could not be bound
-//   Unsupported parameter type `TrivialButInheritable&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TrivialButInheritable&`:
-//     references are not yet supported
-
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "20UnionWithInheritable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=UnionWithInheritable
 pub union UnionWithInheritable {
@@ -408,31 +401,12 @@ impl Default for UnionWithInheritable {
     }
 }
 
-// error: constructor `UnionWithInheritable::UnionWithInheritable` could not be bound
-//   Unsupported parameter type `const UnionWithInheritable& __param_0`:
-//     references are not yet supported
-
-// error: constructor `UnionWithInheritable::UnionWithInheritable` could not be bound
-//   Unsupported parameter type `UnionWithInheritable&& __param_0`:
-//     references are not yet supported
-
-// error: function `UnionWithInheritable::operator=` could not be bound
-//   Unsupported parameter type `const UnionWithInheritable& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionWithInheritable&`:
-//     references are not yet supported
-
-// error: function `UnionWithInheritable::operator=` could not be bound
-//   Unsupported parameter type `UnionWithInheritable&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `UnionWithInheritable&`:
-//     references are not yet supported
-
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "12TypedefUnion"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TypedefUnion
 pub union TypedefUnion {
@@ -456,31 +430,12 @@ impl Default for TypedefUnion {
     }
 }
 
-// error: constructor `TypedefUnion::TypedefUnion` could not be bound
-//   Unsupported parameter type `const TypedefUnion& __param_0`:
-//     references are not yet supported
-
-// error: constructor `TypedefUnion::TypedefUnion` could not be bound
-//   Unsupported parameter type `TypedefUnion&& __param_0`:
-//     references are not yet supported
-
-// error: function `TypedefUnion::operator=` could not be bound
-//   Unsupported parameter type `const TypedefUnion& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TypedefUnion&`:
-//     references are not yet supported
-
-// error: function `TypedefUnion::operator=` could not be bound
-//   Unsupported parameter type `TypedefUnion&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TypedefUnion&`:
-//     references are not yet supported
-
 /// # Safety
 ///
 /// To call a function that accepts this type, you must uphold these requirements:
 /// * The callee does not read an incorrect field out of the union.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "27TypedefUnionWithInheritable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TypedefUnionWithInheritable
 pub union TypedefUnionWithInheritable {
@@ -506,26 +461,6 @@ impl Default for TypedefUnionWithInheritable {
     }
 }
 
-// error: constructor `TypedefUnionWithInheritable::TypedefUnionWithInheritable` could not be bound
-//   Unsupported parameter type `const TypedefUnionWithInheritable& __param_0`:
-//     references are not yet supported
-
-// error: constructor `TypedefUnionWithInheritable::TypedefUnionWithInheritable` could not be bound
-//   Unsupported parameter type `TypedefUnionWithInheritable&& __param_0`:
-//     references are not yet supported
-
-// error: function `TypedefUnionWithInheritable::operator=` could not be bound
-//   Unsupported parameter type `const TypedefUnionWithInheritable& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TypedefUnionWithInheritable&`:
-//     references are not yet supported
-
-// error: function `TypedefUnionWithInheritable::operator=` could not be bound
-//   Unsupported parameter type `TypedefUnionWithInheritable&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `TypedefUnionWithInheritable&`:
-//     references are not yet supported
-
 mod detail {
     #[allow(unused_imports)]
     use super::*;
@@ -533,13 +468,43 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN10EmptyUnionC1Ev(__this: *mut ::core::ffi::c_void);
         #[link_name = "_ZN10NontrivialC1Ev"]
         pub(crate) unsafe fn __rust_thunk___ZN10NontrivialC1Ev(__this: *mut ::core::ffi::c_void);
+        #[link_name = "_ZN10NontrivialC1EOS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN10NontrivialC1EOS_<'__unelided>(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: ::ctor::RvalueReference<'__unelided, crate::Nontrivial>,
+        );
         pub(crate) unsafe fn __rust_thunk___ZN13UnionToRenameC1Ev(__this: *mut ::core::ffi::c_void);
-        pub(crate) unsafe fn __rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleD1Ev<
-            'a,
+        pub(crate) unsafe fn __rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleaSERKS_<
+            '__param_0,
+            '__this,
         >(
-            __this: ::core::pin::Pin<&'a mut crate::TriviallyCopyableButNontriviallyDestructible>,
+            __this: ::core::pin::Pin<
+                &'__this mut crate::TriviallyCopyableButNontriviallyDestructible,
+            >,
+            __param_0: &'__param_0 crate::TriviallyCopyableButNontriviallyDestructible,
+        ) -> ::core::pin::Pin<&'__this mut crate::TriviallyCopyableButNontriviallyDestructible>;
+        pub(crate) unsafe fn __rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleC1ERKS_<
+            '__param_0,
+        >(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: &'__param_0 crate::TriviallyCopyableButNontriviallyDestructible,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN44TriviallyCopyableButNontriviallyDestructibleD1Ev<
+            '__this,
+        >(
+            __this: ::core::pin::Pin<
+                &'__this mut crate::TriviallyCopyableButNontriviallyDestructible,
+            >,
         );
         pub(crate) unsafe fn __rust_thunk___ZN13NonEmptyUnionC1Ev(__this: *mut ::core::ffi::c_void);
+        pub(crate) unsafe fn __rust_thunk___ZN13NonCopyUnion2aSERKS_<'__param_0, '__this>(
+            __this: &'__this mut crate::NonCopyUnion2,
+            __param_0: &'__param_0 crate::NonCopyUnion2,
+        ) -> &'__this mut crate::NonCopyUnion2;
+        pub(crate) unsafe fn __rust_thunk___ZN13NonCopyUnion2aSEOS_<'__this>(
+            __this: &'__this mut crate::NonCopyUnion2,
+            __param_0: ::ctor::RvalueReference<'_, crate::NonCopyUnion2>,
+        ) -> &'__this mut crate::NonCopyUnion2;
         pub(crate) unsafe fn __rust_thunk___ZN20UnionWithOpaqueFieldC1Ev(
             __this: *mut ::core::ffi::c_void,
         );

@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/golden:composable_bridging_template_type_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: class `MyOption` could not be bound
 //   Class templates are not yet supported
 
@@ -30,6 +29,7 @@ pub fn ReturnsValue() -> crate::MyOption<crate::__CcTemplateInst5ValueIiE> {
 
 /// A basic templated type that does nothing fancy.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "__CcTemplateInst5ValueIiE"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Value < int >
 pub(crate) struct __CcTemplateInst5ValueIiE {

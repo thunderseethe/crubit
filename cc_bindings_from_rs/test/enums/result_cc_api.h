@@ -238,28 +238,23 @@ struct alignas(1) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::Result<::result::CloneNoDefault, ::std::uint8_t>,
       ::result::CloneNoDefault, ::std::uint8_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::result::CloneNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::CloneNoDefault, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::result::CloneNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::CloneNoDefault, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -323,28 +318,23 @@ struct alignas(1) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::Result<::result::CopyNoDefault, ::std::uint8_t>,
       ::result::CopyNoDefault, ::std::uint8_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::result::CopyNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::CopyNoDefault, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::result::CopyNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::CopyNoDefault, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -410,28 +400,23 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::ResultBase<rs_std::Result<::result::HasDefault, ::std::uint8_t>,
                          ::result::HasDefault, ::std::uint8_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::result::HasDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::HasDefault, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::result::HasDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::HasDefault, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -499,28 +484,23 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::ResultBase<rs_std::Result<::result::HasNoDefault, ::std::uint8_t>,
                          ::result::HasNoDefault, ::std::uint8_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::result::HasNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::HasNoDefault, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::result::HasNoDefault, U>)
+    requires(
+        rs_std::ResultForwardConstructible<Result, ::result::HasNoDefault, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -586,28 +566,21 @@ struct alignas(4)
       rs_std::ResultBase<rs_std::Result<::std::uint32_t, ::std::uint32_t>,
                          ::std::uint32_t, ::std::uint32_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint32_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint32_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint32_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint32_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint32_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint32_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint32_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint32_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -706,30 +679,23 @@ struct alignas(4) CRUBIT_INTERNAL_RUST_TYPE(
                      ::std::uint32_t>,
       rs_std::Result<::std::uint32_t, ::std::uint32_t>, ::std::uint32_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<
-                 rs_std::Result<::std::uint32_t, ::std::uint32_t>, U>)
+    requires(rs_std::ResultForwardConstructible<
+             Result, rs_std::Result<::std::uint32_t, ::std::uint32_t>, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<
-                 rs_std::Result<::std::uint32_t, ::std::uint32_t>, U>)
+    requires(rs_std::ResultForwardConstructible<
+             Result, rs_std::Result<::std::uint32_t, ::std::uint32_t>, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint32_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint32_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint32_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint32_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -799,29 +765,22 @@ struct alignas(4) CRUBIT_INTERNAL_RUST_TYPE(
                      rs_std::Result<::std::uint32_t, ::std::uint32_t>>,
       ::std::uint32_t, rs_std::Result<::std::uint32_t, ::std::uint32_t>>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint32_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint32_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint32_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint32_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<
+    requires(rs_std::ResultUnexpectedConstructible<
              rs_std::Result<::std::uint32_t, ::std::uint32_t>, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<
+    requires(rs_std::ResultUnexpectedConstructible<
              rs_std::Result<::std::uint32_t, ::std::uint32_t>, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
@@ -931,28 +890,21 @@ struct alignas(1) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::Result<::std::uint8_t, ::result::CloneNoDefault>, ::std::uint8_t,
       ::result::CloneNoDefault>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::result::CloneNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::CloneNoDefault, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::result::CloneNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::CloneNoDefault, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -1053,28 +1005,21 @@ struct alignas(1) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::Result<::std::uint8_t, ::result::CopyNoDefault>, ::std::uint8_t,
       ::result::CopyNoDefault>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::result::CopyNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::CopyNoDefault, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::result::CopyNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::CopyNoDefault, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -1177,28 +1122,21 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::ResultBase<rs_std::Result<::std::uint8_t, ::result::HasDefault>,
                          ::std::uint8_t, ::result::HasDefault>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::result::HasDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::HasDefault, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::result::HasDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::HasDefault, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -1305,28 +1243,21 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
       rs_std::ResultBase<rs_std::Result<::std::uint8_t, ::result::HasNoDefault>,
                          ::std::uint8_t, ::result::HasNoDefault>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::result::HasNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::HasNoDefault, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::result::HasNoDefault, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::result::HasNoDefault, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -1430,28 +1361,21 @@ struct alignas(1)
       rs_std::ResultBase<rs_std::Result<::std::uint8_t, ::std::uint8_t>,
                          ::std::uint8_t, ::std::uint8_t>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<::std::uint8_t, U>)
+    requires(rs_std::ResultForwardConstructible<Result, ::std::uint8_t, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<::std::uint8_t, F>)
+    requires(rs_std::ResultUnexpectedConstructible<::std::uint8_t, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
     return *this;
@@ -1522,31 +1446,24 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
       crubit::type_identity_t<void(void*, void*)>*,
       crubit::type_identity_t<void(void*, void*)>*>;
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             !std::is_same_v<std::decay_t<U>, ::std::in_place_t> &&
-             std::is_constructible_v<
-                 crubit::type_identity_t<void(void*, void*)>*, U>)
+    requires(rs_std::ResultForwardConstructible<
+             Result, crubit::type_identity_t<void(void*, void*)>*, U>)
   explicit constexpr Result(U&& ok) noexcept
       : base_type(::std::forward<U>(ok)) {}
   template <typename U>
-    requires(!std::is_base_of_v<Result, std::decay_t<U>> &&
-             !rs_std::is_unexpected_v<std::decay_t<U>> &&
-             !std::is_same_v<std::decay_t<U>, rs_std::unexpect_t> &&
-             std::is_constructible_v<
-                 crubit::type_identity_t<void(void*, void*)>*, U>)
+    requires(rs_std::ResultForwardConstructible<
+             Result, crubit::type_identity_t<void(void*, void*)>*, U>)
   constexpr Result& operator=(U&& ok) noexcept {
     base_type::operator=(::std::forward<U>(ok));
     return *this;
   }
   template <typename F>
-    requires(std::is_constructible_v<
+    requires(rs_std::ResultUnexpectedConstructible<
              crubit::type_identity_t<void(void*, void*)>*, F>)
   explicit constexpr Result(rs_std::unexpected<F>&& err) noexcept
       : base_type(::std::move(err)) {}
   template <typename F>
-    requires(std::is_constructible_v<
+    requires(rs_std::ResultUnexpectedConstructible<
              crubit::type_identity_t<void(void*, void*)>*, F>)
   constexpr Result& operator=(rs_std::unexpected<F>&& err) noexcept {
     base_type::operator=(::std::move(err));
@@ -1631,20 +1548,26 @@ static_assert(
     ::std::is_trivially_move_constructible_v<::result::CloneNoDefault>);
 static_assert(::std::is_trivially_move_assignable_v<::result::CloneNoDefault>);
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone(::result::CloneNoDefault const&,
-                                     ::result::CloneNoDefault* __ret_ptr);
+extern "C" void
+__crubit_thunk_Clone_uclone_uresult_ugolden_x0000003a_x0000003aCloneNoDefault(
+    ::result::CloneNoDefault const&, ::result::CloneNoDefault* __ret_ptr);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone_ufrom(::result::CloneNoDefault&,
-                                           ::result::CloneNoDefault const&);
+extern "C" void
+__crubit_thunk_Clone_uclone_ufrom_uresult_ugolden_x0000003a_x0000003aCloneNoDefault(
+    ::result::CloneNoDefault&, ::result::CloneNoDefault const&);
 }
 inline ::result::CloneNoDefault::CloneNoDefault(const CloneNoDefault& other) {
-  __crubit_internal::__crubit_thunk_clone(other, this);
+  __crubit_internal::
+      __crubit_thunk_Clone_uclone_uresult_ugolden_x0000003a_x0000003aCloneNoDefault(
+          other, this);
 }
 inline ::result::CloneNoDefault& ::result::CloneNoDefault::operator=(
     const CloneNoDefault& other) {
   if (this != &other) {
-    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
+    __crubit_internal::
+        __crubit_thunk_Clone_uclone_ufrom_uresult_ugolden_x0000003a_x0000003aCloneNoDefault(
+            *this, other);
   }
   return *this;
 }
@@ -1748,16 +1671,24 @@ static_assert(
     alignof(HasDefault) == 8,
     "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_default(::result::HasDefault* __ret_ptr);
+extern "C" void
+__crubit_thunk_Default_udefault_uresult_ugolden_x0000003a_x0000003aHasDefault(
+    ::result::HasDefault* __ret_ptr);
 }
 inline ::result::HasDefault::HasDefault() {
-  __crubit_internal::__crubit_thunk_default(this);
+  __crubit_internal::
+      __crubit_thunk_Default_udefault_uresult_ugolden_x0000003a_x0000003aHasDefault(
+          this);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::result::HasDefault&);
+extern "C" void
+__crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasDefault(
+    ::result::HasDefault&);
 }
 inline HasDefault::~HasDefault() {
-  __crubit_internal::__crubit_thunk_drop(*this);
+  __crubit_internal::
+      __crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasDefault(
+          *this);
 }
 inline ::result::HasDefault::HasDefault(HasDefault&& other) : HasDefault() {
   *this = ::std::move(other);
@@ -1796,10 +1727,14 @@ static_assert(
     alignof(HasDefaultResult) == 8,
     "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::result::HasDefaultResult&);
+extern "C" void
+__crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasDefaultResult(
+    ::result::HasDefaultResult&);
 }
 inline HasDefaultResult::~HasDefaultResult() {
-  __crubit_internal::__crubit_thunk_drop(*this);
+  __crubit_internal::
+      __crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasDefaultResult(
+          *this);
 }
 namespace __crubit_internal {
 extern "C" void __crubit_thunk_new(rs_std::StrRef,
@@ -1822,10 +1757,14 @@ static_assert(
     alignof(HasNoDefault) == 8,
     "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::result::HasNoDefault&);
+extern "C" void
+__crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasNoDefault(
+    ::result::HasNoDefault&);
 }
 inline HasNoDefault::~HasNoDefault() {
-  __crubit_internal::__crubit_thunk_drop(*this);
+  __crubit_internal::
+      __crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasNoDefault(
+          *this);
 }
 namespace __crubit_internal {
 extern "C" rs_std::StrRef __crubit_thunk_val(::result::HasNoDefault const&);
@@ -1845,10 +1784,14 @@ static_assert(
     alignof(HasNoDefaultResult) == 8,
     "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::result::HasNoDefaultResult&);
+extern "C" void
+__crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasNoDefaultResult(
+    ::result::HasNoDefaultResult&);
 }
 inline HasNoDefaultResult::~HasNoDefaultResult() {
-  __crubit_internal::__crubit_thunk_drop(*this);
+  __crubit_internal::
+      __crubit_thunk_Drop_udrop_uresult_ugolden_x0000003a_x0000003aHasNoDefaultResult(
+          *this);
 }
 namespace __crubit_internal {
 extern "C" void __crubit_thunk_new(rs_std::StrRef,
@@ -1975,23 +1918,29 @@ inline rs_std::StrRef take_result_has_default(
 #ifndef _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Result_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020result_x00000020_x0000003a_x0000003a_x00000020CloneNoDefault_x00000020_x0000002c_x00000020_x0000003a_x0000003a_x00000020std_x00000020_x0000003a_x0000003a_x00000020uint8_ut_x00000020_x0000003e
 #define _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Result_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020result_x00000020_x0000003a_x0000003a_x00000020CloneNoDefault_x00000020_x0000002c_x00000020_x0000003a_x0000003a_x00000020std_x00000020_x0000003a_x0000003a_x00000020uint8_ut_x00000020_x0000003e
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone(
+extern "C" void
+__crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cresult_ugolden_x0000003a_x0000003aCloneNoDefault_x0000002c_x00000020u8_x0000003e(
     rs_std::Result<::result::CloneNoDefault, ::std::uint8_t> const&,
     rs_std::Result<::result::CloneNoDefault, ::std::uint8_t>* __ret_ptr);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone_ufrom(
+extern "C" void
+__crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cresult_ugolden_x0000003a_x0000003aCloneNoDefault_x0000002c_x00000020u8_x0000003e(
     rs_std::Result<::result::CloneNoDefault, ::std::uint8_t>&,
     rs_std::Result<::result::CloneNoDefault, ::std::uint8_t> const&);
 }
 inline rs_std::Result<::result::CloneNoDefault, ::std::uint8_t>::Result(
     const Result& other) {
-  __crubit_internal::__crubit_thunk_clone(other, this);
+  __crubit_internal::
+      __crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cresult_ugolden_x0000003a_x0000003aCloneNoDefault_x0000002c_x00000020u8_x0000003e(
+          other, this);
 }
 inline rs_std::Result<::result::CloneNoDefault, ::std::uint8_t>& rs_std::Result<
     ::result::CloneNoDefault, ::std::uint8_t>::operator=(const Result& other) {
   if (this != &other) {
-    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
+    __crubit_internal::
+        __crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cresult_ugolden_x0000003a_x0000003aCloneNoDefault_x0000002c_x00000020u8_x0000003e(
+            *this, other);
   }
   return *this;
 }
@@ -2215,23 +2164,29 @@ inline constexpr void rs_std::Result<::std::uint32_t, ::std::uint32_t>::set_tag(
 #ifndef _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Result_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020std_x00000020_x0000003a_x0000003a_x00000020uint8_ut_x00000020_x0000002c_x00000020_x0000003a_x0000003a_x00000020result_x00000020_x0000003a_x0000003a_x00000020CloneNoDefault_x00000020_x0000003e
 #define _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Result_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020std_x00000020_x0000003a_x0000003a_x00000020uint8_ut_x00000020_x0000002c_x00000020_x0000003a_x0000003a_x00000020result_x00000020_x0000003a_x0000003a_x00000020CloneNoDefault_x00000020_x0000003e
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone(
+extern "C" void
+__crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cu8_x0000002c_x00000020result_ugolden_x0000003a_x0000003aCloneNoDefault_x0000003e(
     rs_std::Result<::std::uint8_t, ::result::CloneNoDefault> const&,
     rs_std::Result<::std::uint8_t, ::result::CloneNoDefault>* __ret_ptr);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone_ufrom(
+extern "C" void
+__crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cu8_x0000002c_x00000020result_ugolden_x0000003a_x0000003aCloneNoDefault_x0000003e(
     rs_std::Result<::std::uint8_t, ::result::CloneNoDefault>&,
     rs_std::Result<::std::uint8_t, ::result::CloneNoDefault> const&);
 }
 inline rs_std::Result<::std::uint8_t, ::result::CloneNoDefault>::Result(
     const Result& other) {
-  __crubit_internal::__crubit_thunk_clone(other, this);
+  __crubit_internal::
+      __crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cu8_x0000002c_x00000020result_ugolden_x0000003a_x0000003aCloneNoDefault_x0000003e(
+          other, this);
 }
 inline rs_std::Result<::std::uint8_t, ::result::CloneNoDefault>& rs_std::Result<
     ::std::uint8_t, ::result::CloneNoDefault>::operator=(const Result& other) {
   if (this != &other) {
-    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
+    __crubit_internal::
+        __crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003aresult_x0000003a_x0000003aResult_x0000003cu8_x0000002c_x00000020result_ugolden_x0000003a_x0000003aCloneNoDefault_x0000003e(
+            *this, other);
   }
   return *this;
 }

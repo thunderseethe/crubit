@@ -6,21 +6,21 @@
 // //rs_bindings_from_cc/test/golden:no_unique_address_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// The no_unique_address.h header is present both in
 /// rs_bindings_from_cc/test/struct/no_unique_address/ and in
 /// rs_bindings_from_cc/test/golden/ because the format provides end-to-end
 /// coverage for working accessor functions, while the latter helps manually
 /// inspect and verify the expected layout of the generated Rust struct.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "6Struct"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=Struct
 pub struct Struct {
@@ -58,26 +58,6 @@ impl Default for Struct {
     }
 }
 
-// error: constructor `Struct::Struct` could not be bound
-//   Unsupported parameter type `const Struct& __param_0`:
-//     references are not yet supported
-
-// error: constructor `Struct::Struct` could not be bound
-//   Unsupported parameter type `Struct&& __param_0`:
-//     references are not yet supported
-
-// error: function `Struct::operator=` could not be bound
-//   Unsupported parameter type `const Struct& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `Struct&`:
-//     references are not yet supported
-
-// error: function `Struct::operator=` could not be bound
-//   Unsupported parameter type `Struct&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `Struct&`:
-//     references are not yet supported
-
 pub mod r#struct {
     #[inline(always)]
     pub(crate) fn Make(f1: ::ffi_11::c_int, f2: ::ffi_11::c_char) -> crate::Struct {
@@ -99,6 +79,7 @@ pub mod r#struct {
 /// compile-time assertions of field offsets in the generated Rust code.  Before
 /// cl/448287893 `field2` would be incorrectly placed at offset 1.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "20PaddingBetweenFields"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=PaddingBetweenFields
 pub struct PaddingBetweenFields {
@@ -135,26 +116,6 @@ impl Default for PaddingBetweenFields {
     }
 }
 
-// error: constructor `PaddingBetweenFields::PaddingBetweenFields` could not be bound
-//   Unsupported parameter type `const PaddingBetweenFields& __param_0`:
-//     references are not yet supported
-
-// error: constructor `PaddingBetweenFields::PaddingBetweenFields` could not be bound
-//   Unsupported parameter type `PaddingBetweenFields&& __param_0`:
-//     references are not yet supported
-
-// error: function `PaddingBetweenFields::operator=` could not be bound
-//   Unsupported parameter type `const PaddingBetweenFields& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `PaddingBetweenFields&`:
-//     references are not yet supported
-
-// error: function `PaddingBetweenFields::operator=` could not be bound
-//   Unsupported parameter type `PaddingBetweenFields&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `PaddingBetweenFields&`:
-//     references are not yet supported
-
 pub mod padding_between_fields {
     #[inline(always)]
     pub(crate) fn Make(f1: ::ffi_11::c_char, f2: ::ffi_11::c_int) -> crate::PaddingBetweenFields {
@@ -177,6 +138,7 @@ pub mod padding_between_fields {
 ///   (4 bytes for `inner_int_field`, 1 byte for `inner_char_field`)
 /// - size: 8 (dsize adjusted up to account for alignment)
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "30FieldInTailPadding_InnerStruct"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=FieldInTailPadding_InnerStruct
 pub struct FieldInTailPadding_InnerStruct {
@@ -208,21 +170,48 @@ impl ::ctor::CtorNew<()> for FieldInTailPadding_InnerStruct {
     }
 }
 
-// error: constructor `FieldInTailPadding_InnerStruct::FieldInTailPadding_InnerStruct` could not be bound
-//   Unsupported parameter type `const FieldInTailPadding_InnerStruct& __param_0`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for FieldInTailPadding_InnerStruct {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN30FieldInTailPadding_InnerStructC1ERKS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    __param_0,
+                );
+            })
+        }
+    }
+}
+impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for FieldInTailPadding_InnerStruct {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
+    }
+}
 
-// error: function `FieldInTailPadding_InnerStruct::operator=` could not be bound
-//   Unsupported parameter type `const FieldInTailPadding_InnerStruct& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `FieldInTailPadding_InnerStruct&`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for FieldInTailPadding_InnerStruct {
+    #[inline(always)]
+    fn assign<'__this>(self: ::core::pin::Pin<&'__this mut Self>, __param_0: &'__param_0 Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN30FieldInTailPadding_InnerStructaSERKS_(
+                self, __param_0,
+            );
+        }
+    }
+}
 
 /// User-defined destructor to make this struct non-POD for the purposes of
 /// layout.
 impl ::ctor::PinnedDrop for FieldInTailPadding_InnerStruct {
     #[inline(always)]
-    unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+    unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
         unsafe { crate::detail::__rust_thunk___ZN30FieldInTailPadding_InnerStructD1Ev(self) }
     }
 }
@@ -236,6 +225,7 @@ impl ::ctor::PinnedDrop for FieldInTailPadding_InnerStruct {
 /// code.  The initial alignment-based fix idea for b/232418721 would incorrectly
 /// put `char_in_tail_padding_of_prev_field` at offset 8.
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "18FieldInTailPadding"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=FieldInTailPadding
 pub struct FieldInTailPadding {
@@ -253,32 +243,89 @@ unsafe impl ::cxx::ExternType for FieldInTailPadding {
     type Kind = ::cxx::kind::Opaque;
 }
 
-// error: constructor `FieldInTailPadding::FieldInTailPadding` could not be bound
-//   Unsupported parameter type `const FieldInTailPadding& __param_0`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for FieldInTailPadding {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN18FieldInTailPaddingC1ERKS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    __param_0,
+                );
+            })
+        }
+    }
+}
+impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for FieldInTailPadding {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
+    }
+}
 
-// error: constructor `FieldInTailPadding::FieldInTailPadding` could not be bound
-//   Unsupported parameter type `FieldInTailPadding&& __param_0`:
-//     references are not yet supported
+impl<'__unelided> ::ctor::CtorNew<::ctor::RvalueReference<'__unelided, Self>>
+    for FieldInTailPadding
+{
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: ::ctor::RvalueReference<'__unelided, Self>) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN18FieldInTailPaddingC1EOS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    __param_0,
+                );
+            })
+        }
+    }
+}
+impl<'__unelided> ::ctor::CtorNew<(::ctor::RvalueReference<'__unelided, Self>,)>
+    for FieldInTailPadding
+{
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__unelided>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (::ctor::RvalueReference<'__unelided, Self>,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<::ctor::RvalueReference<'__unelided, Self>>>::ctor_new(arg)
+    }
+}
 
 impl ::ctor::PinnedDrop for FieldInTailPadding {
     #[inline(always)]
-    unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+    unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
         unsafe { crate::detail::__rust_thunk___ZN18FieldInTailPaddingD1Ev(self) }
     }
 }
 
-// error: function `FieldInTailPadding::operator=` could not be bound
-//   Unsupported parameter type `const FieldInTailPadding& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `FieldInTailPadding&`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for FieldInTailPadding {
+    #[inline(always)]
+    fn assign<'__this>(self: ::core::pin::Pin<&'__this mut Self>, __param_0: &'__param_0 Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN18FieldInTailPaddingaSERKS_(self, __param_0);
+        }
+    }
+}
 
-// error: function `FieldInTailPadding::operator=` could not be bound
-//   Unsupported parameter type `FieldInTailPadding&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `FieldInTailPadding&`:
-//     references are not yet supported
+impl ::ctor::Assign<::ctor::RvalueReference<'_, Self>> for FieldInTailPadding {
+    #[inline(always)]
+    fn assign<'__this>(
+        self: ::core::pin::Pin<&'__this mut Self>,
+        __param_0: ::ctor::RvalueReference<'_, Self>,
+    ) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN18FieldInTailPaddingaSEOS_(self, __param_0);
+        }
+    }
+}
 
 impl ::ctor::CtorNew<(::ffi_11::c_int, ::ffi_11::c_char, ::ffi_11::c_char)> for FieldInTailPadding {
     type CtorType = ::ctor::Ctor![Self];
@@ -320,12 +367,39 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN30FieldInTailPadding_InnerStructC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN30FieldInTailPadding_InnerStructD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::FieldInTailPadding_InnerStruct>,
+        pub(crate) unsafe fn __rust_thunk___ZN30FieldInTailPadding_InnerStructC1ERKS_<'__param_0>(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: &'__param_0 crate::FieldInTailPadding_InnerStruct,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::FieldInTailPadding>,
+        pub(crate) unsafe fn __rust_thunk___ZN30FieldInTailPadding_InnerStructaSERKS_<
+            '__param_0,
+            '__this,
+        >(
+            __this: ::core::pin::Pin<&'__this mut crate::FieldInTailPadding_InnerStruct>,
+            __param_0: &'__param_0 crate::FieldInTailPadding_InnerStruct,
+        ) -> ::core::pin::Pin<&'__this mut crate::FieldInTailPadding_InnerStruct>;
+        pub(crate) unsafe fn __rust_thunk___ZN30FieldInTailPadding_InnerStructD1Ev<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::FieldInTailPadding_InnerStruct>,
         );
+        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingC1ERKS_<'__param_0>(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: &'__param_0 crate::FieldInTailPadding,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingC1EOS_<'__unelided>(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: ::ctor::RvalueReference<'__unelided, crate::FieldInTailPadding>,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingD1Ev<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::FieldInTailPadding>,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingaSERKS_<'__param_0, '__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::FieldInTailPadding>,
+            __param_0: &'__param_0 crate::FieldInTailPadding,
+        ) -> ::core::pin::Pin<&'__this mut crate::FieldInTailPadding>;
+        pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingaSEOS_<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::FieldInTailPadding>,
+            __param_0: ::ctor::RvalueReference<'_, crate::FieldInTailPadding>,
+        ) -> ::core::pin::Pin<&'__this mut crate::FieldInTailPadding>;
         pub(crate) unsafe fn __rust_thunk___ZN18FieldInTailPaddingC1Eicc(
             __this: *mut ::core::ffi::c_void,
             inner_int: ::ffi_11::c_int,

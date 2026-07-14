@@ -6,18 +6,18 @@
 // //rs_bindings_from_cc/test/golden:type_annotations_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes)]
+#![feature(cfi_encoding, custom_inner_attributes)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// Generated from: rs_bindings_from_cc/test/golden/type_annotations.h;l=8[348,352]
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
+#[cfi_encoding = "4Enum"]
 ///CRUBIT_ANNOTATE: cpp_type=Enum
 pub struct Enum(::ffi_11::c_uint);
 impl Enum {
@@ -37,6 +37,7 @@ impl From<Enum> for ::ffi_11::c_uint {
 /// Generated from: rs_bindings_from_cc/test/golden/type_annotations.h;l=9[376,385]
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
+#[cfi_encoding = "9EnumClass"]
 ///CRUBIT_ANNOTATE: cpp_type=EnumClass
 pub struct EnumClass(::ffi_11::c_int);
 impl EnumClass {
@@ -53,4 +54,4 @@ impl From<EnumClass> for ::ffi_11::c_int {
     }
 }
 
-// This file contains Kythe metadata. eyJ0eXBlIjoia3l0aGUwIiwibWV0YSI6W3sidHlwZSI6ImFuY2hvcl9hbmNob3IiLCJzb3VyY2VfYmVnaW4iOjM0OCwic291cmNlX2VuZCI6MzUyLCJ0YXJnZXRfYmVnaW4iOjYyNiwidGFyZ2V0X2VuZCI6NjMwLCJlZGdlIjoiL2t5dGhlL2VkZ2UvaW1wdXRlcyIsInNvdXJjZV92bmFtZSI6eyJjb3JwdXMiOiJjb3JwdXMiLCJwYXRoIjoidGhpcmRfcGFydHkvY3J1Yml0L3JzX2JpbmRpbmdzX2Zyb21fY2MvdGVzdC9nb2xkZW4vdHlwZV9hbm5vdGF0aW9ucy5oIiwibGFuZ3VhZ2UiOiJjKysifX0seyJ0eXBlIjoiYW5jaG9yX2FuY2hvciIsInNvdXJjZV9iZWdpbiI6Mzc2LCJzb3VyY2VfZW5kIjozODUsInRhcmdldF9iZWdpbiI6MTE5OSwidGFyZ2V0X2VuZCI6MTIwOCwiZWRnZSI6Ii9reXRoZS9lZGdlL2ltcHV0ZXMiLCJzb3VyY2Vfdm5hbWUiOnsiY29ycHVzIjoiY29ycHVzIiwicGF0aCI6InRoaXJkX3BhcnR5L2NydWJpdC9yc19iaW5kaW5nc19mcm9tX2NjL3Rlc3QvZ29sZGVuL3R5cGVfYW5ub3RhdGlvbnMuaCIsImxhbmd1YWdlIjoiYysrIn19XX0=
+// This file contains Kythe metadata. eyJ0eXBlIjoia3l0aGUwIiwibWV0YSI6W3sidHlwZSI6ImFuY2hvcl9hbmNob3IiLCJzb3VyY2VfYmVnaW4iOjM0OCwic291cmNlX2VuZCI6MzUyLCJ0YXJnZXRfYmVnaW4iOjY5NSwidGFyZ2V0X2VuZCI6Njk5LCJlZGdlIjoiL2t5dGhlL2VkZ2UvaW1wdXRlcyIsInNvdXJjZV92bmFtZSI6eyJjb3JwdXMiOiJjb3JwdXMiLCJwYXRoIjoidGhpcmRfcGFydHkvY3J1Yml0L3JzX2JpbmRpbmdzX2Zyb21fY2MvdGVzdC9nb2xkZW4vdHlwZV9hbm5vdGF0aW9ucy5oIiwibGFuZ3VhZ2UiOiJjKysifX0seyJ0eXBlIjoiYW5jaG9yX2FuY2hvciIsInNvdXJjZV9iZWdpbiI6Mzc2LCJzb3VyY2VfZW5kIjozODUsInRhcmdldF9iZWdpbiI6MTI5OSwidGFyZ2V0X2VuZCI6MTMwOCwiZWRnZSI6Ii9reXRoZS9lZGdlL2ltcHV0ZXMiLCJzb3VyY2Vfdm5hbWUiOnsiY29ycHVzIjoiY29ycHVzIiwicGF0aCI6InRoaXJkX3BhcnR5L2NydWJpdC9yc19iaW5kaW5nc19mcm9tX2NjL3Rlc3QvZ29sZGVuL3R5cGVfYW5ub3RhdGlvbnMuaCIsImxhbmd1YWdlIjoiYysrIn19XX0=

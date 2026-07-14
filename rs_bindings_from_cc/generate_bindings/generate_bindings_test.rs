@@ -169,7 +169,7 @@ mod custom_abi_tests {
                         }, ...
                     }, ...
                     has_c_calling_convention: true, ...
-                }),
+                })
             }
         );
 
@@ -238,7 +238,7 @@ mod custom_abi_tests {
                         }, ...
                     }, ...
                     has_c_calling_convention: true, ...
-                }),
+                })
             }
         );
 
@@ -478,6 +478,19 @@ fn test_type_alias() -> Result<()> {
 }
 
 #[gtest]
+fn test_type_alias_skips_dunder() -> Result<()> {
+    let ir = ir_from_cc(
+        r#"
+            struct __DunderStruct final { int x; };
+            using AliasToDunder = __DunderStruct;
+        "#,
+    )?;
+    let BindingsTokens { rs_api, .. } = generate_bindings_tokens_for_test(ir)?;
+    assert_rs_not_matches!(rs_api, quote! { pub type AliasToDunder });
+    Ok(())
+}
+
+#[gtest]
 fn test_rs_type_kind_implements_copy() -> Result<()> {
     let template = r#" LIFETIMES
         struct [[clang::trivial_abi]] TrivialStruct final { int i; };
@@ -561,7 +574,7 @@ fn test_rs_type_kind_implements_copy() -> Result<()> {
         let ir = db.ir();
 
         let f = retrieve_func(ir, "func");
-        let t = db.rs_type_kind(f.params[0].type_.clone())?;
+        let t = db.rs_type_kind(f.params()[0].type_().clone())?;
 
         let fmt = t.to_token_stream(&db).to_string();
         expect_eq!(test.rs, fmt, "Testing: {}", test_name);
@@ -584,18 +597,18 @@ fn test_rs_type_kind_is_shared_ref_to_with_lifetimes() -> Result<()> {
     let bar_func = retrieve_func(ir, "bar");
 
     // const-ref + lifetimes in C++  ===>  shared-ref in Rust
-    assert_eq!(foo_func.params.len(), 1);
-    let foo_param = &foo_func.params[0];
-    assert_eq!(foo_param.identifier.identifier.as_ref(), "foo_param");
-    let foo_type = db.rs_type_kind(foo_param.type_.clone())?;
+    assert_eq!(foo_func.params().len(), 1);
+    let foo_param = &foo_func.params()[0];
+    assert_eq!(foo_param.identifier().as_str(), "foo_param");
+    let foo_type = db.rs_type_kind(foo_param.type_().clone())?;
     assert!(foo_type.is_shared_ref_to(record));
     assert!(matches!(foo_type, RsTypeKind::Reference { mutability: Mutability::Const, .. }));
 
     // non-const-ref + lifetimes in C++  ===>  mutable-ref in Rust
-    assert_eq!(bar_func.params.len(), 1);
-    let bar_param = &bar_func.params[0];
-    assert_eq!(bar_param.identifier.identifier.as_ref(), "bar_param");
-    let bar_type = db.rs_type_kind(bar_param.type_.clone())?;
+    assert_eq!(bar_func.params().len(), 1);
+    let bar_param = &bar_func.params()[0];
+    assert_eq!(bar_param.identifier().as_str(), "bar_param");
+    let bar_type = db.rs_type_kind(bar_param.type_().clone())?;
     assert!(!bar_type.is_shared_ref_to(record));
     assert!(matches!(bar_type, RsTypeKind::Reference { mutability: Mutability::Mut, .. }));
 
@@ -613,10 +626,10 @@ fn test_rs_type_kind_is_shared_ref_to_without_lifetimes() -> Result<()> {
     let foo_func = retrieve_func(ir, "foo");
 
     // const-ref + *no* lifetimes in C++  ===>  const-pointer in Rust
-    assert_eq!(foo_func.params.len(), 1);
-    let foo_param = &foo_func.params[0];
-    assert_eq!(foo_param.identifier.identifier.as_ref(), "foo_param");
-    let foo_type = db.rs_type_kind(foo_param.type_.clone())?;
+    assert_eq!(foo_func.params().len(), 1);
+    let foo_param = &foo_func.params()[0];
+    assert_eq!(foo_param.identifier().as_str(), "foo_param");
+    let foo_type = db.rs_type_kind(foo_param.type_().clone())?;
     assert!(!foo_type.is_shared_ref_to(record));
     assert!(matches!(foo_type, RsTypeKind::Pointer { mutability: Mutability::Const, .. }));
 
@@ -634,14 +647,14 @@ fn test_rs_type_kind_lifetimes() -> Result<()> {
     let db = db_factory.make_db();
     let ir = db.ir();
     let func = retrieve_func(ir, "foo");
-    let ret = db.rs_type_kind(func.return_type.clone())?;
-    let a = db.rs_type_kind(func.params[0].type_.clone())?;
-    let b = db.rs_type_kind(func.params[1].type_.clone())?;
-    let c = db.rs_type_kind(func.params[2].type_.clone())?;
-    let d = db.rs_type_kind(func.params[3].type_.clone())?;
-    let e = db.rs_type_kind(func.params[4].type_.clone())?;
-    let f = db.rs_type_kind(func.params[5].type_.clone())?;
-    let g = db.rs_type_kind(func.params[6].type_.clone())?;
+    let ret = db.rs_type_kind(func.return_type().clone())?;
+    let a = db.rs_type_kind(func.params()[0].type_().clone())?;
+    let b = db.rs_type_kind(func.params()[1].type_().clone())?;
+    let c = db.rs_type_kind(func.params()[2].type_().clone())?;
+    let d = db.rs_type_kind(func.params()[3].type_().clone())?;
+    let e = db.rs_type_kind(func.params()[4].type_().clone())?;
+    let f = db.rs_type_kind(func.params()[5].type_().clone())?;
+    let g = db.rs_type_kind(func.params()[6].type_().clone())?;
 
     expect_eq!(0, ret.lifetimes().count()); // No lifetimes on `void`.
     expect_eq!(0, a.lifetimes().count()); // No lifetimes on `int`.
@@ -661,7 +674,7 @@ fn test_rs_type_kind_lifetimes_raw_ptr() -> Result<()> {
     let db = db_factory.make_db();
     let ir = db.ir();
     let f = retrieve_func(ir, "foo");
-    let a = db.rs_type_kind(f.params[0].type_.clone())?;
+    let a = db.rs_type_kind(f.params()[0].type_().clone())?;
     assert_eq!(0, a.lifetimes().count()); // No lifetimes on `int*`.
     Ok(())
 }
@@ -681,7 +694,7 @@ fn test_rs_type_kind_rejects_func_ptr_that_returns_struct_by_value() -> Result<(
 
     // Expecting an error, because passing a struct by value requires a thunk and
     // function pointers don't have a thunk.
-    let err = db.rs_type_kind(f.return_type.clone()).unwrap_err();
+    let err = db.rs_type_kind(f.return_type().clone()).unwrap_err();
     let msg = err.to_string();
     assert_eq!(
         msg,
@@ -706,7 +719,7 @@ fn test_rs_type_kind_rejects_func_ptr_that_takes_struct_by_value() -> Result<()>
 
     // Expecting an error, because passing a struct by value requires a thunk and
     // function pointers don't have a thunk.
-    let err = db.rs_type_kind(f.return_type.clone()).unwrap_err();
+    let err = db.rs_type_kind(f.return_type().clone()).unwrap_err();
     let msg = err.to_string();
     assert_eq!(
         msg,
@@ -1130,7 +1143,7 @@ fn test_default_crubit_features_disabled_dependency_supported_function_parameter
         "void Func(NotPresent);",
         /*dependency=*/ "struct NotPresent {};",
     )?;
-    ir.target_crubit_features_mut(&ir::BazelLabel("//test:dependency".into())).clear();
+    ir.target_crubit_features_mut(&ir::BazelLabel::from("//test:dependency")).clear();
     enable_supported(&mut ir);
     let BindingsTokens { rs_api, rs_api_impl } = generate_bindings_tokens_for_test(ir)?;
     assert_rs_not_matches!(rs_api, quote! {Func});
@@ -1144,7 +1157,7 @@ fn test_default_crubit_features_disabled_dependency_wrapper_function_parameter()
         "void Func(NotPresent);",
         "template <typename T> struct NotPresentTemplate {T x;}; using NotPresent = NotPresentTemplate<int>;",
     )?;
-    ir.target_crubit_features_mut(&ir::BazelLabel("//test:dependency".into())).clear();
+    ir.target_crubit_features_mut(&ir::BazelLabel::from("//test:dependency")).clear();
     enable_supported(&mut ir);
     let BindingsTokens { rs_api, rs_api_impl } = generate_bindings_tokens_for_test(ir)?;
     assert_rs_not_matches!(rs_api, quote! {Func});
@@ -1155,7 +1168,7 @@ fn test_default_crubit_features_disabled_dependency_wrapper_function_parameter()
 #[gtest]
 fn test_default_crubit_features_disabled_dependency_supported_function_return_type() -> Result<()> {
     let mut ir = ir_from_cc_dependency("NotPresent Func();", "struct NotPresent {};")?;
-    ir.target_crubit_features_mut(&ir::BazelLabel("//test:dependency".into())).clear();
+    ir.target_crubit_features_mut(&ir::BazelLabel::from("//test:dependency")).clear();
     enable_supported(&mut ir);
     let BindingsTokens { rs_api, rs_api_impl } = generate_bindings_tokens_for_test(ir)?;
     assert_rs_not_matches!(rs_api, quote! {Func});
@@ -1168,7 +1181,7 @@ fn test_default_crubit_features_disabled_dependency_wrapper_function_return_type
     let mut ir = ir_from_cc_dependency(
         "NotPresent Func();",
         "template <typename T> struct NotPresentTemplate {T x;}; using NotPresent = NotPresentTemplate<int>;")?;
-    ir.target_crubit_features_mut(&ir::BazelLabel("//test:dependency".into())).clear();
+    ir.target_crubit_features_mut(&ir::BazelLabel::from("//test:dependency")).clear();
     enable_supported(&mut ir);
     let BindingsTokens { rs_api, rs_api_impl } = generate_bindings_tokens_for_test(ir)?;
     assert_rs_not_matches!(rs_api, quote! {Func});
@@ -1180,7 +1193,7 @@ fn test_default_crubit_features_disabled_dependency_wrapper_function_return_type
 fn test_default_crubit_features_disabled_dependency_struct() -> Result<()> {
     for dependency in ["struct NotPresent {signed char x;};", "using NotPresent = signed char;"] {
         let mut ir = ir_from_cc_dependency("struct Present {NotPresent field;};", dependency)?;
-        ir.target_crubit_features_mut(&ir::BazelLabel("//test:dependency".into())).clear();
+        ir.target_crubit_features_mut(&ir::BazelLabel::from("//test:dependency")).clear();
         enable_supported(&mut ir);
         let BindingsTokens { rs_api, rs_api_impl: _ } = generate_bindings_tokens_for_test(ir)?;
         assert_rs_matches!(
@@ -1470,4 +1483,32 @@ fn test_interpolate_spelled_rust_type() {
         interpolate_spelled_rust_type(input, &mut substs.into_iter()).unwrap(),
         expected
     );
+}
+
+#[gtest]
+fn test_nested_ir_end_to_end() -> Result<()> {
+    let header_source = "namespace outer { struct Inner { int x; }; }";
+
+    let ir = ir_testing::ir_from_cc_dependency(
+        multiplatform_testing::test_platform(),
+        header_source,
+        "// no dependencies",
+        None,
+        /*kythe_annotations=*/ false,
+    )?;
+
+    let rs_api = generate_bindings_tokens_for_test(ir)?.rs_api;
+    assert_rs_matches!(
+        rs_api,
+        quote! {
+            pub mod outer {
+                ...
+                pub struct Inner {
+                    pub x: ::ffi_11::c_int,
+                }
+                ...
+            }
+        }
+    );
+    Ok(())
 }

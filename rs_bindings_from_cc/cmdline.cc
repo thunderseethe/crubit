@@ -45,13 +45,19 @@ ABSL_FLAG(std::string, ir_out, "",
 ABSL_FLAG(std::string, crubit_support_path_format, "",
           "the format of `#include` for including Crubit C++ support library "
           "headers in the "
-          "generated .cc files, in the format specifier, use `{header}` as the "
+          "generated .cc files. in the format specifier, use `{header}` as the "
           "placeholder. For "
           "example, to include `support_header.h` as "
-          "`#include <crubit/support/support_header.h>, specify "
-          "`<crubit/support/{header}>`; for "
-          "`#include \"crubit/support/support_header.h\", specify "
-          "`\"crubit/support/{header}`,");
+          "`#include \"support/support_header.h\", specify "
+          "`\"support/{header}\";");
+ABSL_FLAG(std::string, crubit_support_versioned_path_format, "",
+          "the format of `#include` for including Crubit's versioned `internal`"
+          "support library headers in the generated .cc files. "
+          "In the format specifier, use `{header}` as the "
+          "placeholder. For "
+          "example, to include `support_header.h` as "
+          "`#include <crubit/support/internal/support_header.h>, specify "
+          "`<crubit/support/internal/{header}>`;");
 ABSL_FLAG(std::string, clang_format_exe_path, "",
           "(optional) Path to a clang-format executable that will be used to "
           "format the "
@@ -71,18 +77,20 @@ ABSL_FLAG(std::vector<std::string>, public_headers, std::vector<std::string>(),
           "unparseable headers may be removed frp, public_headers, but kept "
           "attributed to that target in target_args.");
 ABSL_FLAG(std::string, target, "", "The target to generate bindings for.");
-ABSL_FLAG(std::string, target_args, "",
-          "Per-target Crubit arguments, encoded as a JSON array. This contains "
-          "both the list of headers assigned to the target (h), and the set of "
-          "enabled features (f). For example:"
-          "[\n"
-          "  {\n"
-          "     \"t\": \"//foo/bar:baz\",\n"
-          "     \"h\": [\"foo/bar/header1.h\", \"foo/bar/header2.h\"],\n"
-          "     \"f\": [\"supported\"]\n"
-          "  },\n"
-          "...\n"
-          "]");
+ABSL_FLAG(
+    std::string, target_args, "",
+    "Per-target Crubit arguments, encoded as a JSON array. This contains "
+    "the list of headers assigned to the target (h), the set of "
+    "enabled features (f), and the (optional) crate name (c). For example:"
+    "[\n"
+    "  {\n"
+    "     \"t\": \"//foo/bar:baz\",\n"
+    "     \"h\": [\"foo/bar/header1.h\", \"foo/bar/header2.h\"],\n"
+    "     \"f\": [\"supported\"],\n"
+    "     \"c\": \"some_not_target_name_derived_crate_name\"\n"
+    "  },\n"
+    "...\n"
+    "]");
 ABSL_FLAG(std::vector<std::string>, extra_rs_srcs, std::vector<std::string>(),
           "Additional Rust source files to include into the crate.");
 ABSL_FLAG(std::vector<std::string>, reexported_namespaces,
@@ -110,31 +118,10 @@ ABSL_FLAG(std::string, namespaces_out, "",
           "namespace hierarchy.");
 ABSL_FLAG(std::string, error_report_out, "",
           "(optional) output path for the JSON error report");
-ABSL_FLAG(std::string, environment, "production",
-          "The environment that the bindings are generated for. When set to "
-          "'production', non mandatory (but potentially useful) information is "
-          "generated. When set to 'golden_test', unnecessary information is "
-          "omitted to reduce noise.")
-    .OnUpdate([] {
-      absl::SetFlag(&FLAGS_is_golden_test,
-                    absl::GetFlag(FLAGS_environment) == "golden_test");
-    });
-
 ABSL_FLAG(bool, is_golden_test, false,
           "If true, unnecessary information (such as source locations) is "
           "omitted from the generated bindings to reduce noise in golden "
           "tests.");
-
-// TODO(b/517182898): This is now an alias for --is_golden_test.
-// Remove this flag (and --environment) once the alias is no longer used.
-ABSL_FLAG(bool, generate_source_location_in_doc_comment, true,
-          "add the source code location from which the binding originates in"
-          "the doc comment of the binding")
-    .OnUpdate([] {
-      absl::SetFlag(
-          &FLAGS_is_golden_test,
-          !absl::GetFlag(FLAGS_generate_source_location_in_doc_comment));
-    });
 ABSL_FLAG(bool, kythe_annotations, false,
           "Emit extra source information for generating cross-references.");
 
@@ -152,6 +139,7 @@ struct TargetArgs {
   std::string target;
   std::vector<std::string> headers;
   std::vector<std::string> features;
+  std::optional<std::string> crate_name;
 };
 
 bool fromJSON(const llvm::json::Value& json, TargetArgs& out,
@@ -159,7 +147,8 @@ bool fromJSON(const llvm::json::Value& json, TargetArgs& out,
   llvm::json::ObjectMapper mapper(json, path);
   return mapper && mapper.map("t", out.target) &&
          mapper.mapOptional("h", out.headers) &&
-         mapper.mapOptional("f", out.features);
+         mapper.mapOptional("f", out.features) &&
+         mapper.mapOptional("c", out.crate_name);
 }
 
 std::vector<HeaderName> PublicHeaders() {
@@ -220,6 +209,9 @@ absl::Status ParseTargetArgs(absl::string_view target_args_str,
       }
       args.target_to_features[BazelLabel(target)].insert(feature);
     }
+    if (it.crate_name.has_value()) {
+      args.target_to_crate_name[BazelLabel(target)] = *it.crate_name;
+    }
   }
   return absl::OkStatus();
 }
@@ -236,6 +228,8 @@ absl::StatusOr<Cmdline> Cmdline::FromFlags() {
       .namespaces_out = absl::GetFlag(FLAGS_namespaces_out),
       .crubit_support_path_format =
           absl::GetFlag(FLAGS_crubit_support_path_format),
+      .crubit_support_versioned_path_format =
+          absl::GetFlag(FLAGS_crubit_support_versioned_path_format),
       .clang_format_exe_path = absl::GetFlag(FLAGS_clang_format_exe_path),
       .rustfmt_exe_path = absl::GetFlag(FLAGS_rustfmt_exe_path),
       .rustfmt_config_path = absl::GetFlag(FLAGS_rustfmt_config_path),

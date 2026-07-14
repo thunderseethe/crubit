@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/golden:types_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: type alias `PtrDiff` could not be bound
 //   Unsupported type 'decltype(static_cast<int *>(nullptr) - static_cast<int *>(nullptr))': Unsupported type '__ptrdiff_t': Unsupported clang::Type class 'PredefinedSugar'
 
@@ -22,6 +21,7 @@
 //   Unsupported type 'decltype(sizeof (0))': Unsupported type '__size_t': Unsupported clang::Type class 'PredefinedSugar'
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "10SomeStruct"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=SomeStruct
 pub struct SomeStruct {
@@ -45,26 +45,6 @@ impl Default for SomeStruct {
     }
 }
 
-// error: constructor `SomeStruct::SomeStruct` could not be bound
-//   Unsupported parameter type `const SomeStruct& __param_0`:
-//     references are not yet supported
-
-// error: constructor `SomeStruct::SomeStruct` could not be bound
-//   Unsupported parameter type `SomeStruct&& __param_0`:
-//     references are not yet supported
-
-// error: function `SomeStruct::operator=` could not be bound
-//   Unsupported parameter type `const SomeStruct& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `SomeStruct&`:
-//     references are not yet supported
-
-// error: function `SomeStruct::operator=` could not be bound
-//   Unsupported parameter type `SomeStruct&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `SomeStruct&`:
-//     references are not yet supported
-
 // error: struct `ForwardDeclaredStruct` could not be bound
 //   incomplete type
 
@@ -86,6 +66,7 @@ impl Default for SomeStruct {
 ///   * `forward_declared_ptr_field`: raw pointer
 ///   * `cyclic_ptr_field`: raw pointer
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "19FieldTypeTestStruct"]
 #[repr(C, align(8))]
 ///CRUBIT_ANNOTATE: cpp_type=FieldTypeTestStruct
 pub struct FieldTypeTestStruct {
@@ -143,19 +124,27 @@ unsafe impl ::cxx::ExternType for FieldTypeTestStruct {
     type Kind = ::cxx::kind::Trivial;
 }
 
-// error: constructor `FieldTypeTestStruct::FieldTypeTestStruct` could not be bound
-//   Unsupported parameter type `const FieldTypeTestStruct& __param_0`:
-//     references are not yet supported
-
-// error: constructor `FieldTypeTestStruct::FieldTypeTestStruct` could not be bound
-//   Unsupported parameter type `FieldTypeTestStruct&& __param_0`:
-//     references are not yet supported
-
-// error: function `FunctionTakingPointersAndReferences` could not be bound
-//   Unsupported parameter type `const int& const_ref_param`:
-//     references are not yet supported
-//   Unsupported parameter type `int& mut_ref_param`:
-//     references are not yet supported
+/// # Safety
+///
+/// The caller must ensure that the following unsafe arguments are not misused by the function:
+/// * `const_ptr_param`: raw pointer
+/// * `mut_ptr_param`: raw pointer
+#[inline(always)]
+pub unsafe fn FunctionTakingPointersAndReferences<'const_ref_param, 'mut_ref_param>(
+    const_ref_param: &'const_ref_param ::ffi_11::c_int,
+    mut_ref_param: &'mut_ref_param mut ::ffi_11::c_int,
+    const_ptr_param: *const ::ffi_11::c_int,
+    mut_ptr_param: *mut ::ffi_11::c_int,
+) {
+    unsafe {
+        crate::detail::__rust_thunk___Z35FunctionTakingPointersAndReferencesRKiRiPS_Pi(
+            const_ref_param,
+            mut_ref_param,
+            const_ptr_param,
+            mut_ptr_param,
+        )
+    }
+}
 
 #[inline(always)]
 pub fn VoidReturningFunction() {
@@ -167,9 +156,8 @@ pub fn VoidReturningFunction() {
 /// returning a function. In ML-like syntax:
 /// FunctionPointerReturningFunction : () -> (const int&, int*) -> int&
 #[inline(always)]
-pub fn FunctionPointerReturningFunction() -> Option<
-    unsafe extern "C" fn(*const ::ffi_11::c_int, *mut ::ffi_11::c_int) -> *mut ::ffi_11::c_int,
-> {
+pub fn FunctionPointerReturningFunction(
+) -> Option<unsafe extern "C" fn(&::ffi_11::c_int, *mut ::ffi_11::c_int) -> &mut ::ffi_11::c_int> {
     unsafe { crate::detail::__rust_thunk___Z32FunctionPointerReturningFunctionv() }
 }
 
@@ -191,12 +179,19 @@ mod detail {
     use super::*;
     unsafe extern "C" {
         pub(crate) unsafe fn __rust_thunk___ZN10SomeStructC1Ev(__this: *mut ::core::ffi::c_void);
+        #[link_name = "_Z35FunctionTakingPointersAndReferencesRKiRiPS_Pi"]
+        pub(crate) unsafe fn __rust_thunk___Z35FunctionTakingPointersAndReferencesRKiRiPS_Pi<
+            'const_ref_param,
+            'mut_ref_param,
+        >(
+            const_ref_param: &'const_ref_param ::ffi_11::c_int,
+            mut_ref_param: &'mut_ref_param mut ::ffi_11::c_int,
+            const_ptr_param: *const ::ffi_11::c_int,
+            mut_ptr_param: *mut ::ffi_11::c_int,
+        );
         pub(crate) unsafe fn __rust_thunk___Z21VoidReturningFunctionv();
         pub(crate) unsafe fn __rust_thunk___Z32FunctionPointerReturningFunctionv() -> Option<
-            unsafe extern "C" fn(
-                *const ::ffi_11::c_int,
-                *mut ::ffi_11::c_int,
-            ) -> *mut ::ffi_11::c_int,
+            unsafe extern "C" fn(&::ffi_11::c_int, *mut ::ffi_11::c_int) -> &mut ::ffi_11::c_int,
         >;
         pub(crate) unsafe fn __rust_thunk___Z24FunctionWithVoidPointersPvPKv(
             __param_0: *mut ::ffi_11::c_void,

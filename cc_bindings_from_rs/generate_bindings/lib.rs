@@ -27,9 +27,10 @@ mod generate_template_specialization;
 mod get_generic_args;
 
 use crate::format_type::{
-    crubit_abi_type_from_ty, format_cc_ident, format_cc_ident_symbol, format_param_types_for_cc,
-    format_region_as_cc_lifetime, format_ret_ty_for_cc, format_top_level_ns_for_crate,
-    is_bridged_type, BridgedBuiltin, BridgedType, BridgedTypeConversionInfo,
+    crubit_abi_type_from_ty, format_cc_ident, format_cc_ident_symbol,
+    format_param_types_for_cc_api, format_param_types_for_cc_thunk, format_region_as_cc_lifetime,
+    format_ret_ty_for_cc, format_top_level_ns_for_crate, is_bridged_type, BridgedBuiltin,
+    BridgedType, BridgedTypeConversionInfo,
 };
 use crate::generate_function::{generate_function, must_use_attr_of};
 use crate::generate_function_thunk::{generate_trait_thunks, TraitThunks};
@@ -37,7 +38,7 @@ use crate::generate_struct_and_union::{
     adt_needs_bindings, cpp_enum_cpp_underlying_type, from_trait_impls_by_argument, generate_adt,
     generate_adt_core, into_trait_impls_by_destination, scalar_value_to_string,
 };
-use crate::generate_template_specialization::collect_trait_impls;
+use crate::generate_template_specialization::append_trait_impls;
 use arc_anyhow::{Context, Error, Result};
 use code_gen_utils::{format_cc_includes, CcConstQualifier, CcInclude, NamespaceQualifier};
 use database::code_snippet::{
@@ -237,7 +238,7 @@ fn specializations<'tcx>(db: &crate::BindingsGenerator<'tcx>) -> Rc<[CppTypeSpec
                     Some(CppTypeSpecialization {
                         ty,
                         cpp_type: Rc::from(cpp_type.as_str()),
-                        include_path: attrs.include_path.map(|s| Rc::from(s.as_str())),
+                        include_paths: attrs.include_paths.iter().map(|s| Rc::from(s.as_str())).collect(),
                     })
                 }),
         );
@@ -730,7 +731,10 @@ fn symbol_unqualified_name(db: &BindingsGenerator<'_>, def_id: DefId) -> Option<
         // we should _not_ implicitly change it, and should instead given them an error.
         // Hence, this unkeywording behavior only happens in the case where we implicitly
         // delegate to the Rust name.
-        Symbol::intern(code_gen_utils::unkeyword_cpp_ident(rs_name.as_str()).as_ref())
+        Symbol::intern(
+            code_gen_utils::unkeyword_cpp_ident(rs_name.as_str(), db.crate_features(def_id.krate))
+                .as_ref(),
+        )
     });
     let cpp_type = attributes.cpp_type;
     Some(UnqualifiedName { cpp_name, rs_name, cpp_type })
@@ -848,6 +852,35 @@ fn matches_qualified_name(db: &BindingsGenerator<'_>, item_did: DefId, name: &[&
         .all(|(sym, expected)| sym == expected)
 }
 
+#[rustversion::before(2026-07-09)]
+fn has_slice_layout_representation(backend_repr: BackendRepr) -> bool {
+    matches!(
+        backend_repr,
+        BackendRepr::ScalarPair(
+            Scalar::Initialized { value: Primitive::Pointer(AddressSpace(_)), .. },
+            Scalar::Initialized {
+                value: Primitive::Int(Integer::I32 | Integer::I64, /* signedness = */ false),
+                ..
+            }
+        )
+    )
+}
+
+#[rustversion::since(2026-07-09)]
+fn has_slice_layout_representation(backend_repr: BackendRepr) -> bool {
+    matches!(
+        backend_repr,
+        BackendRepr::ScalarPair {
+            a: Scalar::Initialized { value: Primitive::Pointer(AddressSpace(_)), .. },
+            b: Scalar::Initialized {
+                value: Primitive::Int(Integer::I32 | Integer::I64, /* signedness = */ false),
+                ..
+            },
+            ..
+        }
+    )
+}
+
 /// Checks that `ty` has the same ABI as `rs_std::SliceRef`.
 fn check_slice_layout<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) {
     // Check the assumption from `rust_builtin_type_abi_assumptions.md` that Rust's
@@ -863,16 +896,7 @@ fn check_slice_layout<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) {
 
     assert_eq!(ptr_align, layout.align().abi.bytes());
     assert_eq!(2 * ptr_size, layout.size().bytes());
-    assert!(matches!(
-        layout.backend_repr(),
-        BackendRepr::ScalarPair(
-            Scalar::Initialized { value: Primitive::Pointer(AddressSpace(_)), .. },
-            Scalar::Initialized {
-                value: Primitive::Int(Integer::I32 | Integer::I64, /* signedness = */ false),
-                ..
-            }
-        )
-    ));
+    assert!(has_slice_layout_representation(layout.backend_repr()));
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1182,7 +1206,12 @@ fn supported_traits(db: &BindingsGenerator<'_>) -> Rc<[DefId]> {
                 lang_items.try_trait(),
             ];
             let is_excluded_builtin = excluded_traits.iter().any(|id| id.eq(&Some(*trait_id)));
-            has_meaningful_impl && !is_excluded_builtin
+
+            let included_auto_traits = [lang_items.unpin_trait()];
+            let is_included_auto_trait =
+                included_auto_traits.iter().any(|id| id.eq(&Some(*trait_id)));
+
+            (is_included_auto_trait || has_meaningful_impl) && !is_excluded_builtin
         })
         .collect::<Vec<DefId>>()
         .into_boxed_slice();
@@ -2147,6 +2176,15 @@ impl NodeSortKey {
                 }
             }
             TemplateSpecialization::TraitImpl(t) => Self::from_def_id(tcx, t.trait_impl),
+            TemplateSpecialization::NegativeAutoTraitImpl(u) => {
+                let trait_name = tcx.item_name(u.trait_id);
+                // While other trait impls have a single `DefId` representing the particular
+                // type-trait impl combination, auto trait impls do not have this, so we construct
+                // a path string manually.
+                let path_str = format!("{} as !{trait_name}", tcx.def_path_str(u.self_def_id));
+                let hash = tcx.def_path_hash(u.self_def_id).local_hash().as_u64();
+                NodeSortKey { hash, path_str }
+            }
         }
     }
 }
@@ -2222,7 +2260,7 @@ fn generate_crate(db: &BindingsGenerator) -> Result<BindingsTokens> {
         cc_api_impl.extend(api_snippets.rs_details.into_tokens(&mut extern_c_decls));
     }
 
-    let worklist: Vec<_> = std::mem::take(&mut cc_details_prereqs.template_specializations)
+    let mut worklist: Vec<_> = std::mem::take(&mut cc_details_prereqs.template_specializations)
         .into_iter()
         .chain(std::mem::take(&mut cc_details_prereqs.lazy_template_specializations))
         .chain(
@@ -2236,8 +2274,8 @@ fn generate_crate(db: &BindingsGenerator) -> Result<BindingsTokens> {
                 })
                 .cloned(),
         )
-        .chain(collect_trait_impls(db))
         .collect();
+    append_trait_impls(db, &mut worklist);
 
     let GeneratedSpecializations { mut specializations, impls_cc_details } =
         generate_specializations_fixpoint(

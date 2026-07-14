@@ -2,21 +2,23 @@
 // Exceptions. See /LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use crate::format_type::{format_cc_ident, has_elided_region, region_is_elided, CcParamTy};
+use crate::format_type::{
+    alias_ty_as_opaque_def_id, format_cc_ident, has_elided_region, region_is_elided,
+    ty_as_alias_ty, CcParamTy,
+};
 use crate::generate_doc_comment;
 use crate::generate_function_thunk::{
     generate_thunk_decl, generate_thunk_impl, ident_or_opt_ident, is_thunk_required,
+    make_thunk_name, ThunkKind,
 };
 use crate::{
-    format_param_types_for_cc, format_region_as_cc_lifetime, format_ret_ty_for_cc,
+    format_param_types_for_cc_api, format_region_as_cc_lifetime, format_ret_ty_for_cc,
     format_top_level_ns_for_crate, generate_deprecated_tag, is_bridged_type,
     is_c_abi_compatible_by_value, liberate_and_deanonymize_late_bound_regions, BridgedType, CcType,
     RsSnippet,
 };
 use arc_anyhow::{Context, Result};
-use code_gen_utils::{
-    escape_non_identifier_chars, expect_format_cc_ident, make_rs_ident, CcInclude,
-};
+use code_gen_utils::{expect_format_cc_ident, make_rs_ident, CcInclude};
 use crubit_abi_type::{CrubitAbiTypeToCppExprTokens, CrubitAbiTypeToCppTokens};
 use database::code_snippet::{ApiSnippets, CcPrerequisites, CcSnippet};
 use database::{BindingsGenerator, StaticMethodMode, TypeLocation};
@@ -73,14 +75,13 @@ impl<'tcx> FunctionKind<'tcx> {
     }
 }
 
-fn thunk_name(
+pub(crate) fn function_symbol_name(
     db: &BindingsGenerator,
     def_id: DefId,
     export_name: Option<Symbol>,
-    needs_thunk: bool,
 ) -> String {
     let tcx = db.tcx();
-    let symbol_name = if db.is_golden_test() {
+    if db.is_golden_test() {
         if let Some(export_name) = export_name {
             export_name.to_string()
         } else {
@@ -115,27 +116,24 @@ fn thunk_name(
                 .unwrap_or(def_name)
         }
     } else {
-        // `expect` and `expect_resolve` are used because `fn get_generic_args`
-        // should be called earlier to reject cases with unsupported generics.
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, def_id);
         let args = db.get_generic_args(def_id).expect("Generics should be checked earlier");
         let span = tcx.def_span(def_id);
         let instance = ty::Instance::expect_resolve(tcx, typing_env, def_id, args, span);
         tcx.symbol_name(instance).name.to_string()
-    };
-    let target_path_mangled_hash = if db.is_golden_test() {
-        "".to_string()
-    } else {
-        format!("{:x}_", tcx.stable_crate_id(db.source_crate_num()))
-    };
+    }
+}
+
+fn thunk_name(
+    db: &BindingsGenerator,
+    def_id: DefId,
+    export_name: Option<Symbol>,
+    needs_thunk: bool,
+) -> String {
     if needs_thunk {
-        format!(
-            "__crubit_thunk_{}{}",
-            target_path_mangled_hash,
-            &escape_non_identifier_chars(&symbol_name)
-        )
+        make_thunk_name(db, ThunkKind::Function { def_id, export_name })
     } else {
-        symbol_name
+        function_symbol_name(db, def_id, export_name)
     }
 }
 
@@ -202,7 +200,8 @@ pub(crate) fn cc_param_to_c_abi<'tcx>(
         }
     } else if is_c_abi_compatible_by_value(tcx, ty) {
         if let ty::TyKind::Adt(adt, _) = ty.kind()
-            && crate::matches_qualified_name(db, adt.did(), &["ctor", "RvalueReference"])
+            && (crate::matches_qualified_name(db, adt.did(), &["ctor", "RvalueReference"])
+                || crate::matches_qualified_name(db, adt.did(), &["ctor", "ByValue"]))
         {
             includes.insert(code_gen_utils::CcInclude::utility());
             quote! { ::std::move(#cc_ident) }
@@ -941,7 +940,8 @@ pub fn generate_function<'tcx>(
 
     let params = {
         let names = fn_arg_idents(tcx, def_id);
-        let cpp_types = format_param_types_for_cc(db, &sig_mid, function_kind.has_self_param())?;
+        let cpp_types =
+            format_param_types_for_cc_api(db, &sig_mid, function_kind.has_self_param())?;
         names
             .into_iter()
             .enumerate()
@@ -1247,29 +1247,16 @@ pub fn get_async_future_output_ty<'tcx>(
     tcx: TyCtxt<'tcx>,
     rs_return_type: Ty<'tcx>,
 ) -> Result<Ty<'tcx>> {
-    #[rustversion::any(all(nightly, since(2026-06-25)), stable(1.95))]
-    let ty::TyKind::Alias(_, alias_ty) = rs_return_type.kind() else {
-        bail!("async functions should always return a TyKind::Alias, this should never happen.");
+    let Some(alias_ty) = ty_as_alias_ty(rs_return_type) else {
+        bail!("async functions should always return a TyKind::Alias (`{rs_return_type}`), this should never happen.");
     };
-    #[rustversion::any(all(nightly, before(2026-06-25)), stable(1.96))]
-    let ty::TyKind::Alias(alias_ty) = rs_return_type.kind() else {
-        bail!("async functions should always return a TyKind::Alias, this should never happen.");
+    let Some(alias_def_id) = alias_ty_as_opaque_def_id(tcx, alias_ty) else {
+        bail!("crubit.rs-bug: Future::Output alias is not an opaque type (`{rs_return_type}`), this should never happen.");
     };
     let future_output = tcx
         .lang_items()
         .future_output()
         .ok_or_else(|| anyhow!("crubit.rs-bug: Future::Output lang item not found"))?;
-    #[rustversion::stable(1.95)]
-    let alias_def_id = alias_ty.def_id;
-    #[rustversion::any(all(nightly, before(2026-06-23)), stable(1.96))]
-    let alias_def_id = alias_ty.kind.def_id();
-    #[rustversion::all(nightly, since(2026-06-23))]
-    let alias_def_id: DefId =
-        alias_ty.kind.try_to_opaque().map(|id| id.into()).ok_or_else(|| {
-            anyhow!(
-            "crubit.rs-bug: Future::Output alias is not an opaque type, this should never happen.",
-        )
-        })?;
     tcx.explicit_item_bounds(alias_def_id)
         .iter_instantiated_copied(tcx, alias_ty.args)
         .find_map(|unnorm| {

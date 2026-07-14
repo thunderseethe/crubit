@@ -6,21 +6,21 @@
 // //rs_bindings_from_cc/test/wrapper/pub_crate_types:pub_crate_types
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: class `Template` could not be bound
 //   Class templates are not yet supported
 
 pub(crate) type TemplateIntAlias = crate::__CcTemplateInst8TemplateIiE;
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "16CompoundDataType"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=CompoundDataType
 pub struct CompoundDataType {
@@ -107,6 +107,7 @@ pub(crate) fn GetOtherPubCrateTemplate2Int() -> crate::__CcTemplateInst9Template
 // Template2<int>*>) {}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "__CcTemplateInst9Template2IiE"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Template2 < int >
 pub(crate) struct __CcTemplateInst9Template2IiE {
@@ -135,6 +136,7 @@ forward_declare::unsafe_define!(
 //   b/248542210: template instantiation of member function cannot reliably get bindings
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "__CcTemplateInst8TemplateIiE"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Template < int >
 pub(crate) struct __CcTemplateInst8TemplateIiE {
@@ -162,13 +164,7 @@ forward_declare::unsafe_define!(
 // error: function `Template<int>::operator=` could not be bound
 //   b/248542210: template instantiation of member function cannot reliably get bindings
 
-// error: function `Template<int>::IndirectCannotBeInstantiated` could not be bound
-//   Failed to instantiate the function/method template: Diagnostics emitted:
-//   rs_bindings_from_cc/test/wrapper/pub_crate_types/pub_crate_types.h;l=16:5: note: in instantiation of member function 'Template<int>::CannotBeInstantiated' requested here
-//   rs_bindings_from_cc/test/wrapper/pub_crate_types/pub_crate_types.h;l=18:47: error: static assertion failed
-
-// error: function `Template<int>::CannotBeInstantiated` could not be bound
-//   Instantiating this template relies on an invalid decl: Template<int>::CannotBeInstantiated
+// trigger b/248542210,
 
 #[path = "rs_bindings_from_cc/test/wrapper/pub_crate_types/pub_crate_types_extra.rs"]
 mod __crubit_mod_0;

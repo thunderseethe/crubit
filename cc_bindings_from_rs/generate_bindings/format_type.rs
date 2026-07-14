@@ -36,9 +36,38 @@ use rustc_abi::{BackendRepr, HasDataLayout, Integer, Layout, Primitive, Scalar, 
 use rustc_hir::lang_items::LangItem;
 use rustc_middle::mir::Mutability;
 use rustc_middle::ty::{self, AdtDef, GenericArg, Ty, TyCtxt};
-use rustc_span::def_id::CrateNum;
+use rustc_span::def_id::{CrateNum, DefId};
 use rustc_span::symbol::Symbol;
 use std::rc::Rc;
+
+/// Returns true if `did` is the struct `::ctor::RvalueReference`.
+fn is_rvalue_reference(db: &BindingsGenerator<'_>, did: DefId) -> bool {
+    matches_qualified_name(db, did, &["ctor", "RvalueReference"])
+        || matches_qualified_name(db, did, &["rust_out", "ctor", "RvalueReference"])
+}
+
+/// Returns true if `did` is the struct `::ctor::ByValue`.
+fn is_ctor_by_value(db: &BindingsGenerator<'_>, did: DefId) -> bool {
+    matches_qualified_name(db, did, &["ctor", "ByValue"])
+        || matches_qualified_name(db, did, &["rust_out", "ctor", "ByValue"])
+}
+
+fn format_non_owning_pointer_prefix<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    region: ty::Region<'tcx>,
+    referent: Ty<'tcx>,
+    prereqs: &mut CcPrerequisites<'tcx>,
+) -> TokenStream {
+    let lifetime = format_region_as_cc_lifetime(db, region, prereqs);
+    // Don't annotate maybe uninit with crubit_nonnull.
+    let annotation = if try_ty_as_maybe_uninit(db, referent).is_some() {
+        quote! {}
+    } else {
+        prereqs.includes.insert(db.support_header("annotations_internal.h"));
+        quote! { crubit_nonnull }
+    };
+    quote! { * #lifetime #annotation }
+}
 
 /// Implementation of `BindingsGenerator::format_top_level_ns_for_crate`.
 pub fn format_top_level_ns_for_crate(db: &BindingsGenerator<'_>, krate: CrateNum) -> Rc<[Symbol]> {
@@ -72,11 +101,15 @@ pub fn format_cc_ident(db: &BindingsGenerator, ident: &str) -> Result<Ident> {
     // enabled for the feature. Right now if the dep enables the feature but the
     // current crate doesn't, we will escape the identifier in the dep but
     // consider it failed in the current crate.
+    let features = db.crate_features(db.source_crate_num());
     if check_feature_enabled_on_self_and_all_deps(db, FineGrainedFeature::EscapeCppReservedKeyword)
     {
-        code_gen_utils::format_cc_ident(code_gen_utils::unkeyword_cpp_ident(ident).as_ref())
+        code_gen_utils::format_cc_ident(
+            code_gen_utils::unkeyword_cpp_ident(ident, features).as_ref(),
+            features,
+        )
     } else {
-        code_gen_utils::format_cc_ident(ident)
+        code_gen_utils::format_cc_ident(ident, features)
     }
 }
 
@@ -236,7 +269,7 @@ pub fn format_ty_for_cc<'tcx>(
                 quote! {}
             });
         let mut prereqs = CcPrerequisites::default();
-        if let Some(include_path) = &specialization.include_path {
+        for include_path in &specialization.include_paths {
             prereqs.includes.insert(CcInclude::from_path(include_path.as_ref()));
         }
         return Ok(CcSnippet { tokens, prereqs });
@@ -381,16 +414,31 @@ pub fn format_ty_for_cc<'tcx>(
             bail!("C++ doesn't have a standard equivalent of `{ty}` (b/254094650)");
         }
 
+        ty::TyKind::Adt(adt, substs)
+            if is_rvalue_reference(db, adt.did()) || is_ctor_by_value(db, adt.did()) =>
+        {
+            // TODO(jeanpierreda): We need to support const rvalue references and CRef/CMut.
+            // (Likely this should be merged with the handling for actual Rust references.)
+            let referent = substs[1].expect_ty();
+            let mut prereqs = CcPrerequisites::default();
+            let sigil =
+                if matches!(location, TypeLocation::FnParam { .. } | TypeLocation::FnReturn { .. })
+                {
+                    quote! { && }
+                } else {
+                    let region = substs[0]
+                        .as_region()
+                        .expect("RvalueReference/ByValue's first parameter should be a lifetime");
+                    format_non_owning_pointer_prefix(db, region, referent, &mut prereqs)
+                };
+
+            let mut snippet =
+                format_pointer_or_reference_ty_for_cc(db, referent, Mutability::Mut, sigil)?;
+            snippet.prereqs += prereqs;
+            return Ok(snippet);
+        }
+
         ty::TyKind::Adt(adt, substs) => {
-            if matches_qualified_name(db, adt.did(), &["ctor", "RvalueReference"]) {
-                let referent = substs[1].expect_ty();
-                return format_pointer_or_reference_ty_for_cc(
-                    db,
-                    referent,
-                    Mutability::Mut,
-                    quote! { && },
-                );
-            }
             let def_id = adt.did();
             let mut prereqs = CcPrerequisites::default();
 
@@ -440,8 +488,10 @@ pub fn format_ty_for_cc<'tcx>(
                     "Bridged types must appear in a bridgeable type location"
                 );
                 match bridged_type {
-                    BridgedType::Legacy { include_path, cpp_type, .. } => {
-                        prereqs.includes.insert(CcInclude::from_path(include_path.as_str()));
+                    BridgedType::Legacy { include_paths, cpp_type, .. } => {
+                        for path in &include_paths {
+                            prereqs.includes.insert(CcInclude::from_path(path.as_str()));
+                        }
 
                         let cpp_type_str = match &cpp_type {
                             CcType::Other(symbol) => symbol.as_str(),
@@ -554,15 +604,7 @@ pub fn format_ty_for_cc<'tcx>(
 
             let mut prereqs = CcPrerequisites::default();
             let ptr_or_ref_prefix = if let RefConvert::ToPtr { .. } = treat_ref_as_ptr {
-                let lifetime = format_region_as_cc_lifetime(db, region, &mut prereqs);
-                // Don't annotate maybe uninit with crubit_nonnull.
-                let annotation = if try_ty_as_maybe_uninit(db, referent).is_some() {
-                    quote! {}
-                } else {
-                    prereqs.includes.insert(db.support_header("annotations_internal.h"));
-                    quote! { crubit_nonnull }
-                };
-                quote! { * #lifetime #annotation }
+                format_non_owning_pointer_prefix(db, region, referent, &mut prereqs)
             } else if matches!(location, TypeLocation::FnParam { .. }) {
                 // Omit the lifetime of parameter-location references whose lifetime is trivial.
                 // References with non-trivial lifetimes will be converted to pointers above.
@@ -653,9 +695,10 @@ pub fn format_ty_for_cc<'tcx>(
             prereqs.includes.insert(db.support_header("internal/cxx20_backports.h"));
 
             let ret_type = format_ret_ty_for_cc(db, &sig)?.into_tokens(&mut prereqs);
-            let param_types = format_param_types_for_cc(db, &sig, /*has_self_param=*/ false)?
-                .into_iter()
-                .map(|cc_param| cc_param.snippet.into_tokens(&mut prereqs));
+            let param_types =
+                format_param_types_for_cc_api(db, &sig, /*has_self_param=*/ false)?
+                    .into_iter()
+                    .map(|cc_param| cc_param.snippet.into_tokens(&mut prereqs));
             let tokens = quote! {
                 crubit::type_identity_t<
                     #ret_type( #( #param_types ),* )
@@ -672,6 +715,36 @@ pub fn format_ty_for_cc<'tcx>(
         // `CcPrerequisites::move_defs_to_fwd_decls`.
         _ => bail!("The following Rust type is not supported yet: {ty}"),
     })
+}
+
+/// Returns the `AliasTy` if `ty` is a type alias, or `None` otherwise.
+pub(crate) fn ty_as_alias_ty<'tcx>(ty: Ty<'tcx>) -> Option<&'tcx ty::AliasTy<'tcx>> {
+    #[rustversion::any(all(nightly, since(2026-06-25)), stable(1.95))]
+    let ty::TyKind::Alias(_, alias_ty) = ty.kind() else {
+        return None;
+    };
+    #[rustversion::any(all(nightly, before(2026-06-25)), stable(1.96))]
+    let ty::TyKind::Alias(alias_ty) = ty.kind() else {
+        return None;
+    };
+
+    Some(alias_ty)
+}
+
+/// Returns `Some(def_id)` if `alias_ty` represents an `Opaque` alias
+/// (`-> impl Trait` / `async fn`).
+pub(crate) fn alias_ty_as_opaque_def_id<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    alias_ty: &ty::AliasTy<'tcx>,
+) -> Option<DefId> {
+    #[rustversion::stable(1.95)]
+    let def_id = alias_ty.def_id;
+    #[rustversion::any(all(nightly, before(2026-06-23)), stable(1.96))]
+    let def_id = alias_ty.kind.def_id();
+    #[rustversion::all(nightly, since(2026-06-23))]
+    let def_id: DefId = alias_ty.kind.try_to_opaque()?;
+
+    (tcx.def_kind(def_id) == rustc_hir::def::DefKind::OpaqueTy).then_some(def_id)
 }
 
 enum RefConvert {
@@ -768,18 +841,32 @@ pub struct CcParamTy<'tcx> {
     pub is_lifetime_bound: bool,
 }
 
-/// Returns the C++ parameter types.
-pub fn format_param_types_for_cc<'tcx>(
+/// Returns the C++ parameter types, both for thunks and non-thunks
+fn format_param_types_for_cc_impl<'tcx>(
     db: &BindingsGenerator<'tcx>,
     sig_mid: &ty::FnSig<'tcx>,
     has_self_param: bool,
+    is_thunk: bool,
 ) -> Result<Vec<CcParamTy<'tcx>>> {
     let elided_is_output = has_elided_region(db.tcx(), sig_mid.output());
     let param_types = sig_mid.inputs();
     let mut snippets = Vec::with_capacity(param_types.len());
-    for (i, param_type) in param_types.iter().copied().enumerate() {
+    let ctor_plain_values = db
+        .crate_features(db.source_crate_num())
+        .contains(crubit_feature::CrubitFeature::CtorPlainValues);
+
+    for (i, mut param_type) in param_types.iter().copied().enumerate() {
         let is_self_param = i == 0 && has_self_param;
         let location = TypeLocation::FnParam { elided_is_output, is_self_param };
+
+        if !is_thunk
+            && ctor_plain_values
+            && let ty::TyKind::Adt(adt, substs) = param_type.kind()
+            && is_ctor_by_value(db, adt.did())
+        {
+            param_type = substs[1].expect_ty();
+        }
+
         let cc_type = db
             .format_ty_for_cc(param_type, location)
             .with_context(|| format!("Error handling parameter #{i} of type `{param_type}`"))?;
@@ -792,6 +879,24 @@ pub fn format_param_types_for_cc<'tcx>(
         });
     }
     Ok(snippets)
+}
+
+/// Returns the C++ parameter types for the C++ API.
+pub fn format_param_types_for_cc_api<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    sig_mid: &ty::FnSig<'tcx>,
+    has_self_param: bool,
+) -> Result<Vec<CcParamTy<'tcx>>> {
+    format_param_types_for_cc_impl(db, sig_mid, has_self_param, /*is_thunk=*/ false)
+}
+
+/// Returns the C++ parameter types for the thunks.
+pub fn format_param_types_for_cc_thunk<'tcx>(
+    db: &BindingsGenerator<'tcx>,
+    sig_mid: &ty::FnSig<'tcx>,
+    has_self_param: bool,
+) -> Result<Vec<CcParamTy<'tcx>>> {
+    format_param_types_for_cc_impl(db, sig_mid, has_self_param, /*is_thunk=*/ true)
 }
 
 fn try_ty_as_maybe_uninit<'tcx>(
@@ -928,7 +1033,8 @@ pub fn format_ty_for_rs<'tcx>(db: &BindingsGenerator<'tcx>, ty: Ty<'tcx>) -> Res
             // We support generics if they're for `std::option::Option` or `std::result::Result`.
             let is_supported_generic_type = BridgedBuiltin::new(db, adt).is_some()
                 || !has_non_lifetime_substs(substs)
-                || matches_qualified_name(db, adt.did(), &["ctor", "RvalueReference"]);
+                || is_rvalue_reference(db, adt.did())
+                || is_ctor_by_value(db, adt.did());
             ensure!(
                 has_cpp_type || is_supported_generic_type || has_composable_bridging,
                 "Generic types without composable bridging are not supported yet (b/259749095)"
@@ -1055,8 +1161,8 @@ pub enum BridgedType<'tcx> {
     Legacy {
         /// The spelling of the C++ type of the item.
         cpp_type: CcType,
-        /// Path to the header file that declares the type specified in `cpp_type`.
-        include_path: Symbol,
+        /// Paths to the header files that declare the type specified in `cpp_type`.
+        include_paths: Vec<Symbol>,
         conversion_info: BridgedTypeConversionInfo,
     },
     Composable(Box<BridgedTypeComposable<'tcx>>),
@@ -1160,13 +1266,13 @@ pub fn crubit_abi_type_from_ty<'tcx>(
                     BridgingAttrs::Composable { abi_rust, abi_cpp, .. } => {
                         return crubit_abi_type_from_bridged_adt(db, abi_rust, abi_cpp, substs);
                     }
-                    BridgingAttrs::JustCppType { include_path, cpp_type } => {
+                    BridgingAttrs::JustCppType { include_paths, cpp_type } => {
                         let fully_qualified_name = db.symbol_canonical_name(adt.did()).ok_or_else(|| {
                             anyhow!("Failed to get canonical name for {:?}", adt.did())
                         })?;
                         let mut prereqs = CcPrerequisites::default();
-                        if let Some(include_path) = include_path {
-                            prereqs.includes.insert(CcInclude::from_path(include_path.as_str()));
+                        for path in &include_paths {
+                            prereqs.includes.insert(CcInclude::from_path(path.as_str()));
                         }
                         return Ok(CrubitAbiTypeWithCcPrereqs {
                             crubit_abi_type: CrubitAbiType::Transmute {
@@ -1387,8 +1493,8 @@ fn is_manually_annotated_bridged_adt<'tcx>(
     };
 
     match bridging_attrs {
-        BridgingAttrs::JustCppType { include_path, cpp_type } => {
-            let Some(include_path) = include_path else {
+        BridgingAttrs::JustCppType { include_paths, cpp_type } => {
+            if include_paths.is_empty() {
                 // NOTE: this branch is surprising, and the annotations should probably be rewritten
                 // to be more explicit.
                 //
@@ -1396,7 +1502,7 @@ fn is_manually_annotated_bridged_adt<'tcx>(
                 // a pointer-like transmute bridged type rather than a non-bridged type.
                 // When no include path is specified, we treat the type as non-bridged.
                 return Ok(None);
-            };
+            }
 
             let ts = cpp_type.as_str().parse::<TokenStream>().unwrap_or_else(|err| {
                 panic!("Failed to parse CrubitAttrs.cpp_type for {ty} = {cpp_type}: {err}")
@@ -1413,19 +1519,19 @@ fn is_manually_annotated_bridged_adt<'tcx>(
             let is_pointer = matches!(cpp_type_cc, CcType::Pointer { .. });
             Ok(Some(BridgedType::Legacy {
                 cpp_type: cpp_type_cc,
-                include_path,
+                include_paths,
                 conversion_info: BridgedTypeConversionInfo::PointerLikeTransmute { is_pointer },
             }))
         }
         BridgingAttrs::ExternCFuncConverters {
-            include_path,
+            include_paths,
             cpp_type,
             cpp_to_rust_converter,
             rust_to_cpp_converter,
         } => {
-            let Some(include_path) = include_path else {
-                panic!("Failed to parse CrubitAttrs.include_path for {ty} = {cpp_type}: missing include_path")
-            };
+            if include_paths.is_empty() {
+                panic!("Failed to parse CrubitAttrs.include_paths for {ty} = {cpp_type}: missing include_path")
+            }
 
             let ts = cpp_type.as_str().parse::<TokenStream>().unwrap_or_else(|err| {
                 panic!("Failed to parse CrubitAttrs.cpp_type for {ty} = {cpp_type}: {err}")
@@ -1436,7 +1542,7 @@ fn is_manually_annotated_bridged_adt<'tcx>(
                     Some(cv) => CcType::Pointer { cpp_type, cv },
                     None => CcType::Other(cpp_type),
                 },
-                include_path,
+                include_paths,
                 conversion_info: BridgedTypeConversionInfo::ExternCFuncConverters {
                     cpp_to_rust_converter,
                     rust_to_cpp_converter,

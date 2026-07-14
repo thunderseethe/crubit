@@ -6,17 +6,17 @@
 // //rs_bindings_from_cc/test/golden:private_members_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod test_namespace_bindings {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N23test_namespace_bindings9SomeClassE"]
     #[repr(C, align(4))]
     ///CRUBIT_ANNOTATE: cpp_type=test_namespace_bindings :: SomeClass
     pub struct SomeClass {
@@ -34,7 +34,7 @@ pub mod test_namespace_bindings {
     }
     impl SomeClass {
         #[inline(always)]
-        pub fn public_method<'a>(&'a mut self) {
+        pub fn public_method<'__this>(&'__this mut self) {
             unsafe { self::some_class::public_method(self) }
         }
         #[inline(always)]
@@ -56,29 +56,11 @@ pub mod test_namespace_bindings {
         }
     }
 
-    // error: constructor `test_namespace_bindings::SomeClass::SomeClass` could not be bound
-    //   Unsupported parameter type `const test_namespace_bindings::SomeClass& __param_0`:
-    //     references are not yet supported
-
-    // error: constructor `test_namespace_bindings::SomeClass::SomeClass` could not be bound
-    //   Unsupported parameter type `test_namespace_bindings::SomeClass&& __param_0`:
-    //     references are not yet supported
-
-    // error: function `test_namespace_bindings::SomeClass::operator=` could not be bound
-    //   Unsupported parameter type `const test_namespace_bindings::SomeClass& __param_0`:
-    //     references are not yet supported
-    //   Unsupported return type `test_namespace_bindings::SomeClass&`:
-    //     references are not yet supported
-
-    // error: function `test_namespace_bindings::SomeClass::operator=` could not be bound
-    //   Unsupported parameter type `test_namespace_bindings::SomeClass&& __param_0`:
-    //     references are not yet supported
-    //   Unsupported return type `test_namespace_bindings::SomeClass&`:
-    //     references are not yet supported
-
     pub mod some_class {
         #[inline(always)]
-        pub(crate) fn public_method<'a>(__this: &'a mut crate::test_namespace_bindings::SomeClass) {
+        pub(crate) fn public_method<'__this>(
+            __this: &'__this mut crate::test_namespace_bindings::SomeClass,
+        ) {
             unsafe {
                 crate::detail::__rust_thunk___ZN23test_namespace_bindings9SomeClass13public_methodEv(
                     __this,
@@ -105,9 +87,9 @@ mod detail {
         );
         #[link_name = "_ZN23test_namespace_bindings9SomeClass13public_methodEv"]
         pub(crate) unsafe fn __rust_thunk___ZN23test_namespace_bindings9SomeClass13public_methodEv<
-            'a,
+            '__this,
         >(
-            __this: &'a mut crate::test_namespace_bindings::SomeClass,
+            __this: &'__this mut crate::test_namespace_bindings::SomeClass,
         );
         #[link_name = "_ZN23test_namespace_bindings9SomeClass20public_static_methodEv"]
         pub(crate) unsafe fn __rust_thunk___ZN23test_namespace_bindings9SomeClass20public_static_methodEv(

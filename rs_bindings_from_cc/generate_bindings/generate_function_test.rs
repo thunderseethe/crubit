@@ -5,7 +5,10 @@
 use arc_anyhow::Result;
 use code_gen_utils::make_rs_ident;
 use database::code_snippet::BindingsTokens;
+use database::db::Interner;
 use database::rs_snippet::{format_generic_params, Lifetime};
+use error_report::{ErrorReport, FatalErrors, SourceLanguage};
+use generate_bindings::new_database;
 use generate_function_thunk::thunk_ident;
 use googletest::prelude::{assert_that, contains_substring, expect_that, gtest, not, OrFail as _};
 
@@ -451,19 +454,18 @@ fn test_impl_clone_that_propagates_lifetime() -> Result<()> {
             _ => None,
         })
         .find(|f| {
-            matches!(&f.rs_name, UnqualifiedIdentifier::Constructor)
-                && f.params
-                    .get(1)
-                    .map(|p| p.identifier.identifier.as_ref() == "i")
-                    .unwrap_or_default()
+            matches!(f.rs_name(), UnqualifiedIdentifier::Constructor)
+                && f.params().get(1).map(|p| p.identifier().as_str() == "i").unwrap_or_default()
         })
         .unwrap();
     {
         // Double-check that the test scenario set up above uses the same lifetime
         // for both of the constructor's parameters: `__this` and `i`.
-        assert_eq!(ctor.params.len(), 2);
-        let this_lifetime = ctor.params[0].type_.variant.as_pointer().unwrap().lifetime.unwrap();
-        let i_lifetime = ctor.params[1].type_.variant.as_pointer().unwrap().lifetime.unwrap();
+        assert_eq!(ctor.params().len(), 2);
+        let this_lifetime =
+            ctor.params()[0].type_().variant().as_pointer().unwrap().lifetime().unwrap();
+        let i_lifetime =
+            ctor.params()[1].type_().variant().as_pointer().unwrap().lifetime().unwrap();
         assert_eq!(i_lifetime, this_lifetime);
     }
 
@@ -1205,22 +1207,31 @@ fn test_impl_lt_missing_eq_impl() -> Result<()> {
 fn test_thunk_ident_function() -> Result<()> {
     let ir = ir_from_cc("inline int foo() { return 42; }")?;
     let func = retrieve_func(&ir, "foo");
-    assert_eq!(thunk_ident(func), make_rs_ident("__rust_thunk___Z3foov"));
+    let errors = ErrorReport::new(SourceLanguage::Cpp);
+    let fatal_errors = FatalErrors::new();
+    let interner = Interner::new();
+    let db = new_database(&ir, &errors, &fatal_errors, false, false, &interner);
+    assert_eq!(thunk_ident(&db, func), make_rs_ident("__rust_thunk___Z3foov"));
     Ok(())
 }
 
 #[gtest]
-fn test_thunk_ident_special_names() {
-    let ir = ir_from_cc("struct Class {};").unwrap();
+fn test_thunk_ident_special_names() -> Result<()> {
+    let ir = ir_from_cc("struct Class {};")?;
+    let errors = ErrorReport::new(SourceLanguage::Cpp);
+    let fatal_errors = FatalErrors::new();
+    let interner = Interner::new();
+    let db = new_database(&ir, &errors, &fatal_errors, false, false, &interner);
 
     let destructor = ir.get_functions_by_name(&UnqualifiedIdentifier::Destructor).next().unwrap();
-    assert_eq!(thunk_ident(destructor), make_rs_ident("__rust_thunk___ZN5ClassD1Ev"));
+    assert_eq!(thunk_ident(&db, destructor), make_rs_ident("__rust_thunk___ZN5ClassD1Ev"));
 
     let default_constructor = ir
         .get_functions_by_name(&UnqualifiedIdentifier::Constructor)
-        .find(|f| f.params.len() == 1)
+        .find(|f| f.params().len() == 1)
         .unwrap();
-    assert_eq!(thunk_ident(default_constructor), make_rs_ident("__rust_thunk___ZN5ClassC1Ev"));
+    assert_eq!(thunk_ident(&db, default_constructor), make_rs_ident("__rust_thunk___ZN5ClassC1Ev"));
+    Ok(())
 }
 
 #[gtest]

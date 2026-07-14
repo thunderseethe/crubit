@@ -244,12 +244,13 @@ struct CcType {
 
   struct Primitive {
     // One of: bool, void, float, double, char, signed char, unsigned char,
-    // short, int, long, long long, unsigned short, unsigned int, unsigned long,
-    // unsigned long long, char16_t, char32_t, ptrdiff_t, intptr_t, size_t,
-    // uintptr_t, std::ptrdiff_t, std::intptr_t, std::size_t, std::uintptr_t,
-    // int8_t, int16_t, int32_t, int64_t, std::int8_t, std::int16_t,
-    // std::int32_t, std::int64_t, uint8_t, uint16_t, uint32_t, uint64_t,
-    // std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t.
+    // short, int, long, long long, __int128, unsigned short, unsigned int,
+    // unsigned long, unsigned long long, unsigned __int128, char16_t, char32_t,
+    // ptrdiff_t, intptr_t, size_t, uintptr_t, std::ptrdiff_t, std::intptr_t,
+    // std::size_t, std::uintptr_t, int8_t, int16_t, int32_t, int64_t,
+    // std::int8_t, std::int16_t, std::int32_t, std::int64_t, uint8_t, uint16_t,
+    // uint32_t, uint64_t, std::uint8_t, std::uint16_t, std::uint32_t,
+    // std::uint64_t.
     //
     // If we wanted to be really pedantic, this could be an enum. However,
     // this type is only read by Rust after serialization. So there's no reason
@@ -728,13 +729,21 @@ struct TemplateSpecialization {
   struct AbslSpan {
     CcType element_type;
   };
+  struct AbslFlatHashMap {
+    CcType key_type;
+    CcType value_type;
+  };
+  struct AbslFlatHashSet {
+    CcType element_type;
+  };
   struct C9Co {
     CcType element_type;
   };
   struct NonSpecial {};
 
   using Kind = std::variant<StdStringView, StdWStringView, StdVector,
-                            StdUniquePtr, AbslSpan, C9Co, NonSpecial>;
+                            StdUniquePtr, AbslSpan, AbslFlatHashMap,
+                            AbslFlatHashSet, C9Co, NonSpecial>;
 
   BazelLabel defining_target;
   Kind kind = NonSpecial{};
@@ -813,7 +822,7 @@ struct Record {
   // aligned due to layout issues, the parent struct must instead receive an
   // alignment adjustment as necessary, via .override_alignment=true.
   //
-  // More information: docs/struct_layout
+  // More information: docs/design/struct_layout.md
   bool override_alignment = false;
 
   // Whether the C++ type is explicitly annotated as safe or unsafe, or has no
@@ -871,12 +880,13 @@ struct Record {
   // in).
   bool is_explicit_class_template_instantiation_definition = false;
 
-  std::vector<ItemId> child_item_ids;
+  std::vector<ItemId> child_item_ids() const;
   std::optional<ItemId> enclosing_item_id;
   bool must_bind = false;
   bool overloads_operator_delete = false;
   bool has_private_or_deleted_operator_delete = false;
   bool detected_formatter = false;
+  bool impl_debug = false;
 
   // Whether this type is annotated as thread-safe (CRUBIT_THREAD_SAFE).
   // Thread-safe types implement Send+Sync and wrap their internals in
@@ -889,7 +899,6 @@ struct Record {
   // Set if this is [[deprecated]]. If no message was given, will be "".
   std::optional<std::string> deprecated;
 
-  // TODO(b/523265360): Remove child_item_ids.
   std::vector<std::shared_ptr<Item>> children;
 };
 
@@ -927,6 +936,7 @@ struct Enum {
   Identifier cc_name;
   Identifier rs_name;
   std::string unique_name;
+  std::string mangled_cc_name;
   ItemId id;
   BazelLabel owning_target;
   std::string source_loc;
@@ -1076,7 +1086,7 @@ struct Namespace {
   ItemId canonical_namespace_id;
   std::optional<std::string> unknown_attr;
   BazelLabel owning_target;
-  std::vector<ItemId> child_item_ids;
+  std::vector<ItemId> child_item_ids() const;
   std::optional<ItemId> enclosing_item_id;
   bool is_inline = false;
   bool must_bind = false;
@@ -1084,7 +1094,6 @@ struct Namespace {
   std::optional<std::string> deprecated;
   std::optional<std::string> doc_comment;
 
-  // TODO(b/523265360): Remove child_item_ids.
   std::vector<std::shared_ptr<Item>> children;
 };
 
@@ -1130,6 +1139,7 @@ struct ExistingRustType {
   bool is_same_abi;
   ItemId id;
   bool must_bind = false;
+  bool impl_debug = false;
 };
 
 inline std::ostream& operator<<(std::ostream& o,
@@ -1148,6 +1158,8 @@ struct Item
 
   const Base& as_variant() const { return *this; }
   Base& as_variant() { return *this; }
+
+  ItemId id() const;
 };
 
 // A complete intermediate representation of bindings for publicly accessible
@@ -1155,9 +1167,6 @@ struct Item
 struct IR {
   llvm::json::Value ToJson() const;
   void ToFlatProto(rs_bindings_from_cc::ir_proto::flat::IRProto* proto) const;
-
-  // TODO(b/523265360): Remove this once use_nested_ir flag is retired.
-  bool UseNestedIr() const;
 
   template <typename T>
   std::vector<const T*> get_items_if() const {
@@ -1191,12 +1200,16 @@ struct IR {
   BazelLabel current_target;
 
   using Item = ::crubit::Item;
+  // TODO(b/530340081): Should refactor this out to stage flat items elsewhere.
   std::vector<Item> items;
-  absl::flat_hash_map<BazelLabel, std::vector<ItemId>> top_level_item_ids;
   absl::flat_hash_map<BazelLabel, std::vector<std::shared_ptr<Item>>>
       top_level_items;
 
-  void BuildTree();
+  std::vector<ItemId> top_level_item_ids(const BazelLabel& target) const;
+
+  void BuildTree(
+      absl::flat_hash_map<BazelLabel, std::vector<ItemId>> top_level_item_ids,
+      absl::flat_hash_map<ItemId, std::vector<ItemId>> child_item_ids);
   // Empty string signals that the bindings should be generated in the crate
   // root. This is the default state.
   //
@@ -1213,6 +1226,8 @@ struct IR {
 
   absl::flat_hash_map<BazelLabel, absl::flat_hash_set<std::string>>
       crubit_features;
+
+  absl::flat_hash_map<BazelLabel, std::string> crate_names;
 
   std::vector<std::string> reexported_namespaces;
   std::vector<std::string> unstable_rust_features;

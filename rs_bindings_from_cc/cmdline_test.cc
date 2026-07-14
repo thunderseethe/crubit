@@ -78,12 +78,15 @@ TEST(CmdlineTest, BasicCorrectInput) {
   absl::SetFlag(&FLAGS_ir_out, "ir_out");
   absl::SetFlag(&FLAGS_crubit_support_path_format,
                 "<crubit/support/path/{header}>");
+  absl::SetFlag(&FLAGS_crubit_support_versioned_path_format,
+                "<crubit/support/internal/{header}>");
   absl::SetFlag(&FLAGS_clang_format_exe_path, "clang_format_exe_path");
   absl::SetFlag(&FLAGS_rustfmt_exe_path, "rustfmt_exe_path");
   absl::SetFlag(&FLAGS_rustfmt_config_path, "rustfmt_config_path");
   absl::SetFlag(&FLAGS_public_headers, {"h1"});
   absl::SetFlag(&FLAGS_target, "//:t1");
-  absl::SetFlag(&FLAGS_target_args, R"([{"t": "//:t1", "h": ["h1", "h2"]}])");
+  absl::SetFlag(&FLAGS_target_args,
+                R"([{"t": "//:t1", "h": ["h1", "h2"], "c": "custom_crate"}])");
   absl::SetFlag(&FLAGS_extra_rs_srcs, {"extra_file.rs"});
   absl::SetFlag(&FLAGS_reexported_namespaces, {"absl"});
   absl::SetFlag(&FLAGS_srcs_to_scan_for_instantiations,
@@ -99,6 +102,8 @@ TEST(CmdlineTest, BasicCorrectInput) {
   EXPECT_EQ(args.ir_out, "ir_out");
   EXPECT_EQ(args.namespaces_out, "namespaces_out");
   EXPECT_EQ(args.crubit_support_path_format, "<crubit/support/path/{header}>");
+  EXPECT_EQ(args.crubit_support_versioned_path_format,
+            "<crubit/support/internal/{header}>");
   EXPECT_EQ(args.clang_format_exe_path, "clang_format_exe_path");
   EXPECT_EQ(args.rustfmt_exe_path, "rustfmt_exe_path");
   EXPECT_EQ(args.rustfmt_config_path, "rustfmt_config_path");
@@ -115,6 +120,8 @@ TEST(CmdlineTest, BasicCorrectInput) {
       args.headers_to_targets,
       UnorderedElementsAre(Pair(HeaderName("h1"), BazelLabel("//:t1")),
                            Pair(HeaderName("h2"), BazelLabel("//:t1"))));
+  EXPECT_THAT(args.target_to_crate_name,
+              UnorderedElementsAre(Pair(BazelLabel("//:t1"), "custom_crate")));
   EXPECT_EQ(args.is_golden_test, true);
 }
 

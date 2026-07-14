@@ -6,19 +6,19 @@
 // //rs_bindings_from_cc/test/golden:templates_source_order_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // error: class `MyTemplate` could not be bound
 //   Class templates are not yet supported
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "8TopLevel"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TopLevel
 pub struct TopLevel {
@@ -62,6 +62,7 @@ impl Default for TopLevel {
 
 pub mod test_namespace_bindings {
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N23test_namespace_bindings5InnerE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=test_namespace_bindings :: Inner
     pub struct Inner {

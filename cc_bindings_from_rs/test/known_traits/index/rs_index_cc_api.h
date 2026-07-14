@@ -178,15 +178,15 @@ struct alignas(8) CRUBIT_INTERNAL_RUST_TYPE(
   }
   ~Vec() noexcept;
   ::rs::alloc::string::String* data() noexcept;
-  const ::rs::alloc::string::String* data() const noexcept;
+  ::rs::alloc::string::String const* data() const noexcept;
   std::size_t size() const noexcept;
   ::rs::alloc::string::String& operator[](std::size_t index) noexcept;
-  const ::rs::alloc::string::String& operator[](
+  ::rs::alloc::string::String const& operator[](
       std::size_t index) const noexcept;
   ::rs::alloc::string::String* begin() noexcept;
-  const ::rs::alloc::string::String* begin() const noexcept;
+  ::rs::alloc::string::String const* begin() const noexcept;
   ::rs::alloc::string::String* end() noexcept;
-  const ::rs::alloc::string::String* end() const noexcept;
+  ::rs::alloc::string::String const* end() const noexcept;
 
  private:
   unsigned char storage_[24];
@@ -374,9 +374,15 @@ static_assert(
     alignof(Map) == 8,
     "Verify that ADT layout didn't change since this header got generated");
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_drop(::rs_index::Map&);
+extern "C" void
+__crubit_thunk_Drop_udrop_urs_uindex_ugolden_x0000003a_x0000003aMap(
+    ::rs_index::Map&);
 }
-inline Map::~Map() { __crubit_internal::__crubit_thunk_drop(*this); }
+inline Map::~Map() {
+  __crubit_internal::
+      __crubit_thunk_Drop_udrop_urs_uindex_ugolden_x0000003a_x0000003aMap(
+          *this);
+}
 namespace __crubit_internal {
 extern "C" void __crubit_thunk_new(::std::uintptr_t, ::std::uintptr_t,
                                    ::rs_index::Map* __ret_ptr);
@@ -431,29 +437,38 @@ inline void Map::__crubit_field_offset_assertions() {
 #ifndef _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Vec_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020rs_x00000020_x0000003a_x0000003a_x00000020alloc_x00000020_x0000003a_x0000003a_x00000020string_x00000020_x0000003a_x0000003a_x00000020String_x00000020_x0000003e
 #define _CRUBIT_BINDINGS_FOR_IMPL_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Vec_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020rs_x00000020_x0000003a_x0000003a_x00000020alloc_x00000020_x0000003a_x0000003a_x00000020string_x00000020_x0000003a_x0000003a_x00000020String_x00000020_x0000003e
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_default(
+extern "C" void
+__crubit_thunk_Default_udefault_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
     rs_std::Vec<::rs::alloc::string::String>* __ret_ptr);
 }
 inline rs_std::Vec<::rs::alloc::string::String>::Vec() {
-  __crubit_internal::__crubit_thunk_default(this);
+  __crubit_internal::
+      __crubit_thunk_Default_udefault_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
+          this);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone(
+extern "C" void
+__crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
     rs_std::Vec<::rs::alloc::string::String> const&,
     rs_std::Vec<::rs::alloc::string::String>* __ret_ptr);
 }
 namespace __crubit_internal {
-extern "C" void __crubit_thunk_clone_ufrom(
+extern "C" void
+__crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
     rs_std::Vec<::rs::alloc::string::String>&,
     rs_std::Vec<::rs::alloc::string::String> const&);
 }
 inline rs_std::Vec<::rs::alloc::string::String>::Vec(const Vec& other) {
-  __crubit_internal::__crubit_thunk_clone(other, this);
+  __crubit_internal::
+      __crubit_thunk_Clone_uclone_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
+          other, this);
 }
 inline rs_std::Vec<::rs::alloc::string::String>&
 rs_std::Vec<::rs::alloc::string::String>::operator=(const Vec& other) {
   if (this != &other) {
-    __crubit_internal::__crubit_thunk_clone_ufrom(*this, other);
+    __crubit_internal::
+        __crubit_thunk_Clone_uclone_ufrom_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
+            *this, other);
   }
   return *this;
 }
@@ -466,10 +481,10 @@ rs_std::Vec<::rs::alloc::string::String>::operator=(Vec&& other) {
   return *this;
 }
 extern "C" void
-__crubit_drop_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Vec_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020rs_x00000020_x0000003a_x0000003a_x00000020alloc_x00000020_x0000003a_x0000003a_x00000020string_x00000020_x0000003a_x0000003a_x00000020String_x00000020_x0000003e(
+__crubit_thunk_Drop_udrop_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
     void* vec) noexcept;
 inline rs_std::Vec<::rs::alloc::string::String>::~Vec() noexcept {
-  __crubit_drop_rs_ustd_x00000020_x0000003a_x0000003a_x00000020Vec_x00000020_x0000003c_x00000020_x0000003a_x0000003a_x00000020rs_x00000020_x0000003a_x0000003a_x00000020alloc_x00000020_x0000003a_x0000003a_x00000020string_x00000020_x0000003a_x0000003a_x00000020String_x00000020_x0000003e(
+  __crubit_thunk_Drop_udrop_ustd_x0000003a_x0000003avec_x0000003a_x0000003aVec_x0000003cstd_x0000003a_x0000003astring_x0000003a_x0000003aString_x0000003e(
       this);
 }
 inline ::rs::alloc::string::String*
@@ -477,7 +492,7 @@ rs_std::Vec<::rs::alloc::string::String>::data() noexcept {
   return std::bit_cast<::rs::alloc::string::String*>(
       *reinterpret_cast<const std::uintptr_t*>(&storage_[8]));
 }
-inline const ::rs::alloc::string::String*
+inline ::rs::alloc::string::String const*
 rs_std::Vec<::rs::alloc::string::String>::data() const noexcept {
   return std::bit_cast<::rs::alloc::string::String*>(
       *reinterpret_cast<const std::uintptr_t*>(&storage_[8]));
@@ -492,7 +507,7 @@ inline ::rs::alloc::string::String& rs_std::Vec<
   CRUBIT_CHECK(index < size());
   return data()[index];
 }
-inline const ::rs::alloc::string::String& rs_std::Vec<
+inline ::rs::alloc::string::String const& rs_std::Vec<
     ::rs::alloc::string::String>::operator[](std::size_t index) const noexcept {
   CRUBIT_CHECK(index < size());
   return data()[index];
@@ -501,7 +516,7 @@ inline ::rs::alloc::string::String*
 rs_std::Vec<::rs::alloc::string::String>::begin() noexcept {
   return data();
 }
-inline const ::rs::alloc::string::String*
+inline ::rs::alloc::string::String const*
 rs_std::Vec<::rs::alloc::string::String>::begin() const noexcept {
   return data();
 }
@@ -509,7 +524,7 @@ inline ::rs::alloc::string::String*
 rs_std::Vec<::rs::alloc::string::String>::end() noexcept {
   return data() + size();
 }
-inline const ::rs::alloc::string::String*
+inline ::rs::alloc::string::String const*
 rs_std::Vec<::rs::alloc::string::String>::end() const noexcept {
   return data() + size();
 }

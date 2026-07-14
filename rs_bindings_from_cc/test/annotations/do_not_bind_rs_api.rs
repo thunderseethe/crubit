@@ -6,18 +6,18 @@
 // //rs_bindings_from_cc/test/annotations:do_not_bind
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod crubit {
     pub mod test {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test23ArgumentToBoundOverloadE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ArgumentToBoundOverload
         pub struct ArgumentToBoundOverload {
@@ -44,6 +44,7 @@ pub mod crubit {
         }
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test25ArgumentToUnboundOverloadE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: ArgumentToUnboundOverload
         pub struct ArgumentToUnboundOverload {
@@ -80,6 +81,7 @@ pub mod crubit {
         //   Parameter #0 is not supported: Unsupported type 'crubit::test::DoNotBindStruct': No generated bindings found for 'DoNotBindStruct'
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test30StructWithDoNotBindConstructorE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: StructWithDoNotBindConstructor
         pub struct StructWithDoNotBindConstructor {
@@ -115,6 +117,7 @@ pub mod crubit {
         }
 
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N6crubit4test25StructWithDoNotBindMethodE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=crubit :: test :: StructWithDoNotBindMethod
         pub struct StructWithDoNotBindMethod {

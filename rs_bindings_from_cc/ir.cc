@@ -535,6 +535,7 @@ llvm::json::Value ExistingRustType::ToJson() const {
       {"is_same_abi", is_same_abi},
       {"id", id},
       {"must_bind", must_bind},
+      {"impl_debug", impl_debug},
   };
   if (size_align.has_value()) {
     override.insert({"size_align", size_align->ToJson()});
@@ -557,6 +558,7 @@ flat_proto::ExistingRustType ExistingRustType::ToFlatProto() const {
   proto.set_is_same_abi(is_same_abi);
   proto.set_id(id.value());
   proto.set_must_bind(must_bind);
+  proto.set_impl_debug(impl_debug);
   return proto;
 }
 
@@ -1069,6 +1071,19 @@ llvm::json::Value TemplateSpecialization::ToJson() const {
                       llvm::json::Object{
                           {"element_type", absl_span.element_type}}}};
                },
+               [&](const AbslFlatHashMap& absl_flat_hash_map) {
+                 return llvm::json::Object{
+                     {"AbslFlatHashMap",
+                      llvm::json::Object{
+                          {"key_type", absl_flat_hash_map.key_type},
+                          {"value_type", absl_flat_hash_map.value_type}}}};
+               },
+               [&](const AbslFlatHashSet& absl_flat_hash_set) {
+                 return llvm::json::Object{
+                     {"AbslFlatHashSet",
+                      llvm::json::Object{
+                          {"element_type", absl_flat_hash_set.element_type}}}};
+               },
                [&](const C9Co& c9_co) {
                  return llvm::json::Object{
                      {"C9Co", llvm::json::Object{
@@ -1100,6 +1115,18 @@ flat_proto::TemplateSpecialization TemplateSpecialization::ToFlatProto() const {
           [&](const AbslSpan& absl_span) {
             *proto.mutable_absl_span()->mutable_element_type() =
                 absl_span.element_type.ToFlatProto();
+          },
+          [&](const AbslFlatHashMap& absl_flat_hash_map) {
+            auto* msg = proto.mutable_absl_flat_hash_map();
+            *msg->mutable_key_type() =
+                absl_flat_hash_map.key_type.ToFlatProto();
+            *msg->mutable_value_type() =
+                absl_flat_hash_map.value_type.ToFlatProto();
+          },
+          [&](const AbslFlatHashSet& absl_flat_hash_set) {
+            auto* msg = proto.mutable_absl_flat_hash_set();
+            *msg->mutable_element_type() =
+                absl_flat_hash_set.element_type.ToFlatProto();
           },
           [&](const C9Co& c9_co) {
             *proto.mutable_c9_co()->mutable_element_type() =
@@ -1182,12 +1209,6 @@ flat_proto::OwnedPtrConfig OwnedPtrConfig::ToFlatProto() const {
 }
 
 llvm::json::Value Record::ToJson() const {
-  std::vector<llvm::json::Value> json_item_ids;
-  json_item_ids.reserve(child_item_ids.size());
-  for (const auto& id : child_item_ids) {
-    json_item_ids.push_back(id.value());
-  }
-
   llvm::json::Object record{
       {"rs_name", rs_name},
       {"cc_name", cc_name},
@@ -1218,7 +1239,6 @@ llvm::json::Value Record::ToJson() const {
       {"record_type", RecordTypeToString(record_type)},
       {"is_aggregate", is_aggregate},
       {"is_canonical_alias", is_canonical_alias},
-      {"child_item_ids", std::move(json_item_ids)},
       // TODO(b/513299904): Should remove once protobuf IR rollout is complete.
       {"children",
        [&] {
@@ -1236,6 +1256,7 @@ llvm::json::Value Record::ToJson() const {
       {"overloads_operator_delete", overloads_operator_delete},
       {"has_private_or_deleted_operator_delete",
        has_private_or_deleted_operator_delete},
+      {"impl_debug", impl_debug},
       {"detected_formatter", detected_formatter},
       {"is_thread_safe", is_thread_safe},
   };
@@ -1295,9 +1316,6 @@ flat_proto::Record Record::ToFlatProto() const {
   proto.set_record_type(crubit::ToFlatProto(record_type));
   proto.set_is_aggregate(is_aggregate);
   proto.set_is_canonical_alias(is_canonical_alias);
-  proto.mutable_child_item_ids()->Reserve(child_item_ids.size());
-  for (const auto& child : child_item_ids)
-    proto.add_child_item_ids(child.value());
   proto.mutable_children()->Reserve(children.size());
   for (const auto& child : children) {
     *proto.add_children() = crubit::ToFlatProto(*child);
@@ -1308,6 +1326,7 @@ flat_proto::Record Record::ToFlatProto() const {
   proto.set_overloads_operator_delete(overloads_operator_delete);
   proto.set_has_private_or_deleted_operator_delete(
       has_private_or_deleted_operator_delete);
+  proto.set_impl_debug(impl_debug);
   proto.set_detected_formatter(detected_formatter);
   proto.set_is_thread_safe(is_thread_safe);
   proto.mutable_lifetime_inputs()->Add(lifetime_inputs.begin(),
@@ -1348,6 +1367,7 @@ llvm::json::Value Enum::ToJson() const {
       {"cc_name", cc_name},
       {"rs_name", rs_name},
       {"unique_name", unique_name},
+      {"mangled_cc_name", mangled_cc_name},
       {"id", id},
       {"owning_target", owning_target},
       {"source_loc", source_loc},
@@ -1381,6 +1401,7 @@ flat_proto::Enum Enum::ToFlatProto() const {
   *proto.mutable_cc_name() = cc_name.ToFlatProto();
   *proto.mutable_rs_name() = rs_name.ToFlatProto();
   proto.set_unique_name(unique_name);
+  proto.set_mangled_cc_name(mangled_cc_name);
   proto.set_id(id.value());
   proto.set_owning_target(owning_target.value());
   proto.set_source_loc(source_loc);
@@ -1649,12 +1670,6 @@ flat_proto::Comment Comment::ToFlatProto() const {
 }
 
 llvm::json::Value Namespace::ToJson() const {
-  std::vector<llvm::json::Value> json_item_ids;
-  json_item_ids.reserve(child_item_ids.size());
-  for (const auto& id : child_item_ids) {
-    json_item_ids.push_back(id.value());
-  }
-
   llvm::json::Object ns{
       {"cc_name", cc_name},
       {"rs_name", rs_name},
@@ -1663,7 +1678,6 @@ llvm::json::Value Namespace::ToJson() const {
       {"canonical_namespace_id", canonical_namespace_id},
       {"unknown_attr", unknown_attr},
       {"owning_target", owning_target},
-      {"child_item_ids", std::move(json_item_ids)},
       // TODO(b/513299904): Should remove once protobuf IR rollout is complete.
       {"children",
        [&] {
@@ -1703,9 +1717,6 @@ flat_proto::Namespace Namespace::ToFlatProto() const {
   proto.set_canonical_namespace_id(canonical_namespace_id.value());
   if (unknown_attr) proto.set_unknown_attr(*unknown_attr);
   proto.set_owning_target(owning_target.value());
-  proto.mutable_child_item_ids()->Reserve(child_item_ids.size());
-  for (const auto& child : child_item_ids)
-    proto.add_child_item_ids(child.value());
   proto.mutable_children()->Reserve(children.size());
   for (const auto& child : children) {
     *proto.add_children() = crubit::ToFlatProto(*child);
@@ -1720,24 +1731,6 @@ flat_proto::Namespace Namespace::ToFlatProto() const {
 }
 
 llvm::json::Value IR::ToJson() const {
-  std::vector<llvm::json::Value> json_items;
-  json_items.reserve(items.size());
-  for (const auto& item : items) {
-    std::visit([&](auto&& item) { json_items.push_back(item.ToJson()); },
-               item.as_variant());
-  }
-  CHECK_EQ(json_items.size(), items.size());
-
-  llvm::json::Object top_level_item_ids_json;
-  for (const auto& [target, item_ids] : top_level_item_ids) {
-    std::vector<llvm::json::Value> item_ids_json;
-    item_ids_json.reserve(item_ids.size());
-    for (const auto& item_id : item_ids) {
-      item_ids_json.push_back(item_id.value());
-    }
-    top_level_item_ids_json[target.value()] = std::move(item_ids_json);
-  }
-
   llvm::json::Object features_json;
   for (const auto& [target, features] : crubit_features) {
     std::vector<std::string> sorted_features(features.begin(), features.end());
@@ -1750,28 +1743,30 @@ llvm::json::Value IR::ToJson() const {
     features_json[target.value()] = std::move(feature_array);
   }
 
+  llvm::json::Object crate_names_json;
+  for (const auto& [target, name] : crate_names) {
+    crate_names_json[target.value()] = name;
+  }
+
   // TODO(b/513299904): Should remove once protobuf IR rollout is complete.
   llvm::json::Object top_level_items_json;
-  if (UseNestedIr()) {
-    for (const auto& [target, items] : top_level_items) {
-      llvm::json::Array items_json;
-      items_json.reserve(items.size());
-      for (const auto& item : items) {
-        items_json.push_back(std::visit(
-            [](const auto& alternative) { return alternative.ToJson(); },
-            item->as_variant()));
-      }
-      top_level_items_json[target.value()] = std::move(items_json);
+  for (const auto& [target, items] : top_level_items) {
+    llvm::json::Array items_json;
+    items_json.reserve(items.size());
+    for (const auto& item : items) {
+      items_json.push_back(std::visit(
+          [](const auto& alternative) { return alternative.ToJson(); },
+          item->as_variant()));
     }
+    top_level_items_json[target.value()] = std::move(items_json);
   }
 
   llvm::json::Object result{
       {"public_headers", public_headers},
       {"current_target", current_target},
-      {"items", std::move(json_items)},
-      {"top_level_item_ids", std::move(top_level_item_ids_json)},
       {"top_level_items", std::move(top_level_items_json)},
       {"crubit_features", std::move(features_json)},
+      {"crate_names", std::move(crate_names_json)},
       {"reexported_namespaces", reexported_namespaces},
       {"unstable_rust_features", unstable_rust_features},
   };
@@ -1824,21 +1819,13 @@ void IR::ToFlatProto(flat_proto::IRProto* proto) const {
   for (const auto& h : public_headers)
     *proto->add_public_headers() = h.ToFlatProto();
   proto->set_current_target(current_target.value());
-  proto->mutable_items()->Reserve(items.size());
-  for (const auto& item : items)
-    *proto->add_items() = crubit::ToFlatProto(item);
-  for (const auto& [target, item_ids] : top_level_item_ids) {
-    auto& list = (*proto->mutable_top_level_item_ids())[target.value()];
-    list.mutable_item_ids()->Reserve(item_ids.size());
-    for (const auto& id : item_ids) list.add_item_ids(id.value());
-  }
-  if (UseNestedIr()) {
-    for (const auto& [target, items] : top_level_items) {
-      auto& list = (*proto->mutable_top_level_items())[target.value()];
-      list.mutable_items()->Reserve(items.size());
-      for (const auto& item : items) {
-        *list.add_items() = crubit::ToFlatProto(*item);
-      }
+  // Flat items list is deprecated and empty in serialization.
+
+  for (const auto& [target, items] : top_level_items) {
+    auto& list = (*proto->mutable_top_level_items())[target.value()];
+    list.mutable_items()->Reserve(items.size());
+    for (const auto& item : items) {
+      *list.add_items() = crubit::ToFlatProto(*item);
     }
   }
   if (!crate_root_path.empty()) proto->set_crate_root_path(crate_root_path);
@@ -1847,6 +1834,9 @@ void IR::ToFlatProto(flat_proto::IRProto* proto) const {
     std::vector<std::string> sorted_features(features.begin(), features.end());
     absl::c_sort(sorted_features);
     set.mutable_features()->Add(sorted_features.begin(), sorted_features.end());
+  }
+  for (const auto& [target, name] : crate_names) {
+    (*proto->mutable_crate_names())[target.value()] = name;
   }
   proto->mutable_unstable_rust_features()->Add(unstable_rust_features.begin(),
                                                unstable_rust_features.end());
@@ -1866,15 +1856,46 @@ void SetMustBindItem(IR::Item& item) {
              item.as_variant());
 }
 
-bool IR::UseNestedIr() const {
-  auto it = crubit_features.find(current_target);
-  return it != crubit_features.end() && it->second.contains("use_nested_ir");
+ItemId Item::id() const {
+  return std::visit([](const auto& val) { return val.id; }, as_variant());
+}
+
+std::vector<ItemId> IR::top_level_item_ids(const BazelLabel& target) const {
+  std::vector<ItemId> ids;
+  auto it = top_level_items.find(target);
+  if (it != top_level_items.end()) {
+    ids.reserve(it->second.size());
+    for (const auto& item : it->second) {
+      ids.push_back(item->id());
+    }
+  }
+  return ids;
+}
+
+std::vector<ItemId> Record::child_item_ids() const {
+  std::vector<ItemId> ids;
+  ids.reserve(children.size());
+  for (const auto& child : children) {
+    ids.push_back(child->id());
+  }
+  return ids;
+}
+
+std::vector<ItemId> Namespace::child_item_ids() const {
+  std::vector<ItemId> ids;
+  ids.reserve(children.size());
+  for (const auto& child : children) {
+    ids.push_back(child->id());
+  }
+  return ids;
 }
 
 // Produces a nested IR which inlines child items on namespaces and records to
 // replace the legacy representation (an array of item IDs).
 // See crubit.rs-better-ir for more context.
-void IR::BuildTree() {
+void IR::BuildTree(
+    absl::flat_hash_map<BazelLabel, std::vector<ItemId>> top_level_item_ids,
+    absl::flat_hash_map<ItemId, std::vector<ItemId>> child_item_ids) {
   top_level_items.clear();
   absl::flat_hash_map<ItemId, std::shared_ptr<Item>> item_map;
   item_map.reserve(items.size());
@@ -1885,22 +1906,57 @@ void IR::BuildTree() {
     item_map[id] = std::make_shared<Item>(item);
   }
 
-  for (auto& [id, shared_item] : item_map) {
+  for (auto& item : items) {
     std::visit(visitor{[&](Record& r) {
-                         r.children.reserve(r.child_item_ids.size());
-                         for (const auto& child_id : r.child_item_ids) {
-                           if (auto it = item_map.find(child_id);
-                               it != item_map.end()) {
-                             r.children.push_back(it->second);
+                         if (auto it = child_item_ids.find(r.id);
+                             it != child_item_ids.end()) {
+                           r.children.reserve(it->second.size());
+                           for (const auto& child_id : it->second) {
+                             if (auto item_it = item_map.find(child_id);
+                                 item_it != item_map.end()) {
+                               r.children.push_back(item_it->second);
+                             }
                            }
                          }
                        },
                        [&](Namespace& ns) {
-                         ns.children.reserve(ns.child_item_ids.size());
-                         for (const auto& child_id : ns.child_item_ids) {
-                           if (auto it = item_map.find(child_id);
-                               it != item_map.end()) {
-                             ns.children.push_back(it->second);
+                         if (auto it = child_item_ids.find(ns.id);
+                             it != child_item_ids.end()) {
+                           ns.children.reserve(it->second.size());
+                           for (const auto& child_id : it->second) {
+                             if (auto item_it = item_map.find(child_id);
+                                 item_it != item_map.end()) {
+                               ns.children.push_back(item_it->second);
+                             }
+                           }
+                         }
+                       },
+                       [](auto& other) {}},
+               item.as_variant());
+  }
+
+  for (auto& [id, shared_item] : item_map) {
+    std::visit(visitor{[&](Record& r) {
+                         if (auto it = child_item_ids.find(r.id);
+                             it != child_item_ids.end()) {
+                           r.children.reserve(it->second.size());
+                           for (const auto& child_id : it->second) {
+                             if (auto item_it = item_map.find(child_id);
+                                 item_it != item_map.end()) {
+                               r.children.push_back(item_it->second);
+                             }
+                           }
+                         }
+                       },
+                       [&](Namespace& ns) {
+                         if (auto it = child_item_ids.find(ns.id);
+                             it != child_item_ids.end()) {
+                           ns.children.reserve(it->second.size());
+                           for (const auto& child_id : it->second) {
+                             if (auto item_it = item_map.find(child_id);
+                                 item_it != item_map.end()) {
+                               ns.children.push_back(item_it->second);
+                             }
                            }
                          }
                        },

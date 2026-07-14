@@ -6,21 +6,21 @@
 // //rs_bindings_from_cc/test/annotations:owned_ptr
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// An example of a C++ struct that supports ownership via the raw pointer.
 ///
 /// The CRUBIT_OWNED_PTR_TYPE annotation is used to specify the Rust type that
 /// will be used to represent the C++ struct when it is used in a position
 /// annotated with CRUBIT_OWNED_PTR.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "5Thing"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Thing
 pub struct RawThing {
@@ -95,6 +95,7 @@ pub mod raw_thing {
 
 /// A struct that specifies a custom drop method name.
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "11CustomThing"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=CustomThing
 pub struct CustomRawThing {

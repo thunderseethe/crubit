@@ -5,7 +5,7 @@
 //! Generate comments for the bindings.
 
 use database::code_snippet::{ApiSnippets, DocCommentAttr, GeneratedItem};
-use database::BindingsGenerator;
+use database::{intern, BindingsGenerator};
 use ir::{Comment, GenericItem, UnsupportedItem, IR};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -29,7 +29,7 @@ pub fn generate_top_level_comment(ir: &IR, is_golden_test: bool) -> String {
     // current build environment returns a guid-like path... :-/
     //
     // TODO(b/255784681): Consider including cmdline arguments.
-    let target = &ir.current_target().0;
+    let target = ir.current_target().as_str();
 
     let mut result = format!(
         "// Automatically @generated Rust bindings for the following C++ target:\n\
@@ -121,12 +121,12 @@ pub fn generate_doc_comment(
 
 /// Generates Rust source code for a given `UnsupportedItem`.
 pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -> ApiSnippets {
-    db.assert_in_error_scope(item.id);
+    db.assert_in_error_scope(item.id());
 
     // Avoid generating unsupported item comments for standard library templates.
-    if !item.must_bind {
+    if !item.must_bind() {
         let defined_in_libcxx =
-            item.source_loc.as_ref().map(|loc| loc.contains("libcxx")).unwrap_or(false);
+            item.source_loc().map(|loc| loc.contains("libcxx")).unwrap_or(false);
         if defined_in_libcxx {
             return ApiSnippets::default();
         }
@@ -137,8 +137,8 @@ pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -
     }
 
     let source_loc = item.source_loc();
-    let source_loc = match &source_loc {
-        Some(loc) if !db.is_golden_test() => loc.as_ref(),
+    let source_loc = match source_loc.as_deref() {
+        Some(loc) if !db.is_golden_test() => loc,
         _ => "",
     };
 
@@ -147,7 +147,7 @@ pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -
         writeln!(&mut message, "{source_loc}").unwrap();
     }
 
-    let (bold, reset, red) = if item.must_bind {
+    let (bold, reset, red) = if item.must_bind() {
         // If an item is set to `must_bind`, we colorize the output, as it will appear in the
         // terminal or logs rather than in a comment.
         ("\x1B[1m", "\x1B[0m", "\x1B[31m")
@@ -159,7 +159,7 @@ pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -
         &mut message,
         "{bold}{red}error:{reset}{bold} {} `{}` could not be bound{reset}",
         item.unsupported_kind(),
-        item.name.as_ref()
+        item.name()
     )
     .unwrap();
     for (index, error) in item.errors().iter().enumerate() {
@@ -170,14 +170,14 @@ pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -
         write!(&mut message, "{}", format!("  {error:#}").replace('\n', "\n  ")).unwrap();
     }
 
-    if item.must_bind {
+    if item.must_bind() {
         db.fatal_errors().report(&message);
     }
 
     ApiSnippets {
         generated_items: HashMap::from([(
-            item.id,
-            GeneratedItem::Comment { message: message.into() },
+            item.id(),
+            GeneratedItem::Comment { message: intern!(db.interner(), "{message}") },
         )]),
         ..Default::default()
     }
@@ -187,8 +187,8 @@ pub fn generate_unsupported(db: &BindingsGenerator, item: Rc<UnsupportedItem>) -
 pub fn generate_comment(comment: Rc<Comment>) -> ApiSnippets {
     ApiSnippets {
         generated_items: HashMap::from([(
-            comment.id,
-            GeneratedItem::Comment { message: comment.text.clone() },
+            comment.id(),
+            GeneratedItem::Comment { message: Rc::from(comment.text()) },
         )]),
         ..Default::default()
     }

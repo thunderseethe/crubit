@@ -42,7 +42,7 @@ rust_bindings_from_cc_binary(
 deps_for_bindings(
     name = "deps_for_bindings",
     deps_for_generated_cc_file = [
-        "//support/public:bindings_support",
+        "//support/internal:bindings_support",
         "//support:bridge_cpp",
         "//support/rs_std:dyn_callable",
         "//support/rs_std:lossy_formatter_for_bindings",
@@ -434,6 +434,7 @@ rust_library(
         "@crate_index//:quote",  # v1
         "@crate_index//:serde",  # v1
         "@crate_index//:serde_json",  # v1
+        "@crate_index//:syn",  # v1
     ],
 )
 
@@ -609,7 +610,6 @@ cc_library(
     hdrs = ["src_code_gen.h"],
     deps = [
         ":cc_ir",
-        ":ir_cc_proto",
         ":src_code_gen_ffi",
         "//rs_bindings_from_cc/generate_bindings:cc_api_ffi",  # buildcleaner: keep
         "//rs_bindings_from_cc/generate_bindings:generate_bindings_cc_proto",

@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/golden:operators_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18AddableConstMember"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=AddableConstMember
 pub struct AddableConstMember {
@@ -42,31 +42,27 @@ impl Default for AddableConstMember {
     }
 }
 
-// error: constructor `AddableConstMember::AddableConstMember` could not be bound
-//   Unsupported parameter type `const AddableConstMember& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableConstMember::AddableConstMember` could not be bound
-//   Unsupported parameter type `AddableConstMember&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableConstMember::operator=` could not be bound
-//   Unsupported parameter type `const AddableConstMember& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableConstMember&`:
-//     references are not yet supported
-
-// error: function `AddableConstMember::operator=` could not be bound
-//   Unsupported parameter type `AddableConstMember&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableConstMember&`:
-//     references are not yet supported
-
-// error: function `AddableConstMember::operator+` could not be bound
-//   Unsupported parameter type `const AddableConstMember& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Add<&'rhs crate::AddableConstMember>
+    for &'__this crate::AddableConstMember
+{
+    type Output = crate::AddableConstMember;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableConstMember) -> Self::Output {
+        unsafe {
+            let mut __crubit_return =
+                ::core::mem::MaybeUninit::<crate::AddableConstMember>::uninit();
+            crate::detail::__rust_thunk___ZNK18AddableConstMemberplERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "21AddableNonConstMember"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=AddableNonConstMember
 pub struct AddableNonConstMember {
@@ -93,31 +89,27 @@ impl Default for AddableNonConstMember {
     }
 }
 
-// error: constructor `AddableNonConstMember::AddableNonConstMember` could not be bound
-//   Unsupported parameter type `const AddableNonConstMember& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableNonConstMember::AddableNonConstMember` could not be bound
-//   Unsupported parameter type `AddableNonConstMember&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableNonConstMember::operator=` could not be bound
-//   Unsupported parameter type `const AddableNonConstMember& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableNonConstMember&`:
-//     references are not yet supported
-
-// error: function `AddableNonConstMember::operator=` could not be bound
-//   Unsupported parameter type `AddableNonConstMember&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableNonConstMember&`:
-//     references are not yet supported
-
-// error: function `AddableNonConstMember::operator+` could not be bound
-//   Unsupported parameter type `const AddableNonConstMember& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Add<&'rhs crate::AddableNonConstMember>
+    for &'__this mut crate::AddableNonConstMember
+{
+    type Output = crate::AddableNonConstMember;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableNonConstMember) -> Self::Output {
+        unsafe {
+            let mut __crubit_return =
+                ::core::mem::MaybeUninit::<crate::AddableNonConstMember>::uninit();
+            crate::detail::__rust_thunk___ZN21AddableNonConstMemberplERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "13AddableFriend"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=AddableFriend
 pub struct AddableFriend {
@@ -144,33 +136,24 @@ impl Default for AddableFriend {
     }
 }
 
-// error: constructor `AddableFriend::AddableFriend` could not be bound
-//   Unsupported parameter type `const AddableFriend& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableFriend::AddableFriend` could not be bound
-//   Unsupported parameter type `AddableFriend&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableFriend::operator=` could not be bound
-//   Unsupported parameter type `const AddableFriend& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFriend&`:
-//     references are not yet supported
-
-// error: function `AddableFriend::operator=` could not be bound
-//   Unsupported parameter type `AddableFriend&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFriend&`:
-//     references are not yet supported
-
-// error: function `operator+` could not be bound
-//   Unsupported parameter type `const AddableFriend& lhs`:
-//     references are not yet supported
-//   Unsupported parameter type `const AddableFriend& rhs`:
-//     references are not yet supported
+impl<'lhs, 'rhs> ::core::ops::Add<&'rhs crate::AddableFriend> for &'lhs crate::AddableFriend {
+    type Output = crate::AddableFriend;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableFriend) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::AddableFriend>::uninit();
+            crate::detail::__rust_thunk___ZplRK13AddableFriendS1_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "21AddableFreeByConstRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddableFreeByConstRef
 pub struct AddableFreeByConstRef {
@@ -194,27 +177,8 @@ impl Default for AddableFreeByConstRef {
     }
 }
 
-// error: constructor `AddableFreeByConstRef::AddableFreeByConstRef` could not be bound
-//   Unsupported parameter type `const AddableFreeByConstRef& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableFreeByConstRef::AddableFreeByConstRef` could not be bound
-//   Unsupported parameter type `AddableFreeByConstRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableFreeByConstRef::operator=` could not be bound
-//   Unsupported parameter type `const AddableFreeByConstRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByConstRef&`:
-//     references are not yet supported
-
-// error: function `AddableFreeByConstRef::operator=` could not be bound
-//   Unsupported parameter type `AddableFreeByConstRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByConstRef&`:
-//     references are not yet supported
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "19AddableFreeByMutRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddableFreeByMutRef
 pub struct AddableFreeByMutRef {
@@ -238,27 +202,8 @@ impl Default for AddableFreeByMutRef {
     }
 }
 
-// error: constructor `AddableFreeByMutRef::AddableFreeByMutRef` could not be bound
-//   Unsupported parameter type `const AddableFreeByMutRef& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableFreeByMutRef::AddableFreeByMutRef` could not be bound
-//   Unsupported parameter type `AddableFreeByMutRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableFreeByMutRef::operator=` could not be bound
-//   Unsupported parameter type `const AddableFreeByMutRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByMutRef&`:
-//     references are not yet supported
-
-// error: function `AddableFreeByMutRef::operator=` could not be bound
-//   Unsupported parameter type `AddableFreeByMutRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByMutRef&`:
-//     references are not yet supported
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18AddableFreeByValue"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddableFreeByValue
 pub struct AddableFreeByValue {
@@ -282,27 +227,8 @@ impl Default for AddableFreeByValue {
     }
 }
 
-// error: constructor `AddableFreeByValue::AddableFreeByValue` could not be bound
-//   Unsupported parameter type `const AddableFreeByValue& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableFreeByValue::AddableFreeByValue` could not be bound
-//   Unsupported parameter type `AddableFreeByValue&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableFreeByValue::operator=` could not be bound
-//   Unsupported parameter type `const AddableFreeByValue& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByValue&`:
-//     references are not yet supported
-
-// error: function `AddableFreeByValue::operator=` could not be bound
-//   Unsupported parameter type `AddableFreeByValue&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByValue&`:
-//     references are not yet supported
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "22AddableFreeByRValueRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddableFreeByRValueRef
 pub struct AddableFreeByRValueRef {
@@ -326,37 +252,43 @@ impl Default for AddableFreeByRValueRef {
     }
 }
 
-// error: constructor `AddableFreeByRValueRef::AddableFreeByRValueRef` could not be bound
-//   Unsupported parameter type `const AddableFreeByRValueRef& __param_0`:
-//     references are not yet supported
+impl<'lhs, 'rhs> ::core::ops::Add<&'rhs crate::AddableFreeByConstRef>
+    for &'lhs crate::AddableFreeByConstRef
+{
+    type Output = crate::AddableFreeByConstRef;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableFreeByConstRef) -> Self::Output {
+        unsafe {
+            let mut __crubit_return =
+                ::core::mem::MaybeUninit::<crate::AddableFreeByConstRef>::uninit();
+            crate::detail::__rust_thunk___ZplRK21AddableFreeByConstRefS1_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: constructor `AddableFreeByRValueRef::AddableFreeByRValueRef` could not be bound
-//   Unsupported parameter type `AddableFreeByRValueRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableFreeByRValueRef::operator=` could not be bound
-//   Unsupported parameter type `const AddableFreeByRValueRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByRValueRef&`:
-//     references are not yet supported
-
-// error: function `AddableFreeByRValueRef::operator=` could not be bound
-//   Unsupported parameter type `AddableFreeByRValueRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableFreeByRValueRef&`:
-//     references are not yet supported
-
-// error: function `operator+` could not be bound
-//   Unsupported parameter type `const AddableFreeByConstRef& lhs`:
-//     references are not yet supported
-//   Unsupported parameter type `const AddableFreeByConstRef& rhs`:
-//     references are not yet supported
-
-// error: function `operator+` could not be bound
-//   Unsupported parameter type `AddableFreeByMutRef& lhs`:
-//     references are not yet supported
-//   Unsupported parameter type `AddableFreeByMutRef& rhs`:
-//     references are not yet supported
+impl<'lhs, 'rhs> ::core::ops::Add<&'rhs mut crate::AddableFreeByMutRef>
+    for &'lhs mut crate::AddableFreeByMutRef
+{
+    type Output = crate::AddableFreeByMutRef;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs mut crate::AddableFreeByMutRef) -> Self::Output {
+        unsafe {
+            let mut __crubit_return =
+                ::core::mem::MaybeUninit::<crate::AddableFreeByMutRef>::uninit();
+            crate::detail::__rust_thunk___ZplR19AddableFreeByMutRefS0_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
 impl ::core::ops::Add<Self> for crate::AddableFreeByValue {
     type Output = crate::AddableFreeByValue;
@@ -378,6 +310,7 @@ impl ::core::ops::Add<Self> for crate::AddableFreeByValue {
 //   Rvalue reference types are not yet supported as first parameter of operators (b/219826128)
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "10Overloaded"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Overloaded
 pub struct Overloaded {
@@ -401,35 +334,24 @@ impl Default for Overloaded {
     }
 }
 
-// error: constructor `Overloaded::Overloaded` could not be bound
-//   Unsupported parameter type `const Overloaded& __param_0`:
-//     references are not yet supported
+impl<'lhs> ::core::ops::Add<::ffi_11::c_int> for &'lhs crate::Overloaded {
+    type Output = ::ffi_11::c_int;
+    #[inline(always)]
+    fn add(self, rhs: ::ffi_11::c_int) -> Self::Output {
+        unsafe { crate::detail::__rust_thunk___ZplRK10Overloadedi(self, rhs) }
+    }
+}
 
-// error: constructor `Overloaded::Overloaded` could not be bound
-//   Unsupported parameter type `Overloaded&& __param_0`:
-//     references are not yet supported
-
-// error: function `Overloaded::operator=` could not be bound
-//   Unsupported parameter type `const Overloaded& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `Overloaded&`:
-//     references are not yet supported
-
-// error: function `Overloaded::operator=` could not be bound
-//   Unsupported parameter type `Overloaded&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `Overloaded&`:
-//     references are not yet supported
-
-// error: function `operator+` could not be bound
-//   Unsupported parameter type `const Overloaded& lhs`:
-//     references are not yet supported
-
-// error: function `operator+` could not be bound
-//   Unsupported parameter type `const Overloaded& lhs`:
-//     references are not yet supported
+impl<'lhs> ::core::ops::Add<::ffi_11::c_uint> for &'lhs crate::Overloaded {
+    type Output = ::ffi_11::c_int;
+    #[inline(always)]
+    fn add(self, rhs: ::ffi_11::c_uint) -> Self::Output {
+        unsafe { crate::detail::__rust_thunk___ZplRK10Overloadedj(self, rhs) }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "15IncompatibleLHS"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=IncompatibleLHS
 pub struct IncompatibleLHS {
@@ -453,26 +375,6 @@ impl Default for IncompatibleLHS {
     }
 }
 
-// error: constructor `IncompatibleLHS::IncompatibleLHS` could not be bound
-//   Unsupported parameter type `const IncompatibleLHS& __param_0`:
-//     references are not yet supported
-
-// error: constructor `IncompatibleLHS::IncompatibleLHS` could not be bound
-//   Unsupported parameter type `IncompatibleLHS&& __param_0`:
-//     references are not yet supported
-
-// error: function `IncompatibleLHS::operator=` could not be bound
-//   Unsupported parameter type `const IncompatibleLHS& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `IncompatibleLHS&`:
-//     references are not yet supported
-
-// error: function `IncompatibleLHS::operator=` could not be bound
-//   Unsupported parameter type `IncompatibleLHS&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `IncompatibleLHS&`:
-//     references are not yet supported
-
 // error: function `operator+` could not be bound
 //   Non-record-nor-reference operator parameters are not yet supported, found ::ffi_11::c_int
 
@@ -480,6 +382,7 @@ impl Default for IncompatibleLHS {
 //   Expected first operator parameter to be a record or incomplete record, found ::ffi_11::c_int
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18AddableReturnsVoid"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=AddableReturnsVoid
 pub struct AddableReturnsVoid {
@@ -506,31 +409,18 @@ impl Default for AddableReturnsVoid {
     }
 }
 
-// error: constructor `AddableReturnsVoid::AddableReturnsVoid` could not be bound
-//   Unsupported parameter type `const AddableReturnsVoid& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddableReturnsVoid::AddableReturnsVoid` could not be bound
-//   Unsupported parameter type `AddableReturnsVoid&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddableReturnsVoid::operator=` could not be bound
-//   Unsupported parameter type `const AddableReturnsVoid& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableReturnsVoid&`:
-//     references are not yet supported
-
-// error: function `AddableReturnsVoid::operator=` could not be bound
-//   Unsupported parameter type `AddableReturnsVoid&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableReturnsVoid&`:
-//     references are not yet supported
-
-// error: function `AddableReturnsVoid::operator+` could not be bound
-//   Unsupported parameter type `const AddableReturnsVoid& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Add<&'rhs crate::AddableReturnsVoid>
+    for &'__this crate::AddableReturnsVoid
+{
+    type Output = ();
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableReturnsVoid) {
+        unsafe { crate::detail::__rust_thunk___ZNK18AddableReturnsVoidplERKS_(self, rhs) }
+    }
+}
 
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "26AddableConstMemberNonunpin"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=AddableConstMemberNonunpin
 pub struct AddableConstMemberNonunpin {
@@ -562,28 +452,69 @@ impl ::ctor::CtorNew<()> for AddableConstMemberNonunpin {
     }
 }
 
-// error: constructor `AddableConstMemberNonunpin::AddableConstMemberNonunpin` could not be bound
-//   Unsupported parameter type `const AddableConstMemberNonunpin& __param_0`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::CtorNew<&'__param_0 Self> for AddableConstMemberNonunpin {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: &'__param_0 Self) -> Self::CtorType {
+        let mut __param_0 = args;
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut Self| {
+                crate::detail::__rust_thunk___ZN26AddableConstMemberNonunpinC1ERKS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    __param_0,
+                );
+            })
+        }
+    }
+}
+impl<'__param_0> ::ctor::CtorNew<(&'__param_0 Self,)> for AddableConstMemberNonunpin {
+    type CtorType = impl ::ctor::Ctor<Output = Self, Error = ::ctor::Infallible> + use<'__param_0>;
+    type Error = ::ctor::Infallible;
+    #[inline(always)]
+    fn ctor_new(args: (&'__param_0 Self,)) -> Self::CtorType {
+        let (arg,) = args;
+        <Self as ::ctor::CtorNew<&'__param_0 Self>>::ctor_new(arg)
+    }
+}
 
-// error: function `AddableConstMemberNonunpin::operator=` could not be bound
-//   Unsupported parameter type `const AddableConstMemberNonunpin& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddableConstMemberNonunpin&`:
-//     references are not yet supported
+impl<'__param_0> ::ctor::Assign<&'__param_0 Self> for AddableConstMemberNonunpin {
+    #[inline(always)]
+    fn assign<'__this>(self: ::core::pin::Pin<&'__this mut Self>, __param_0: &'__param_0 Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN26AddableConstMemberNonunpinaSERKS_(self, __param_0);
+        }
+    }
+}
 
-// error: function `AddableConstMemberNonunpin::operator+` could not be bound
-//   Unsupported parameter type `const AddableConstMemberNonunpin& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Add<&'rhs crate::AddableConstMemberNonunpin>
+    for &'__this crate::AddableConstMemberNonunpin
+{
+    type Output = impl ::ctor::Ctor<Output = crate::AddableConstMemberNonunpin, Error = ::ctor::Infallible>
+        + use<'__this, 'rhs>;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::AddableConstMemberNonunpin) -> Self::Output {
+        unsafe {
+            ::ctor::FnCtor::new(move |__crubit_dest: *mut crate::AddableConstMemberNonunpin| {
+                crate::detail::__rust_thunk___ZNK26AddableConstMemberNonunpinplERKS_(
+                    __crubit_dest as *mut ::core::ffi::c_void,
+                    self,
+                    rhs,
+                );
+            })
+        }
+    }
+}
 
 impl ::ctor::PinnedDrop for AddableConstMemberNonunpin {
     #[inline(always)]
-    unsafe fn pinned_drop<'a>(self: ::core::pin::Pin<&'a mut Self>) {
+    unsafe fn pinned_drop<'__this>(self: ::core::pin::Pin<&'__this mut Self>) {
         unsafe { crate::detail::__rust_thunk___ZN26AddableConstMemberNonunpinD1Ev(self) }
     }
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "18AddAssignMemberInt"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignMemberInt
 pub struct AddAssignMemberInt {
@@ -607,29 +538,9 @@ impl Default for AddAssignMemberInt {
     }
 }
 
-// error: constructor `AddAssignMemberInt::AddAssignMemberInt` could not be bound
-//   Unsupported parameter type `const AddAssignMemberInt& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignMemberInt::AddAssignMemberInt` could not be bound
-//   Unsupported parameter type `AddAssignMemberInt&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignMemberInt::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignMemberInt& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignMemberInt&`:
-//     references are not yet supported
-
-// error: function `AddAssignMemberInt::operator=` could not be bound
-//   Unsupported parameter type `AddAssignMemberInt&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignMemberInt&`:
-//     references are not yet supported
-
 impl ::core::ops::AddAssign<::ffi_11::c_int> for AddAssignMemberInt {
     #[inline(always)]
-    fn add_assign<'a>(&'a mut self, rhs: ::ffi_11::c_int) {
+    fn add_assign<'__this>(&'__this mut self, rhs: ::ffi_11::c_int) {
         unsafe {
             crate::detail::__rust_thunk___ZN18AddAssignMemberIntpLEi(self, rhs);
         }
@@ -637,6 +548,7 @@ impl ::core::ops::AddAssign<::ffi_11::c_int> for AddAssignMemberInt {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "25AddAssignMemberByConstRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignMemberByConstRef
 pub struct AddAssignMemberByConstRef {
@@ -660,33 +572,17 @@ impl Default for AddAssignMemberByConstRef {
     }
 }
 
-// error: constructor `AddAssignMemberByConstRef::AddAssignMemberByConstRef` could not be bound
-//   Unsupported parameter type `const AddAssignMemberByConstRef& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignMemberByConstRef::AddAssignMemberByConstRef` could not be bound
-//   Unsupported parameter type `AddAssignMemberByConstRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignMemberByConstRef::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignMemberByConstRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignMemberByConstRef&`:
-//     references are not yet supported
-
-// error: function `AddAssignMemberByConstRef::operator=` could not be bound
-//   Unsupported parameter type `AddAssignMemberByConstRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignMemberByConstRef&`:
-//     references are not yet supported
-
-// error: function `AddAssignMemberByConstRef::operator+=` could not be bound
-//   Unsupported parameter type `const AddAssignMemberByConstRef& rhs`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignMemberByConstRef&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::AddAssign<&'rhs Self> for AddAssignMemberByConstRef {
+    #[inline(always)]
+    fn add_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN25AddAssignMemberByConstRefpLERKS_(self, rhs);
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "23AddAssignFreeByConstRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignFreeByConstRef
 pub struct AddAssignFreeByConstRef {
@@ -710,29 +606,9 @@ impl Default for AddAssignFreeByConstRef {
     }
 }
 
-// error: constructor `AddAssignFreeByConstRef::AddAssignFreeByConstRef` could not be bound
-//   Unsupported parameter type `const AddAssignFreeByConstRef& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignFreeByConstRef::AddAssignFreeByConstRef` could not be bound
-//   Unsupported parameter type `AddAssignFreeByConstRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignFreeByConstRef::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignFreeByConstRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFreeByConstRef&`:
-//     references are not yet supported
-
-// error: function `AddAssignFreeByConstRef::operator=` could not be bound
-//   Unsupported parameter type `AddAssignFreeByConstRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFreeByConstRef&`:
-//     references are not yet supported
-
-impl ::core::ops::AddAssign<&Self> for crate::AddAssignFreeByConstRef {
+impl<'rhs> ::core::ops::AddAssign<&'rhs Self> for crate::AddAssignFreeByConstRef {
     #[inline(always)]
-    fn add_assign(&mut self, rhs: &Self) {
+    fn add_assign<'lhs>(&'lhs mut self, rhs: &'rhs Self) {
         unsafe {
             crate::detail::__rust_thunk___ZpLR23AddAssignFreeByConstRefRKS_(self, rhs);
         }
@@ -740,6 +616,7 @@ impl ::core::ops::AddAssign<&Self> for crate::AddAssignFreeByConstRef {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "20AddAssignFreeByValue"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignFreeByValue
 pub struct AddAssignFreeByValue {
@@ -763,33 +640,17 @@ impl Default for AddAssignFreeByValue {
     }
 }
 
-// error: constructor `AddAssignFreeByValue::AddAssignFreeByValue` could not be bound
-//   Unsupported parameter type `const AddAssignFreeByValue& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignFreeByValue::AddAssignFreeByValue` could not be bound
-//   Unsupported parameter type `AddAssignFreeByValue&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignFreeByValue::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignFreeByValue& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFreeByValue&`:
-//     references are not yet supported
-
-// error: function `AddAssignFreeByValue::operator=` could not be bound
-//   Unsupported parameter type `AddAssignFreeByValue&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFreeByValue&`:
-//     references are not yet supported
-
-// error: function `operator+=` could not be bound
-//   Unsupported parameter type `AddAssignFreeByValue& lhs`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFreeByValue&`:
-//     references are not yet supported
+impl ::core::ops::AddAssign<Self> for crate::AddAssignFreeByValue {
+    #[inline(always)]
+    fn add_assign<'lhs>(&'lhs mut self, mut rhs: Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZpLR20AddAssignFreeByValueS_(self, &mut rhs);
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "25AddAssignFriendByConstRef"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignFriendByConstRef
 pub struct AddAssignFriendByConstRef {
@@ -813,29 +674,9 @@ impl Default for AddAssignFriendByConstRef {
     }
 }
 
-// error: constructor `AddAssignFriendByConstRef::AddAssignFriendByConstRef` could not be bound
-//   Unsupported parameter type `const AddAssignFriendByConstRef& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignFriendByConstRef::AddAssignFriendByConstRef` could not be bound
-//   Unsupported parameter type `AddAssignFriendByConstRef&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignFriendByConstRef::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignFriendByConstRef& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFriendByConstRef&`:
-//     references are not yet supported
-
-// error: function `AddAssignFriendByConstRef::operator=` could not be bound
-//   Unsupported parameter type `AddAssignFriendByConstRef&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFriendByConstRef&`:
-//     references are not yet supported
-
-impl ::core::ops::AddAssign<&Self> for crate::AddAssignFriendByConstRef {
+impl<'rhs> ::core::ops::AddAssign<&'rhs Self> for crate::AddAssignFriendByConstRef {
     #[inline(always)]
-    fn add_assign(&mut self, rhs: &Self) {
+    fn add_assign<'lhs>(&'lhs mut self, rhs: &'rhs Self) {
         unsafe {
             crate::detail::__rust_thunk___ZpLR25AddAssignFriendByConstRefRKS_(self, rhs);
         }
@@ -843,6 +684,7 @@ impl ::core::ops::AddAssign<&Self> for crate::AddAssignFriendByConstRef {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "22AddAssignFriendByValue"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignFriendByValue
 pub struct AddAssignFriendByValue {
@@ -866,33 +708,17 @@ impl Default for AddAssignFriendByValue {
     }
 }
 
-// error: constructor `AddAssignFriendByValue::AddAssignFriendByValue` could not be bound
-//   Unsupported parameter type `const AddAssignFriendByValue& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignFriendByValue::AddAssignFriendByValue` could not be bound
-//   Unsupported parameter type `AddAssignFriendByValue&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignFriendByValue::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignFriendByValue& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFriendByValue&`:
-//     references are not yet supported
-
-// error: function `AddAssignFriendByValue::operator=` could not be bound
-//   Unsupported parameter type `AddAssignFriendByValue&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFriendByValue&`:
-//     references are not yet supported
-
-// error: function `operator+=` could not be bound
-//   Unsupported parameter type `AddAssignFriendByValue& lhs`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignFriendByValue&`:
-//     references are not yet supported
+impl ::core::ops::AddAssign<Self> for crate::AddAssignFriendByValue {
+    #[inline(always)]
+    fn add_assign<'lhs>(&'lhs mut self, mut rhs: Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZpLR22AddAssignFriendByValueS_(self, &mut rhs);
+        }
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "30AddAssignProhibitedConstMember"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignProhibitedConstMember
 pub struct AddAssignProhibitedConstMember {
@@ -918,28 +744,8 @@ impl Default for AddAssignProhibitedConstMember {
     }
 }
 
-// error: constructor `AddAssignProhibitedConstMember::AddAssignProhibitedConstMember` could not be bound
-//   Unsupported parameter type `const AddAssignProhibitedConstMember& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignProhibitedConstMember::AddAssignProhibitedConstMember` could not be bound
-//   Unsupported parameter type `AddAssignProhibitedConstMember&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignProhibitedConstMember::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignProhibitedConstMember& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignProhibitedConstMember&`:
-//     references are not yet supported
-
-// error: function `AddAssignProhibitedConstMember::operator=` could not be bound
-//   Unsupported parameter type `AddAssignProhibitedConstMember&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignProhibitedConstMember&`:
-//     references are not yet supported
-
 #[diagnostic::on_unimplemented(
-    message = "binding generation for function failed\nCompound assignment with const left-hand side is not supported, found &'a crate::AddAssignProhibitedConstMember"
+    message = "binding generation for function failed\nCompound assignment with const left-hand side is not supported, found &'__this crate::AddAssignProhibitedConstMember"
 )]
 pub trait BindingFailedFor_ZNK30AddAssignProhibitedConstMemberpLEi {}
 impl ::core::ops::AddAssign<::ffi_11::c_int> for AddAssignProhibitedConstMember
@@ -947,7 +753,7 @@ where
     for<'error> &'error (): BindingFailedFor_ZNK30AddAssignProhibitedConstMemberpLEi,
 {
     #[inline(always)]
-    fn add_assign<'a>(&'a mut self, rhs: ::ffi_11::c_int) {
+    fn add_assign<'__this>(&'__this mut self, rhs: ::ffi_11::c_int) {
         #![allow(unused_variables)]
         unreachable!(
             "This impl can never be instantiated. \
@@ -957,6 +763,7 @@ where
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "33AddAssignProhibitedFriendConstLhs"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=AddAssignProhibitedFriendConstLhs
 pub struct AddAssignProhibitedFriendConstLhs {
@@ -982,31 +789,26 @@ impl Default for AddAssignProhibitedFriendConstLhs {
     }
 }
 
-// error: constructor `AddAssignProhibitedFriendConstLhs::AddAssignProhibitedFriendConstLhs` could not be bound
-//   Unsupported parameter type `const AddAssignProhibitedFriendConstLhs& __param_0`:
-//     references are not yet supported
-
-// error: constructor `AddAssignProhibitedFriendConstLhs::AddAssignProhibitedFriendConstLhs` could not be bound
-//   Unsupported parameter type `AddAssignProhibitedFriendConstLhs&& __param_0`:
-//     references are not yet supported
-
-// error: function `AddAssignProhibitedFriendConstLhs::operator=` could not be bound
-//   Unsupported parameter type `const AddAssignProhibitedFriendConstLhs& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignProhibitedFriendConstLhs&`:
-//     references are not yet supported
-
-// error: function `AddAssignProhibitedFriendConstLhs::operator=` could not be bound
-//   Unsupported parameter type `AddAssignProhibitedFriendConstLhs&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `AddAssignProhibitedFriendConstLhs&`:
-//     references are not yet supported
-
-// error: function `operator+=` could not be bound
-//   Unsupported parameter type `const AddAssignProhibitedFriendConstLhs& lhs`:
-//     references are not yet supported
+#[diagnostic::on_unimplemented(
+    message = "binding generation for function failed\nCompound assignment with const left-hand side is not supported, found &'lhs crate::AddAssignProhibitedFriendConstLhs"
+)]
+pub trait BindingFailedFor_ZpLRK33AddAssignProhibitedFriendConstLhsi {}
+impl ::core::ops::AddAssign<::ffi_11::c_int> for crate::AddAssignProhibitedFriendConstLhs
+where
+    for<'error> &'error (): BindingFailedFor_ZpLRK33AddAssignProhibitedFriendConstLhsi,
+{
+    #[inline(always)]
+    fn add_assign<'lhs>(&'lhs mut self, rhs: ::ffi_11::c_int) {
+        #![allow(unused_variables)]
+        unreachable!(
+            "This impl can never be instantiated. \
+                    If this message appears at runtime, please report a crubit.rs-bug."
+        )
+    }
+}
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "13ManyOperators"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=ManyOperators
 pub struct ManyOperators {
@@ -1020,7 +822,7 @@ unsafe impl ::cxx::ExternType for ManyOperators {
 }
 impl ManyOperators {
     #[inline(always)]
-    pub fn unary_plus<'a>(&'a self) -> crate::ManyOperators {
+    pub fn unary_plus<'__this>(&'__this self) -> crate::ManyOperators {
         unsafe { self::many_operators::unary_plus(self) }
     }
 }
@@ -1036,27 +838,7 @@ impl Default for ManyOperators {
     }
 }
 
-// error: constructor `ManyOperators::ManyOperators` could not be bound
-//   Unsupported parameter type `const ManyOperators& __param_0`:
-//     references are not yet supported
-
-// error: constructor `ManyOperators::ManyOperators` could not be bound
-//   Unsupported parameter type `ManyOperators&& __param_0`:
-//     references are not yet supported
-
-// error: function `ManyOperators::operator=` could not be bound
-//   Unsupported parameter type `const ManyOperators& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
-
-// error: function `ManyOperators::operator=` could not be bound
-//   Unsupported parameter type `ManyOperators&& __param_0`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
-
-impl<'a> ::core::ops::Neg for &'a crate::ManyOperators {
+impl<'__this> ::core::ops::Neg for &'__this crate::ManyOperators {
     type Output = crate::ManyOperators;
     #[inline(always)]
     fn neg(self) -> Self::Output {
@@ -1071,7 +853,7 @@ impl<'a> ::core::ops::Neg for &'a crate::ManyOperators {
     }
 }
 
-impl<'a> ::core::ops::Not for &'a crate::ManyOperators {
+impl<'__this> ::core::ops::Not for &'__this crate::ManyOperators {
     type Output = crate::ManyOperators;
     #[inline(always)]
     fn not(self) -> Self::Output {
@@ -1089,109 +871,267 @@ impl<'a> ::core::ops::Not for &'a crate::ManyOperators {
 // error: function `ManyOperators::operator~` could not be bound
 //   Bindings for this kind of operator (operator ~ with 1 parameter(s)) are not supported
 
-// error: function `ManyOperators::operator+` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Add<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn add(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsplERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator-` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Sub<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn sub(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsmiERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator*` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Mul<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn mul(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsmlERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator/` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Div<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn div(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsdvERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator%` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Rem<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn rem(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsrmERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator&` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::BitAnd<&'rhs crate::ManyOperators>
+    for &'__this crate::ManyOperators
+{
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn bitand(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsanERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator|` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::BitOr<&'rhs crate::ManyOperators>
+    for &'__this crate::ManyOperators
+{
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn bitor(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsorERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator^` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::BitXor<&'rhs crate::ManyOperators>
+    for &'__this crate::ManyOperators
+{
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn bitxor(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorseoERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator<<` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Shl<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn shl(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorslsERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator>>` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
+impl<'__this, 'rhs> ::core::ops::Shr<&'rhs crate::ManyOperators> for &'__this crate::ManyOperators {
+    type Output = crate::ManyOperators;
+    #[inline(always)]
+    fn shr(self, rhs: &'rhs crate::ManyOperators) -> Self::Output {
+        unsafe {
+            let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
+            crate::detail::__rust_thunk___ZNK13ManyOperatorsrsERKS_(
+                &raw mut __crubit_return as *mut ::core::ffi::c_void,
+                self,
+                rhs,
+            );
+            __crubit_return.assume_init()
+        }
+    }
+}
 
-// error: function `ManyOperators::operator+=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::AddAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn add_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorspLERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator-=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::SubAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn sub_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsmIERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator*=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::MulAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn mul_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsmLERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator/=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::DivAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn div_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsdVERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator%=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::RemAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn rem_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsrMERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator&=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::BitAndAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn bitand_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsaNERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator|=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::BitOrAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn bitor_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsoRERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator^=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::BitXorAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn bitxor_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorseOERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator<<=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::ShlAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn shl_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorslSERKS_(self, rhs);
+        }
+    }
+}
 
-// error: function `ManyOperators::operator>>=` could not be bound
-//   Unsupported parameter type `const ManyOperators& rhs`:
-//     references are not yet supported
-//   Unsupported return type `ManyOperators&`:
-//     references are not yet supported
+impl<'rhs> ::core::ops::ShrAssign<&'rhs Self> for ManyOperators {
+    #[inline(always)]
+    fn shr_assign<'__this>(&'__this mut self, rhs: &'rhs Self) {
+        unsafe {
+            crate::detail::__rust_thunk___ZN13ManyOperatorsrSERKS_(self, rhs);
+        }
+    }
+}
 
 pub mod many_operators {
     #[inline(always)]
-    pub(crate) fn unary_plus<'a>(__this: &'a crate::ManyOperators) -> crate::ManyOperators {
+    pub(crate) fn unary_plus<'__this>(
+        __this: &'__this crate::ManyOperators,
+    ) -> crate::ManyOperators {
         unsafe {
             let mut __crubit_return = ::core::mem::MaybeUninit::<crate::ManyOperators>::uninit();
             crate::detail::__rust_thunk___ZNK13ManyOperatorspsEv(
@@ -1210,10 +1150,25 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN18AddableConstMemberC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        pub(crate) unsafe fn __rust_thunk___ZNK18AddableConstMemberplERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::AddableConstMember,
+            rhs: &'rhs crate::AddableConstMember,
+        );
         pub(crate) unsafe fn __rust_thunk___ZN21AddableNonConstMemberC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        pub(crate) unsafe fn __rust_thunk___ZN21AddableNonConstMemberplERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this mut crate::AddableNonConstMember,
+            rhs: &'rhs crate::AddableNonConstMember,
+        );
         pub(crate) unsafe fn __rust_thunk___ZN13AddableFriendC1Ev(__this: *mut ::core::ffi::c_void);
+        pub(crate) unsafe fn __rust_thunk___ZplRK13AddableFriendS1_<'lhs, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            lhs: &'lhs crate::AddableFriend,
+            rhs: &'rhs crate::AddableFriend,
+        );
         pub(crate) unsafe fn __rust_thunk___ZN21AddableFreeByConstRefC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
@@ -1226,59 +1181,111 @@ mod detail {
         pub(crate) unsafe fn __rust_thunk___ZN22AddableFreeByRValueRefC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        pub(crate) unsafe fn __rust_thunk___ZplRK21AddableFreeByConstRefS1_<'lhs, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            lhs: &'lhs crate::AddableFreeByConstRef,
+            rhs: &'rhs crate::AddableFreeByConstRef,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZplR19AddableFreeByMutRefS0_<'lhs, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            lhs: &'lhs mut crate::AddableFreeByMutRef,
+            rhs: &'rhs mut crate::AddableFreeByMutRef,
+        );
         pub(crate) unsafe fn __rust_thunk___Zpl18AddableFreeByValueS_(
             __return: *mut ::core::ffi::c_void,
             lhs: &mut crate::AddableFreeByValue,
             rhs: &mut crate::AddableFreeByValue,
         );
         pub(crate) unsafe fn __rust_thunk___ZN10OverloadedC1Ev(__this: *mut ::core::ffi::c_void);
+        #[link_name = "_ZplRK10Overloadedi"]
+        pub(crate) unsafe fn __rust_thunk___ZplRK10Overloadedi<'lhs>(
+            lhs: &'lhs crate::Overloaded,
+            rhs: ::ffi_11::c_int,
+        ) -> ::ffi_11::c_int;
+        #[link_name = "_ZplRK10Overloadedj"]
+        pub(crate) unsafe fn __rust_thunk___ZplRK10Overloadedj<'lhs>(
+            lhs: &'lhs crate::Overloaded,
+            rhs: ::ffi_11::c_uint,
+        ) -> ::ffi_11::c_int;
         pub(crate) unsafe fn __rust_thunk___ZN15IncompatibleLHSC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
         pub(crate) unsafe fn __rust_thunk___ZN18AddableReturnsVoidC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        #[link_name = "_ZNK18AddableReturnsVoidplERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZNK18AddableReturnsVoidplERKS_<'__this, 'rhs>(
+            __this: &'__this crate::AddableReturnsVoid,
+            rhs: &'rhs crate::AddableReturnsVoid,
+        );
         pub(crate) unsafe fn __rust_thunk___ZN26AddableConstMemberNonunpinC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN26AddableConstMemberNonunpinD1Ev<'a>(
-            __this: ::core::pin::Pin<&'a mut crate::AddableConstMemberNonunpin>,
+        pub(crate) unsafe fn __rust_thunk___ZN26AddableConstMemberNonunpinC1ERKS_<'__param_0>(
+            __this: *mut ::core::ffi::c_void,
+            __param_0: &'__param_0 crate::AddableConstMemberNonunpin,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN26AddableConstMemberNonunpinaSERKS_<
+            '__param_0,
+            '__this,
+        >(
+            __this: ::core::pin::Pin<&'__this mut crate::AddableConstMemberNonunpin>,
+            __param_0: &'__param_0 crate::AddableConstMemberNonunpin,
+        ) -> ::core::pin::Pin<&'__this mut crate::AddableConstMemberNonunpin>;
+        pub(crate) unsafe fn __rust_thunk___ZNK26AddableConstMemberNonunpinplERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::AddableConstMemberNonunpin,
+            rhs: &'rhs crate::AddableConstMemberNonunpin,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZN26AddableConstMemberNonunpinD1Ev<'__this>(
+            __this: ::core::pin::Pin<&'__this mut crate::AddableConstMemberNonunpin>,
         );
         pub(crate) unsafe fn __rust_thunk___ZN18AddAssignMemberIntC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
         #[link_name = "_ZN18AddAssignMemberIntpLEi"]
-        pub(crate) unsafe fn __rust_thunk___ZN18AddAssignMemberIntpLEi<'a>(
-            __this: &'a mut crate::AddAssignMemberInt,
+        pub(crate) unsafe fn __rust_thunk___ZN18AddAssignMemberIntpLEi<'__this>(
+            __this: &'__this mut crate::AddAssignMemberInt,
             rhs: ::ffi_11::c_int,
         ) -> ::ffi_11::c_int;
         pub(crate) unsafe fn __rust_thunk___ZN25AddAssignMemberByConstRefC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        #[link_name = "_ZN25AddAssignMemberByConstRefpLERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN25AddAssignMemberByConstRefpLERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::AddAssignMemberByConstRef,
+            rhs: &'rhs crate::AddAssignMemberByConstRef,
+        ) -> &'__this mut crate::AddAssignMemberByConstRef;
         pub(crate) unsafe fn __rust_thunk___ZN23AddAssignFreeByConstRefC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
         #[link_name = "_ZpLR23AddAssignFreeByConstRefRKS_"]
-        pub(crate) unsafe fn __rust_thunk___ZpLR23AddAssignFreeByConstRefRKS_<'__return_lifetime>(
-            lhs: &mut crate::AddAssignFreeByConstRef,
-            rhs: &crate::AddAssignFreeByConstRef,
-        ) -> &'__return_lifetime mut crate::AddAssignFreeByConstRef;
+        pub(crate) unsafe fn __rust_thunk___ZpLR23AddAssignFreeByConstRefRKS_<'lhs, 'rhs>(
+            lhs: &'lhs mut crate::AddAssignFreeByConstRef,
+            rhs: &'rhs crate::AddAssignFreeByConstRef,
+        ) -> *mut crate::AddAssignFreeByConstRef;
         pub(crate) unsafe fn __rust_thunk___ZN20AddAssignFreeByValueC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        pub(crate) unsafe fn __rust_thunk___ZpLR20AddAssignFreeByValueS_<'lhs>(
+            lhs: &'lhs mut crate::AddAssignFreeByValue,
+            rhs: &mut crate::AddAssignFreeByValue,
+        ) -> &'lhs mut crate::AddAssignFreeByValue;
         pub(crate) unsafe fn __rust_thunk___ZN25AddAssignFriendByConstRefC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
         #[link_name = "_ZpLR25AddAssignFriendByConstRefRKS_"]
-        pub(crate) unsafe fn __rust_thunk___ZpLR25AddAssignFriendByConstRefRKS_<
-            '__return_lifetime,
-        >(
-            lhs: &mut crate::AddAssignFriendByConstRef,
-            rhs: &crate::AddAssignFriendByConstRef,
-        ) -> &'__return_lifetime mut crate::AddAssignFriendByConstRef;
+        pub(crate) unsafe fn __rust_thunk___ZpLR25AddAssignFriendByConstRefRKS_<'lhs, 'rhs>(
+            lhs: &'lhs mut crate::AddAssignFriendByConstRef,
+            rhs: &'rhs crate::AddAssignFriendByConstRef,
+        ) -> *mut crate::AddAssignFriendByConstRef;
         pub(crate) unsafe fn __rust_thunk___ZN22AddAssignFriendByValueC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
+        pub(crate) unsafe fn __rust_thunk___ZpLR22AddAssignFriendByValueS_<'lhs>(
+            lhs: &'lhs mut crate::AddAssignFriendByValue,
+            rhs: &mut crate::AddAssignFriendByValue,
+        ) -> &'lhs mut crate::AddAssignFriendByValue;
         pub(crate) unsafe fn __rust_thunk___ZN30AddAssignProhibitedConstMemberC1Ev(
             __this: *mut ::core::ffi::c_void,
         );
@@ -1286,18 +1293,118 @@ mod detail {
             __this: *mut ::core::ffi::c_void,
         );
         pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsC1Ev(__this: *mut ::core::ffi::c_void);
-        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorspsEv<'a>(
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorspsEv<'__this>(
             __return: *mut ::core::ffi::c_void,
-            __this: &'a crate::ManyOperators,
+            __this: &'__this crate::ManyOperators,
         );
-        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsngEv<'a>(
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsngEv<'__this>(
             __return: *mut ::core::ffi::c_void,
-            __this: &'a crate::ManyOperators,
+            __this: &'__this crate::ManyOperators,
         );
-        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsntEv<'a>(
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsntEv<'__this>(
             __return: *mut ::core::ffi::c_void,
-            __this: &'a crate::ManyOperators,
+            __this: &'__this crate::ManyOperators,
         );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsplERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsmiERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsmlERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsdvERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsrmERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsanERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsorERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorseoERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorslsERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        pub(crate) unsafe fn __rust_thunk___ZNK13ManyOperatorsrsERKS_<'__this, 'rhs>(
+            __return: *mut ::core::ffi::c_void,
+            __this: &'__this crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        );
+        #[link_name = "_ZN13ManyOperatorspLERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorspLERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsmIERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsmIERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsmLERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsmLERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsdVERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsdVERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsrMERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsrMERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsaNERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsaNERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsoRERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsoRERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorseOERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorseOERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorslSERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorslSERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
+        #[link_name = "_ZN13ManyOperatorsrSERKS_"]
+        pub(crate) unsafe fn __rust_thunk___ZN13ManyOperatorsrSERKS_<'__this, 'rhs>(
+            __this: &'__this mut crate::ManyOperators,
+            rhs: &'rhs crate::ManyOperators,
+        ) -> &'__this mut crate::ManyOperators;
     }
 }
 

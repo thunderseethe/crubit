@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/namespace/inline:inline
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod foo {
     // namespace inline1
 
@@ -23,6 +22,7 @@ pub mod foo {
 
     pub mod inline1 {
         #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+        #[cfi_encoding = "N3foo7inline18MyStructE"]
         #[repr(C)]
         ///CRUBIT_ANNOTATE: cpp_type=foo :: inline1 :: MyStruct
         pub struct MyStruct {

@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/golden:conversion_operators_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "15DstLocalMovable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DstLocalMovable
 pub struct DstLocalMovable {
@@ -40,6 +40,7 @@ impl Default for DstLocalMovable {
 }
 
 #[::ctor::recursively_pinned]
+#[cfi_encoding = "18DstLocalNonMovable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=DstLocalNonMovable
 pub struct DstLocalNonMovable {
@@ -54,6 +55,7 @@ unsafe impl ::cxx::ExternType for DstLocalNonMovable {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "3Src"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Src
 pub struct Src {

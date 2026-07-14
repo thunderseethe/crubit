@@ -35,8 +35,8 @@ pub struct CppTypeSpecialization<'tcx> {
     pub ty: Ty<'tcx>,
     /// The C++ spelling of the type.
     pub cpp_type: Rc<str>,
-    /// The include path of the type, if required.
-    pub include_path: Option<Rc<str>>,
+    /// The include paths of the type, if required.
+    pub include_paths: Vec<Rc<str>>,
 }
 
 memoized::query_group! {
@@ -203,7 +203,7 @@ memoized::query_group! {
 
       /// Formats a C++ identifier, if possible.
       ///
-      /// Implementation: cc_bindings_from_rs/generate_bindings/format_type.rs?q=function:format_cc_ident
+      /// Implementation: cc_bindings_from_rs/generate_bindings/format_type.rs?q=function:format_cc_ident_symbol
       fn format_cc_ident(&self, ident: Symbol) -> Result<Ident>;
 
       /// Formats the top-level namespace for the given crate, e.g. as `self::foo`, or

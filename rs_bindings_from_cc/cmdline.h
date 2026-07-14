@@ -30,6 +30,7 @@ struct CmdlineArgs {
   std::string ir_out;
   std::string namespaces_out;
   std::string crubit_support_path_format;
+  std::string crubit_support_versioned_path_format;
   std::string clang_format_exe_path;
   std::string rustfmt_exe_path;
   std::string rustfmt_config_path;
@@ -51,6 +52,8 @@ struct CmdlineArgs {
 
   absl::flat_hash_map<BazelLabel, absl::flat_hash_set<std::string>>
       target_to_features;
+
+  absl::flat_hash_map<BazelLabel, std::string> target_to_crate_name;
 
   std::optional<std::vector<std::string>> do_not_bind_allowlist;
 

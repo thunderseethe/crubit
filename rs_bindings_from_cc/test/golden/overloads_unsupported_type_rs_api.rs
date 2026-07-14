@@ -6,20 +6,20 @@
 // //rs_bindings_from_cc/test/golden:overloads_unsupported_type_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 /// Tests that no bindings are generated when an overload set includes
 /// any unsupported items.
 ///
 /// See http://b/251045039
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "9SomeClass"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=SomeClass
 pub struct SomeClass {

@@ -6,16 +6,16 @@
 // //rs_bindings_from_cc/test/references:references
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "22TypeWithPtrConstructor"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TypeWithPtrConstructor
 pub struct TypeWithPtrConstructor {
@@ -52,6 +52,7 @@ impl ::ctor::UnsafeCtorNew<*mut ::ffi_11::c_int> for TypeWithPtrConstructor {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "29TypeWithNonNullPtrConstructor"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TypeWithNonNullPtrConstructor
 pub struct TypeWithNonNullPtrConstructor {
@@ -88,6 +89,7 @@ impl ::ctor::UnsafeCtorNew<*mut ::ffi_11::c_int> for TypeWithNonNullPtrConstruct
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "28TypeWithReferenceConstructor"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=TypeWithReferenceConstructor
 pub struct TypeWithReferenceConstructor {
@@ -100,9 +102,9 @@ unsafe impl ::cxx::ExternType for TypeWithReferenceConstructor {
     type Kind = ::cxx::kind::Trivial;
 }
 
-impl From<&mut ::ffi_11::c_int> for TypeWithReferenceConstructor {
+impl<'r#ref> From<&'r#ref mut ::ffi_11::c_int> for TypeWithReferenceConstructor {
     #[inline(always)]
-    fn from(args: &mut ::ffi_11::c_int) -> Self {
+    fn from(args: &'r#ref mut ::ffi_11::c_int) -> Self {
         let mut r#ref = args;
         let mut tmp = ::core::mem::MaybeUninit::<Self>::zeroed();
         unsafe {
@@ -114,12 +116,12 @@ impl From<&mut ::ffi_11::c_int> for TypeWithReferenceConstructor {
         }
     }
 }
-impl ::ctor::CtorNew<&mut ::ffi_11::c_int> for TypeWithReferenceConstructor {
+impl<'r#ref> ::ctor::CtorNew<&'r#ref mut ::ffi_11::c_int> for TypeWithReferenceConstructor {
     type CtorType = Self;
     type Error = ::ctor::Infallible;
     #[inline(always)]
-    fn ctor_new(args: &mut ::ffi_11::c_int) -> Self::CtorType {
-        <Self as From<&mut ::ffi_11::c_int>>::from(args)
+    fn ctor_new(args: &'r#ref mut ::ffi_11::c_int) -> Self::CtorType {
+        <Self as From<&'r#ref mut ::ffi_11::c_int>>::from(args)
     }
 }
 
@@ -135,9 +137,9 @@ mod detail {
             __this: *mut ::core::ffi::c_void,
             ptr: *mut ::ffi_11::c_int,
         );
-        pub(crate) unsafe fn __rust_thunk___ZN28TypeWithReferenceConstructorC1ERi(
+        pub(crate) unsafe fn __rust_thunk___ZN28TypeWithReferenceConstructorC1ERi<'r#ref>(
             __this: *mut ::core::ffi::c_void,
-            r#ref: &mut ::ffi_11::c_int,
+            r#ref: &'r#ref mut ::ffi_11::c_int,
         );
     }
 }

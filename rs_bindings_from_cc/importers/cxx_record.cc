@@ -661,6 +661,36 @@ absl::StatusOr<TemplateSpecialization::Kind> GetTemplateSpecializationKind(
                                /*lifetimes=*/nullptr, /*nullable=*/true,
                                ictx.AreAssumedLifetimesEnabledForTarget(
                                    ictx.GetOwningTarget(specialization_decl))));
+    } else if (templated_decl->getName() == "flat_hash_map") {
+      LOG_IF(FATAL, specialization_decl->getTemplateArgs().size() < 2)
+          << "absl::flat_hash_map should have at least two template args";
+      clang::QualType k = specialization_decl->getTemplateArgs()[0].getAsType();
+      clang::QualType v = specialization_decl->getTemplateArgs()[1].getAsType();
+      // TODO(b/454627672): is specialization_decl the right decl to check for
+      // assumed_lifetimes?
+      return TemplateSpecialization::AbslFlatHashMap{
+          .key_type = ictx.ConvertQualType(
+              k,
+              /*lifetimes=*/nullptr, /*nullable=*/true,
+              ictx.AreAssumedLifetimesEnabledForTarget(
+                  ictx.GetOwningTarget(specialization_decl))),
+          .value_type = ictx.ConvertQualType(
+              v,
+              /*lifetimes=*/nullptr, /*nullable=*/true,
+              ictx.AreAssumedLifetimesEnabledForTarget(
+                  ictx.GetOwningTarget(specialization_decl)))};
+    } else if (templated_decl->getName() == "flat_hash_set") {
+      LOG_IF(FATAL, specialization_decl->getTemplateArgs().size() < 1)
+          << "absl::flat_hash_set should have at least one template arg";
+      clang::QualType t = specialization_decl->getTemplateArgs()[0].getAsType();
+      // TODO(b/454627672): is specialization_decl the right decl to check for
+      // assumed_lifetimes?
+      return TemplateSpecialization::AbslFlatHashSet{
+          .element_type = ictx.ConvertQualType(
+              t,
+              /*lifetimes=*/nullptr, /*nullable=*/true,
+              ictx.AreAssumedLifetimesEnabledForTarget(
+                  ictx.GetOwningTarget(specialization_decl)))};
     }
   } else if (top_level_namespace == "c9") {
     if (templated_decl->getName() == "Co") {
@@ -1239,12 +1269,28 @@ std::optional<IR::Item> CXXRecordDeclImporter::Import(
         FormattedError::FromStatus(std::move(detected_formatter).status()));
   }
 
+  ItemId id = ictx_.GenerateItemId(record_decl);
+  ictx_.invocation_.child_item_ids_[id] = std::move(item_ids);
+
+  bool record_impl_debug_enabled = ictx_.IsRecordImplDebugEnabledForTarget(
+      ictx_.GetOwningTarget(record_decl));
+
+  bool impl_debug = false;
+  if (record_impl_debug_enabled) {
+    absl::StatusOr<std::optional<bool>> override_debug =
+        ictx_.GetCrubitOverrideDebugAnnotation(*record_decl);
+    if (!override_debug.ok()) {
+      return unsupported(
+          FormattedError::FromStatus(std::move(override_debug).status()));
+    }
+    impl_debug = override_debug->value_or(!record_decl->isAbstract());
+  }
   auto record = Record{
       .rs_name = Identifier(rs_name),
       .cc_name = Identifier(cc_name),
       .unique_name = ictx_.GetUniqueName(*record_decl),
       .mangled_cc_name = ictx_.GetMangledName(record_decl),
-      .id = ictx_.GenerateItemId(record_decl),
+      .id = id,
       .owning_target = std::move(owning_target),
       .template_specialization = std::move(template_specialization),
       .unknown_attr = std::move(*unknown_attr),
@@ -1276,12 +1322,12 @@ std::optional<IR::Item> CXXRecordDeclImporter::Import(
           anon_typedef != nullptr || is_canonical_template_alias,
       .is_explicit_class_template_instantiation_definition =
           is_explicit_class_template_instantiation_definition,
-      .child_item_ids = std::move(item_ids),
       .enclosing_item_id = std::move(enclosing_item_id),
       .overloads_operator_delete = MayOverloadOperatorDelete(*record_decl),
       .has_private_or_deleted_operator_delete =
           HasPrivateOrDeletedOperatorDelete(*record_decl),
       .detected_formatter = *detected_formatter,
+      .impl_debug = impl_debug,
       .is_thread_safe = *is_thread_safe,
       .lifetime_inputs = std::move(lifetime_inputs),
       .deprecated = std::move(deprecated),

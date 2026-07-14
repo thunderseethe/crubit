@@ -108,6 +108,7 @@ absl::StatusOr<BindingsAndMetadata> GenerateBindingsAndMetadata(
           .clang_args = clang_args_view,
           .extra_instantiations = requested_instantiations,
           .crubit_features = args.target_to_features,
+          .crate_names = args.target_to_crate_name,
           .driver_path = args.driver_path,
           .do_not_bind_allowlist = std::move(do_not_bind_allowlist),
           .kythe_annotations = args.kythe_annotations,
@@ -122,6 +123,7 @@ absl::StatusOr<BindingsAndMetadata> GenerateBindingsAndMetadata(
   CRUBIT_ASSIGN_OR_RETURN(
       Bindings bindings,
       GenerateBindings(ir, args.crubit_support_path_format,
+                       args.crubit_support_versioned_path_format,
                        args.clang_format_exe_path, args.rustfmt_exe_path,
                        args.rustfmt_config_path, generate_error_report,
                        args.is_golden_test, args.kythe_annotations,

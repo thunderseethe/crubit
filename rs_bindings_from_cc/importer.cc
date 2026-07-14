@@ -24,11 +24,13 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
 #include "common/annotation_reader.h"
@@ -38,6 +40,18 @@
 #include "rs_bindings_from_cc/annotations_consumer.h"
 #include "rs_bindings_from_cc/ast_util.h"
 #include "rs_bindings_from_cc/bazel_types.h"
+#include "rs_bindings_from_cc/decl_importer.h"
+#include "rs_bindings_from_cc/importers/class_template.h"
+#include "rs_bindings_from_cc/importers/cxx_record.h"
+#include "rs_bindings_from_cc/importers/enum.h"
+#include "rs_bindings_from_cc/importers/enum_constant.h"
+#include "rs_bindings_from_cc/importers/existing_rust_type.h"
+#include "rs_bindings_from_cc/importers/friend.h"
+#include "rs_bindings_from_cc/importers/function.h"
+#include "rs_bindings_from_cc/importers/function_template.h"
+#include "rs_bindings_from_cc/importers/namespace.h"
+#include "rs_bindings_from_cc/importers/type_alias.h"
+#include "rs_bindings_from_cc/importers/var.h"
 #include "rs_bindings_from_cc/ir.h"
 #include "rs_bindings_from_cc/recording_diagnostic_consumer.h"
 #include "rs_bindings_from_cc/type_map.h"
@@ -54,6 +68,7 @@
 #include "clang/AST/RawCommentList.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeBase.h"
+#include "clang/Basic/ABI.h"
 #include "clang/Basic/AttrKinds.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileManager.h"
@@ -249,7 +264,103 @@ absl::StatusOr<CallingConv> ConvertCcCallConvToSupportedCallingConv(
                        clang::FunctionType::getNameForCallConv(cc_call_conv))));
 }
 
+template <typename T>
+const T* absl_nullable FindDecl(const clang::DeclContext* absl_nonnull context,
+                                absl::string_view name) {
+  if (const auto* absl_nullable ns =
+          llvm::dyn_cast<clang::NamespaceDecl>(context);
+      ns != nullptr) {
+    for (const auto* absl_nonnull redecl : ns->redecls()) {
+      for (const clang::Decl* absl_nonnull decl : redecl->decls()) {
+        if (const auto* absl_nullable type = llvm::dyn_cast<T>(decl);
+            type != nullptr) {
+          if (StringViewFromStringRef(type->getName()) == name) {
+            return type;
+          }
+        }
+      }
+    }
+  } else {
+    for (const clang::Decl* absl_nonnull decl : context->decls()) {
+      if (const auto* absl_nullable type = llvm::dyn_cast<T>(decl);
+          type != nullptr) {
+        if (StringViewFromStringRef(type->getName()) == name) {
+          return type;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+clang::QualType LookupRsCoreFmtDebug(
+    const clang::ASTContext* absl_nonnull context) {
+  const clang::TranslationUnitDecl* translation_unit =
+      context->getTranslationUnitDecl();
+  const clang::NamespaceDecl* rs =
+      FindDecl<clang::NamespaceDecl>(translation_unit, "rs");
+  if (rs == nullptr) {
+    LOG(WARNING) << "Could not find namespace rs";
+    return clang::QualType();
+  }
+  const clang::NamespaceDecl* core = FindDecl<clang::NamespaceDecl>(rs, "core");
+  if (core == nullptr) {
+    LOG(WARNING) << "Could not find namespace rs::core";
+    return clang::QualType();
+  }
+  const clang::NamespaceDecl* fmt = FindDecl<clang::NamespaceDecl>(core, "fmt");
+  if (fmt == nullptr) {
+    LOG(WARNING) << "Could not find namespace rs::core::fmt";
+    return clang::QualType();
+  }
+  const clang::TypeDecl* debug = FindDecl<clang::TypeDecl>(fmt, "Debug");
+  if (debug == nullptr) {
+    LOG(WARNING) << "Could not find rs::core::fmt::Debug";
+    return clang::QualType();
+  }
+  return context->getTypeDeclType(debug);
+}
+
+const clang::ClassTemplateDecl* absl_nullable LookupCanonicalRsStdImpl(
+    const clang::ASTContext* absl_nonnull context) {
+  const clang::TranslationUnitDecl* translation_unit =
+      context->getTranslationUnitDecl();
+  const clang::NamespaceDecl* rs_std =
+      FindDecl<clang::NamespaceDecl>(translation_unit, "rs_std");
+  if (rs_std == nullptr) {
+    LOG(WARNING) << "Could not find namespace rs_std";
+    return nullptr;
+  }
+  const clang::ClassTemplateDecl* impl =
+      FindDecl<clang::ClassTemplateDecl>(rs_std, "impl");
+  if (impl == nullptr) {
+    LOG(WARNING) << "Could not find rs_std::impl";
+    return nullptr;
+  }
+  return impl->getCanonicalDecl();
+}
+
 }  // namespace
+
+Importer::Importer(Invocation& invocation, clang::ASTContext& ctx,
+                   clang::Sema& sema)
+    : ImportContext(invocation, ctx, sema),
+      mangler_(ABSL_DIE_IF_NULL(ctx_.createMangleContext())),
+      rs_core_fmt_debug_(LookupRsCoreFmtDebug(&ctx)),
+      rs_std_impl_(LookupCanonicalRsStdImpl(&ctx)) {
+  decl_importers_.push_back(std::make_unique<ExistingRustTypeImporter>(*this));
+  decl_importers_.push_back(std::make_unique<ClassTemplateDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<CXXRecordDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<EnumDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<EnumConstantDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<VarDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<FriendDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<FunctionDeclImporter>(*this));
+  decl_importers_.push_back(
+      std::make_unique<FunctionTemplateDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<NamespaceDeclImporter>(*this));
+  decl_importers_.push_back(std::make_unique<TypeAliasImporter>(*this));
+}
 
 // Multiple IR items can be associated with the same source location (e.g. the
 // implicitly defined constructors and assignment operators). To produce
@@ -369,7 +480,20 @@ class Importer::SourceLocationComparator {
 std::vector<clang::Decl*> Importer::GetCanonicalChildren(
     const clang::DeclContext* decl_context) const {
   std::vector<clang::Decl*> result;
+  const auto* spec_decl =
+      llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl_context);
+  bool is_always_instantiate =
+      spec_decl == nullptr || IsAlwaysInstantiate(spec_decl);
   for (clang::Decl* decl : decl_context->decls()) {
+    if (!is_always_instantiate) {
+      if (auto* method_decl = llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
+        if (!llvm::isa<clang::CXXConstructorDecl>(decl) &&
+            !llvm::isa<clang::CXXDestructorDecl>(decl) &&
+            method_decl->getOverloadedOperator() != clang::OO_Equal) {
+          continue;
+        }
+      }
+    }
     // Bubble anonymous enum constants up so that they are imported as if they
     // were top-level constants.
     if (const auto* enum_decl = llvm::dyn_cast<clang::EnumDecl>(decl)) {
@@ -438,6 +562,12 @@ const clang::Decl* Importer::CanonicalizeDecl(const clang::Decl* decl) const {
             alias_decl->getUnderlyingType()->getAsCXXRecordDecl()) {
       if (alias_decl == GetTemplateSpecializationAlias(record_decl)) {
         decl = record_decl;
+      }
+    }
+    if (const clang::TagDecl* tag_decl =
+            StripCStyleNameIntroducingTypedef(alias_decl)) {
+      if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(tag_decl)) {
+        decl = const_cast<clang::TagDecl*>(tag_decl);
       }
     }
   }
@@ -713,7 +843,87 @@ void Importer::ImportFreeComments() {
   llvm::sort(comments_, SourceLocationComparator(sm));
 }
 
+void Importer::FindAlwaysInstantiateSpecs(
+    const clang::DeclContext* decl_context) {
+  for (const clang::Decl* decl : decl_context->decls()) {
+    if (const auto* alias_decl =
+            clang::dyn_cast<clang::TypedefNameDecl>(decl)) {
+      if (auto status_or_bool = HasAnnotationWithoutArgs(
+              *alias_decl, "crubit_always_instantiate");
+          status_or_bool.ok() && *status_or_bool) {
+        if (const auto* record_decl =
+                alias_decl->getUnderlyingType()->getAsCXXRecordDecl()) {
+          if (const auto* spec =
+                  clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(
+                      record_decl)) {
+            if (const auto* canonical_spec =
+                    clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(
+                        spec->getCanonicalDecl())) {
+              always_instantiate_specs_.insert(canonical_spec);
+            }
+          }
+        }
+      }
+    } else if (const auto* namespace_decl =
+                   clang::dyn_cast<clang::NamespaceDecl>(decl)) {
+      FindAlwaysInstantiateSpecs(namespace_decl);
+    } else if (const auto* linkage_spec =
+                   clang::dyn_cast<clang::LinkageSpecDecl>(decl)) {
+      FindAlwaysInstantiateSpecs(linkage_spec);
+    }
+  }
+}
+
+static std::optional<llvm::StringRef> AsTopLevelNamespace(
+    const clang::DeclContext* context) {
+  if (!context->isNamespace()) {
+    return std::nullopt;
+  }
+
+  const auto* namespace_decl = clang::cast<clang::NamespaceDecl>(context);
+  if (namespace_decl->isInline()) {
+    return AsTopLevelNamespace(namespace_decl->getParent());
+  }
+
+  if (!context->getParent()->getRedeclContext()->isTranslationUnit()) {
+    return std::nullopt;
+  }
+
+  const clang::IdentifierInfo* identifier_info =
+      namespace_decl->getIdentifier();
+  if (!identifier_info) {
+    return std::nullopt;
+  }
+  return identifier_info->getName();
+}
+
+bool Importer::IsAlwaysInstantiate(
+    const clang::ClassTemplateSpecializationDecl* spec_decl) const {
+  if (always_instantiate_specs_.contains(
+          clang::cast<clang::ClassTemplateSpecializationDecl>(
+              spec_decl->getCanonicalDecl()))) {
+    return true;
+  }
+  if (auto* template_decl = spec_decl->getSpecializedTemplate()) {
+    if (auto* templated_decl = template_decl->getTemplatedDecl()) {
+      std::optional<llvm::StringRef> top_level_ns =
+          AsTopLevelNamespace(templated_decl->getDeclContext());
+      if (top_level_ns == "std" || top_level_ns == "absl" ||
+          top_level_ns == "c9" || top_level_ns == "rs_std") {
+        return true;
+      }
+      if (auto status_or_bool = HasAnnotationWithoutArgs(
+              *templated_decl, "crubit_always_instantiate");
+          status_or_bool.ok() && *status_or_bool) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void Importer::Import(clang::TranslationUnitDecl* translation_unit_decl) {
+  FindAlwaysInstantiateSpecs(translation_unit_decl);
   ImportFreeComments();
   clang::SourceManager& sm = ctx_.getSourceManager();
   std::vector<SourceLocationComparator::OrderedItem> ordered_items;
@@ -756,11 +966,10 @@ void Importer::Import(clang::TranslationUnitDecl* translation_unit_decl) {
     auto* parent_item = std::get_if<Record>(&(parent_it->second.value()));
 
     auto child_id = GenerateItemId(decl);
+    auto& parent_child_ids = invocation_.child_item_ids_[parent_item->id];
     if (!IsUnsupportedAndAlien(child_id) &&
-        std::find(parent_item->child_item_ids.begin(),
-                  parent_item->child_item_ids.end(),
-                  child_id) == parent_item->child_item_ids.end()) {
-      parent_item->child_item_ids.push_back(child_id);
+        !absl::c_linear_search(parent_child_ids, child_id)) {
+      parent_child_ids.push_back(child_id);
     }
   }
 
@@ -777,20 +986,20 @@ void Importer::Import(clang::TranslationUnitDecl* translation_unit_decl) {
   for (auto& ordered_item : ordered_items) {
     invocation_.ir_.items.push_back(ordered_item.second);
   }
-  invocation_.ir_.top_level_item_ids =
+  invocation_.top_level_item_ids_ =
       GetTopLevelItemIdsInSourceOrder(translation_unit_decl);
 
   // TODO(b/257302656): Consider placing the generated template instantiations
   // into a separate namespace (maybe `crubit::instantiated_templates` ?).
-  llvm::copy(GetOrderedItemIdsOfTemplateInstantiations(),
-             std::back_inserter(
-                 invocation_.ir_.top_level_item_ids[invocation_.target_]));
+  llvm::copy(
+      GetOrderedItemIdsOfTemplateInstantiations(),
+      std::back_inserter(invocation_.top_level_item_ids_[invocation_.target_]));
 
   // Remove any unsupported alien (to the current target) items.
   // IsUnsupportedAndAlien only returns true for items outside the current
   // target that are unsupported. You have to run it only if label is not equal
   // to the current target; you can skip the current target.
-  for (auto& [label, item_ids] : invocation_.ir_.top_level_item_ids) {
+  for (auto& [label, item_ids] : invocation_.top_level_item_ids_) {
     if (label == invocation_.target_) continue;
     item_ids.erase(std::remove_if(item_ids.begin(), item_ids.end(),
                                   [&](ItemId item_id) {
@@ -874,10 +1083,10 @@ std::optional<IR::Item> Importer::GetDeclItem(clang::Decl* decl) {
 
   // Logic for `ClassTemplateSpecializationDecl`: insert them into
   // `class_template_instantiations_`, so that they will get included in
-  // IR::top_level_item_ids.
+  // the top-level items.
   // Note: The 'gating' logic here needs to be consistent with the 'gating'
   // logic in `GetItemIdsInSourceOrder`, or else the class template
-  // instantiation decl ID is inserted into the IR::top_level_item_ids but does
+  // instantiation decl ID is inserted into the top-level items but does
   // not have its corresponding IR item, resulting in lookup failures (crashes)
   // when generating bindings.
   if (result.has_value()) {
@@ -919,12 +1128,19 @@ bool IsTransitivelyInPrivate(clang::Decl* decl_to_check) {
 }
 
 std::optional<IR::Item> Importer::ImportDecl(clang::Decl* decl) {
-  if (IsTransitivelyInPrivate(decl)) return std::nullopt;
-
   const absl::StatusOr<bool> must_bind =
       HasAnnotationWithoutArgs(*decl, "crubit_must_bind");
   if (!must_bind.ok()) {
     return HardError(*decl, FormattedError::FromStatus(must_bind.status()));
+  }
+
+  if (IsTransitivelyInPrivate(decl)) {
+    if (*must_bind) {
+      return HardError(*decl,
+                       FormattedError::Static(
+                           "Private declarations cannot receive bindings"));
+    }
+    return std::nullopt;
   }
 
   const absl::StatusOr<bool> do_not_bind =
@@ -933,6 +1149,11 @@ std::optional<IR::Item> Importer::ImportDecl(clang::Decl* decl) {
     return HardError(*decl, FormattedError::FromStatus(do_not_bind.status()));
   }
   if (*do_not_bind) {
+    if (*must_bind) {
+      return HardError(
+          *decl, FormattedError::Static("Conflicting CRUBIT_MUST_BIND and "
+                                        "CRUBIT_DO_NOT_BIND annotations"));
+    }
     const std::optional<absl::flat_hash_set<std::string>>&
         do_not_bind_allowlist = invocation_.do_not_bind_allowlist_;
     const clang::NamedDecl* named_decl =
@@ -1079,6 +1300,9 @@ bool Importer::IsFeatureEnabledForTarget(const BazelLabel& label,
 // LINT.IfChange
 bool Importer::AreAssumedLifetimesEnabledForTarget(
     const BazelLabel& label) const {
+  // TODO(b/530193579): After expanding features earlier, just check the
+  // specific feature without manually checking for "all" or
+  // "no_assume_lifetimes".
   return (IsFeatureEnabledForTarget(label, "assume_lifetimes") ||
           IsFeatureEnabledForTarget(label, "all")) &&
          !IsFeatureEnabledForTarget(label, "no_assume_lifetimes");
@@ -1088,6 +1312,14 @@ bool Importer::AreAssumedLifetimesEnabledForTarget(
 
 bool Importer::IsUnsafeViewEnabledForTarget(const BazelLabel& label) const {
   return IsFeatureEnabledForTarget(label, "unsafe_view");
+}
+
+bool Importer::IsRecordImplDebugEnabledForTarget(
+    const BazelLabel& label) const {
+  // TODO(b/530193579): After expanding features earlier, just check the
+  // specific feature without manually checking for "all".
+  return IsFeatureEnabledForTarget(label, "record_impl_debug") ||
+         IsFeatureEnabledForTarget(label, "all");
 }
 
 absl::StatusOr<bool> Importer::DetectFormatter(
@@ -1102,6 +1334,69 @@ absl::StatusOr<bool> Importer::DetectFormatter(
       std::optional<bool> found,
       DetectFormatterForType(/*lookup=*/type, /*target=*/type));
   return found.value_or(false);
+}
+
+bool Importer::ImplementsCoreFmtDebug(const clang::TypeDecl& type) const {
+  if (rs_core_fmt_debug_.isNull() || rs_std_impl_ == nullptr) {
+    return false;
+  }
+
+  for (const clang::ClassTemplateSpecializationDecl* absl_nonnull spec :
+       rs_std_impl_->specializations()) {
+    const clang::TemplateArgumentList& template_args = spec->getTemplateArgs();
+    if (template_args.size() != 2) {
+      continue;
+    }
+    if (!clang::ASTContext::hasSameType(template_args[0].getAsType(),
+                                        ctx_.getTypeDeclType(&type))) {
+      continue;
+    }
+    if (!clang::ASTContext::hasSameType(template_args[1].getAsType(),
+                                        rs_core_fmt_debug_)) {
+      continue;
+    }
+
+    const clang::CXXRecordDecl* absl_nullable def = spec->getDefinition();
+    if (def == nullptr) {
+      return false;
+    }
+
+    for (const clang::Decl* absl_nonnull decl : def->decls()) {
+      const auto* absl_nullable var = llvm::dyn_cast<clang::VarDecl>(decl);
+      if (var == nullptr || var->getName() != "kIsImplemented") {
+        continue;
+      }
+      const clang::Expr* absl_nullable initializer = var->getAnyInitializer();
+      if (initializer == nullptr) {
+        break;
+      }
+
+      clang::Expr::EvalResult result;
+      if (!initializer->EvaluateAsConstantExpr(result, ctx_) ||
+          !result.Val.isInt()) {
+        break;
+      }
+      return result.Val.getInt().getBoolValue();
+    }
+    return false;
+  }
+
+  return false;
+}
+
+absl::StatusOr<std::optional<bool>> Importer::GetCrubitOverrideDebugAnnotation(
+    const clang::TypeDecl& type) const {
+  CRUBIT_ASSIGN_OR_RETURN(std::optional<AnnotateArgs> args,
+                          GetAnnotateAttrArgs(type, "crubit_override_debug"));
+  if (!args.has_value()) {
+    return std::nullopt;
+  }
+  if (args->size() != 1) {
+    return absl::InvalidArgumentError(
+        "crubit_override_debug annotation must have exactly one argument");
+  }
+  CRUBIT_ASSIGN_OR_RETURN(bool result, GetExprAsBool(*args->front(), ctx_));
+  return result;
 }
 
 absl::StatusOr<std::optional<bool>>
@@ -1654,6 +1949,8 @@ absl::StatusOr<CcType> Importer::ConvertUnattributedType(
         return CcType(CcType::Primitive{"long"});
       case clang::BuiltinType::LongLong:
         return CcType(CcType::Primitive{"long long"});
+      case clang::BuiltinType::Int128:
+        return CcType(CcType::Primitive{"__int128"});
 
       // Unsigned integers
       case clang::BuiltinType::UShort:
@@ -1664,6 +1961,8 @@ absl::StatusOr<CcType> Importer::ConvertUnattributedType(
         return CcType(CcType::Primitive{"unsigned long"});
       case clang::BuiltinType::ULongLong:
         return CcType(CcType::Primitive{"unsigned long long"});
+      case clang::BuiltinType::UInt128:
+        return CcType(CcType::Primitive{"unsigned __int128"});
 
       case clang::BuiltinType::Char16:
         return CcType(CcType::Primitive{"char16_t"});
@@ -1753,13 +2052,13 @@ std::string Importer::GetUniqueName(const clang::Decl& decl) const {
 }
 
 std::string Importer::GetMangledName(const clang::NamedDecl* named_decl) const {
-  if (auto record_decl = clang::dyn_cast<clang::RecordDecl>(named_decl)) {
-    // Mangled record names are used to 1) provide valid Rust identifiers for
-    // C++ template specializations, and 2) help build unique names for virtual
-    // upcast thunks.
+  if (auto tag_decl = clang::dyn_cast<clang::TagDecl>(named_decl)) {
+    // Mangled tag names are used to 1) provide valid Rust identifiers for
+    // C++ template specializations, 2) help build unique names for virtual
+    // upcast thunks, and 3) provide cfi_encoding for structs and enums.
     llvm::SmallString<128> storage;
     llvm::raw_svector_ostream buffer(storage);
-    mangler_->mangleCanonicalTypeName(ctx_.getCanonicalTagType(record_decl),
+    mangler_->mangleCanonicalTypeName(ctx_.getCanonicalTagType(tag_decl),
                                       buffer);
 
     // The Itanium mangler does not provide a way to get the mangled
@@ -1768,16 +2067,17 @@ std::string Importer::GetMangledName(const clang::NamedDecl* named_decl) const {
     // prefix.
     constexpr llvm::StringRef kZtsPrefix = "_ZTS";
     CHECK(buffer.str().take_front(4) == kZtsPrefix);
-    llvm::StringRef mangled_record_name =
+    llvm::StringRef mangled_tag_name =
         buffer.str().drop_front(kZtsPrefix.size());
 
     if (clang::isa<clang::ClassTemplateSpecializationDecl>(named_decl)) {
       // We prepend __CcTemplateInst to reduce chances of conflict
       // with regular C and C++ structs.
+      // TODO(b/526962187): this will break if we use these for CFI.
       constexpr llvm::StringRef kCcTemplatePrefix = "__CcTemplateInst";
-      return llvm::formatv("{0}{1}", kCcTemplatePrefix, mangled_record_name);
+      return llvm::formatv("{0}{1}", kCcTemplatePrefix, mangled_tag_name);
     }
-    return std::string(mangled_record_name);
+    return std::string(mangled_tag_name);
   }
 
   if (!mangler_->shouldMangleDeclName(named_decl)) {

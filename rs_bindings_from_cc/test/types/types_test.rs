@@ -82,17 +82,19 @@ type_is!(
 
     Short => i16,
     Int => i32,
-    Long => i64,
+    Long => ::ffi_11::c_long,
     LongLong => ::ffi_11::c_longlong,
+    Int128 => i128,
 
     UnsignedShort => u16,
     UnsignedInt => u32,
-    UnsignedLong => u64,
+    UnsignedLong => ::ffi_11::c_ulong,
     UnsignedLongLong => ::ffi_11::c_ulonglong,
+    UnsignedInt128 => u128,
 
     SignedShort => i16,
     SignedInt => i32,
-    SignedLong => i64,
+    SignedLong => ::ffi_11::c_long,
     SignedLongLong => ::ffi_11::c_longlong,
 
     Int8 => i8,

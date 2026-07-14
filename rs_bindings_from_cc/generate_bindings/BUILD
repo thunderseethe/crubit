@@ -310,6 +310,7 @@ rust_library(
         "//common:error_report",
         "//rs_bindings_from_cc:ir",
         "//rs_bindings_from_cc/generate_bindings/database",
+        "@crate_index//:flagset",  # v0_4
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",  # v1
     ],
@@ -357,6 +358,7 @@ rust_library(
         "@crate_index//:itertools",  # v0_13
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",  # v1
+        "@crate_index//:rustc_stable_hash",  # v0_1
         "@crate_index//:syn",  # v1
         "@crate_index//:unicode-ident",
     ],
@@ -411,6 +413,7 @@ multiplatform_rust_test(
         "//common:arc_anyhow",
         "//common:code_gen_utils",
         "//common:crubit_feature",
+        "//common:error_report",
         "//common:multiplatform_testing",
         "//common:token_stream_matchers",
         "//common:token_stream_printer",
@@ -489,6 +492,7 @@ multiplatform_rust_test(
         "//rs_bindings_from_cc:ir",
         "//rs_bindings_from_cc:ir_matchers",
         "//rs_bindings_from_cc:ir_testing",
+        "//rs_bindings_from_cc/generate_bindings/database",
         "@crate_index//:googletest",
         "@crate_index//:itertools",  # v0_13
         "@crate_index//:proc-macro2",

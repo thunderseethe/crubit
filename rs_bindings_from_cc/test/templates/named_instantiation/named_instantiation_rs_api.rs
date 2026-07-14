@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/templates/named_instantiation:named_instantiation
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 // This file contains definitions for a very simple named implicit template
 // instantiation test.
 
@@ -23,16 +22,13 @@
 
 pub type NiIF = crate::__CcTemplateInst2NiIifE;
 
-/// # Safety
-///
-/// The caller must ensure that the following unsafe arguments are not misused by the function:
-/// * `i`: raw pointer
 #[inline(always)]
-pub unsafe fn SomeApi(i: *const crate::NiIF) {
+pub fn SomeApi<'i>(i: &'i crate::NiIF) {
     unsafe { crate::detail::__rust_thunk___Z7SomeApiRK2NiIifE(i) }
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "__CcTemplateInst2NiIifE"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Ni < int , float >
 pub struct __CcTemplateInst2NiIifE {
@@ -47,7 +43,7 @@ impl From<(::ffi_11::c_int, f32)> for __CcTemplateInst2NiIifE {
         let (mut t, mut s) = args;
         let mut tmp = ::core::mem::MaybeUninit::<Self>::zeroed();
         unsafe {
-            crate::detail::__rust_thunk___ZN2NiIifEC1Eif__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2ftemplates_2fnamed_5finstantiation_3anamed_5finstantiation(&raw mut tmp as*mut _,t,s);
+            crate::detail::__rust_thunk__426ccee6__ZN2NiIifEC1Eif(&raw mut tmp as *mut _, t, s);
             tmp.assume_init()
         }
     }
@@ -66,8 +62,8 @@ mod detail {
     use super::*;
     unsafe extern "C" {
         #[link_name = "_Z7SomeApiRK2NiIifE"]
-        pub(crate) unsafe fn __rust_thunk___Z7SomeApiRK2NiIifE(i: *const crate::NiIF);
-        pub(crate) unsafe fn __rust_thunk___ZN2NiIifEC1Eif__2f_2fthird_5fparty_2fcrubit_2frs_5fbindings_5ffrom_5fcc_2ftest_2ftemplates_2fnamed_5finstantiation_3anamed_5finstantiation(
+        pub(crate) unsafe fn __rust_thunk___Z7SomeApiRK2NiIifE<'i>(i: &'i crate::NiIF);
+        pub(crate) unsafe fn __rust_thunk__426ccee6__ZN2NiIifEC1Eif(
             __this: *mut ::core::ffi::c_void,
             t: ::ffi_11::c_int,
             s: f32,

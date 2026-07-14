@@ -9,7 +9,10 @@ use arc_anyhow::Result;
 use itertools::Itertools;
 
 use ffi_types::{FfiU8Slice, FfiU8SliceBox};
-use ir::{self, make_ir_from_parts, Func, Identifier, Item, LifetimeId, LifetimeName, Record, IR};
+use ir::{
+    self, make_ir_from_parts, Func, Identifier, Item, LifetimeId, LifetimeName, Record,
+    TypeWithDeclId, IR,
+};
 
 /// Generates `IR` from a header containing `header_source`.
 pub fn ir_from_cc(platform: multiplatform_testing::Platform, header_source: &str) -> Result<IR> {
@@ -74,11 +77,11 @@ static TESTING_FEATURES: LazyLock<flagset::FlagSet<crubit_feature::CrubitFeature
 /// `make_ir_from_items` and `ir_from_cc_dependency`.
 fn update_test_ir(ir: &mut IR, extra_feature: Option<&str>) {
     *ir.target_crubit_features_mut(&ir.current_target().clone()) = *TESTING_FEATURES;
-    *ir.target_crubit_features_mut(&ir::BazelLabel(DEPENDENCY_TARGET.into())) = *TESTING_FEATURES;
+    *ir.target_crubit_features_mut(&ir::BazelLabel::from(DEPENDENCY_TARGET)) = *TESTING_FEATURES;
     if let Some(s) = extra_feature {
         let feature = crubit_feature::named_features(s.as_bytes()).unwrap();
         *ir.target_crubit_features_mut(&ir.current_target().clone()) |= feature;
-        *ir.target_crubit_features_mut(&ir::BazelLabel(DEPENDENCY_TARGET.into())) |= feature;
+        *ir.target_crubit_features_mut(&ir::BazelLabel::from(DEPENDENCY_TARGET)) |= feature;
     }
 }
 
@@ -89,7 +92,6 @@ pub fn make_ir_from_items(items: impl IntoIterator<Item = Item>) -> IR {
         items.into_iter().collect_vec(),
         /* public_headers= */ vec![],
         /* current_target= */ TESTING_TARGET.into(),
-        /* top_level_item_ids= */ BTreeMap::new(),
         /* crate_root_path= */ None,
         /* crubit_features= */
         <BTreeMap<ir::BazelLabel, flagset::FlagSet<crubit_feature::CrubitFeature>>>::new(),
@@ -108,8 +110,6 @@ pub const DEPENDENCY_TARGET: &str = "//test:dependency";
 /// `header_source` of the header will be updated to contain the `#include` line
 /// for the header with `dependency_header_source`. The name of the dependency
 /// target is exposed as `DEPENDENCY_TARGET`.
-///
-/// This will eventually be replaced by `ir_proto_from_cc_dependency`.
 pub fn ir_from_cc_dependency(
     platform: multiplatform_testing::Platform,
     header_source: &str,
@@ -152,7 +152,7 @@ pub fn ir_from_cc_dependency(
 
 /// Creates an identifier
 pub fn ir_id(name: &str) -> Identifier {
-    Identifier { identifier: name.into() }
+    Identifier::new(name)
 }
 
 /// Creates a simple `Item::Record` with a given name.
@@ -161,8 +161,8 @@ pub fn ir_record(platform: multiplatform_testing::Platform, name: &str) -> Recor
     for item in ir.items() {
         if let Item::Record(record) = item {
             let mut record = (**record).clone();
-            record.rs_name = Identifier { identifier: name.into() };
-            record.cc_name = Identifier { identifier: name.into() };
+            record.set_rs_name(Identifier::new(name));
+            record.set_cc_name(Identifier::new(name));
             return record;
         }
     }
@@ -171,8 +171,8 @@ pub fn ir_record(platform: multiplatform_testing::Platform, name: &str) -> Recor
 
 pub fn retrieve_lifetime_param_id(names: &[LifetimeName], name: &str) -> LifetimeId {
     for param in names {
-        if *param.name == *name {
-            return param.id;
+        if param.name() == name {
+            return param.id();
         }
     }
     panic!("Didn't find lifetime param with name {}", name);
@@ -182,7 +182,7 @@ pub fn retrieve_lifetime_param_id(names: &[LifetimeName], name: &str) -> Lifetim
 /// Panics if no such function could be found.
 pub fn retrieve_func<'a>(ir: &'a IR, name: &str) -> &'a Func {
     for func in ir.functions() {
-        if func.rs_name == ir::UnqualifiedIdentifier::Identifier(ir_id(name)) {
+        if *func.rs_name() == ir::UnqualifiedIdentifier::Identifier(ir_id(name)) {
             return func;
         }
     }
@@ -193,11 +193,29 @@ pub fn retrieve_func<'a>(ir: &'a IR, name: &str) -> &'a Func {
 /// Panics if no such record could be found.
 pub fn retrieve_record<'a>(ir: &'a IR, cc_name: &str) -> &'a Record {
     for record in ir.records() {
-        if record.cc_name == cc_name {
+        if *record.cc_name() == cc_name {
             return record;
         }
     }
     panic!("Didn't find record with cc_name {}", cc_name);
+}
+
+/// Retrieves the `Record` underlying the type alias with the given name.
+/// Panics if no such type alias could be found or it did not refer to a record.
+pub fn retrieve_type_alias_record<'a>(ir: &'a IR, cc_name: &str) -> &'a Record {
+    for type_alias in ir.type_aliases() {
+        if type_alias.cc_name().as_str() == cc_name {
+            let Some(item_id) = type_alias.underlying_type().decl_id() else {
+                panic!("Type alias with cc_name {cc_name} has an underlying type with no ItemId");
+            };
+            let Some(Item::Record(record)) = ir.get_decl(item_id) else {
+                panic!("Type alias with cc_name {cc_name} underlying type not found or is not a record");
+            };
+            return record;
+        }
+    }
+
+    panic!("Didn't find type alias with cc_name {}", cc_name);
 }
 
 #[cfg(test)]
@@ -212,7 +230,7 @@ mod tests {
     #[gtest]
     fn test_features_ir_from_cc() -> Result<()> {
         let ir = ir_from_cc(multiplatform_testing::Platform::X86Linux, "")?;
-        let enabled_features = ir.target_crubit_features(&ir::BazelLabel(TESTING_TARGET.into()));
+        let enabled_features = ir.target_crubit_features(&ir::BazelLabel::from(TESTING_TARGET));
         expect_eq!(
             enabled_features,
             CrubitFeature::Experimental
@@ -226,7 +244,7 @@ mod tests {
     #[gtest]
     fn test_features_ir_from_items() -> Result<()> {
         let ir = make_ir_from_items([]);
-        let enabled_features = ir.target_crubit_features(&ir::BazelLabel(TESTING_TARGET.into()));
+        let enabled_features = ir.target_crubit_features(&ir::BazelLabel::from(TESTING_TARGET));
         expect_eq!(
             enabled_features,
             CrubitFeature::Experimental
@@ -241,9 +259,9 @@ mod tests {
     #[should_panic(expected = "Duplicate decl_id found in")]
     fn test_duplicate_decl_ids_err() {
         let mut r1 = ir_record(Platform::X86Linux, "R1");
-        r1.id = ItemId::new_for_testing(42);
+        r1.set_id(ItemId::new_for_testing(42));
         let mut r2 = ir_record(Platform::X86Linux, "R2");
-        r2.id = ItemId::new_for_testing(42);
+        r2.set_id(ItemId::new_for_testing(42));
         let _ = make_ir_from_items([r1.into(), r2.into()]);
     }
 }

@@ -6,21 +6,21 @@
 // //rs_bindings_from_cc/test/types_only:types_only
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, impl_trait_in_assoc_type, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[inline(always)]
 pub fn MustBindFn() {
     unsafe { crate::detail::__rust_thunk___Z10MustBindFnv() }
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "8Copyable"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=Copyable
 pub struct Copyable {
@@ -45,6 +45,7 @@ impl Default for Copyable {
 }
 
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "9Cloneable"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=Cloneable
 pub struct Cloneable {
@@ -164,6 +165,7 @@ impl ::ctor::PinnedDrop for Cloneable {
 }
 
 #[::ctor::recursively_pinned(PinnedDrop)]
+#[cfi_encoding = "7Movable"]
 #[repr(C, align(4))]
 ///CRUBIT_ANNOTATE: cpp_type=Movable
 pub struct Movable {

@@ -18,11 +18,19 @@
 #define CRUBIT_LIFETIME_BOUND
 #endif
 #define crubit_nonnull _Nonnull
+#define crubit_nullable _Nullable
 #else
 #define CRUBIT_TRIVIAL_ABI
 #define CRUBIT_VIEW
 #define CRUBIT_LIFETIME_BOUND
 #define crubit_nonnull
+#define crubit_nullable
+#endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#define CRUBIT_UNREACHABLE() __assume(false)
+#else
+#define CRUBIT_UNREACHABLE() __builtin_unreachable()
 #endif
 
 // Style waiver granted in crubit.rs-style-waiver-attribute-annotate
@@ -34,6 +42,10 @@
 #define CRUBIT_INTERNAL_ANNOTATE(...)
 #define CRUBIT_INTERNAL_ANNOTATE_TYPE(...)
 #endif
+
+#define CRUBIT_INTERNAL_EXPAND_AND_CONCAT_IMPL(a, b) a##b
+#define CRUBIT_INTERNAL_EXPAND_AND_CONCAT(a, b) \
+  CRUBIT_INTERNAL_EXPAND_AND_CONCAT_IMPL(a, b)
 
 namespace crubit::rust_type {
 // Helper for CRUBIT_INTERNAL_RUST_TYPE. This type should never be used

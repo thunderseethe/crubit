@@ -43,6 +43,7 @@ class Invocation {
       std::optional<absl::flat_hash_set<std::string>> do_not_bind_allowlist,
       absl::flat_hash_map<BazelLabel, absl::flat_hash_set<std::string>>
           crubit_features,
+      absl::flat_hash_map<BazelLabel, std::string> crate_names,
       bool kythe_annotations,
       std::shared_ptr<const llvm::Regex> template_blocklist_path_regex)
       : target_(target),
@@ -62,6 +63,7 @@ class Invocation {
                               public_headers.end());
     ir_.current_target = target_;
     ir_.crubit_features = std::move(crubit_features);
+    ir_.crate_names = std::move(crate_names);
   }
 
   // Returns the target of a header, if any.
@@ -85,6 +87,12 @@ class Invocation {
 
   // The main output of the import process
   IR ir_;
+
+  // Transient map of top level items used to build the tree.
+  absl::flat_hash_map<BazelLabel, std::vector<ItemId>> top_level_item_ids_;
+
+  // Transient map of child items used to build the tree.
+  absl::flat_hash_map<ItemId, std::vector<ItemId>> child_item_ids_;
 
   // Returns whether to record extra location information for Kythe annotations.
   bool kythe_annotations() const { return kythe_annotations_; }
@@ -235,6 +243,11 @@ class ImportContext {
   // `[[gsl::Pointer]]` as unsafe.
   virtual bool IsUnsafeViewEnabledForTarget(const BazelLabel& label) const = 0;
 
+  // Returns true iff `label` has opted in to generate `impl Debug` bindings for
+  // records.
+  virtual bool IsRecordImplDebugEnabledForTarget(
+      const BazelLabel& label) const = 0;
+
   virtual bool IsFeatureEnabledForTarget(const BazelLabel& label,
                                          absl::string_view feature) const = 0;
 
@@ -253,6 +266,21 @@ class ImportContext {
   // * declared with a non-bool value.
   virtual absl::StatusOr<bool> DetectFormatter(
       const clang::TypeDecl& decl) const = 0;
+
+  // Returns true if the given C++ type decl implements `rs::core::fmt::Debug`.
+  virtual bool ImplementsCoreFmtDebug(const clang::TypeDecl& type) const = 0;
+
+  // Returns the sole bool argument of the `crubit_override_debug` annotation on
+  // `decl`.
+  //
+  // Returns `std::nullopt` if the annotation is absent.
+  //
+  // Fails if `crubit_override_debug` is:
+  // * declared inconsistently.
+  // * declared with no or more than one argument.
+  // * declared with a non-bool value.
+  virtual absl::StatusOr<std::optional<bool>> GetCrubitOverrideDebugAnnotation(
+      const clang::TypeDecl& type) const = 0;
 
   // Gets an IR UnqualifiedIdentifier for the named decl.
   //

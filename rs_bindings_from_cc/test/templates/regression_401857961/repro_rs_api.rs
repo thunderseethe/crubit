@@ -6,15 +6,14 @@
 // //rs_bindings_from_cc/test/templates/regression_401857961:repro
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 pub mod repro {
     // error: class `repro::optional` could not be bound
     //   Class templates are not yet supported
@@ -25,6 +24,7 @@ pub mod repro {
     /// * Document why the following public unsafe fields of this type cannot be misused by callee:
     ///   * `nanos`: Rust type is unknown; safety requirements cannot be automatically generated: Unsupported type 'char[1]': Unsupported clang::Type class 'ConstantArray'
     #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+    #[cfi_encoding = "N5repro8IntervalE"]
     #[repr(C)]
     ///CRUBIT_ANNOTATE: cpp_type=repro :: Interval
     pub struct Interval {
@@ -61,9 +61,6 @@ pub mod repro {
 // namespace repro
 
 // THIRD_PARTY_CRUBIT_RS_BINDINGS_FROM_CC_TEST_TEMPLATES_REGRESSION_401857961_REPRO_H_
-
-// error: struct `repro::optional<repro::Interval>` could not be bound
-//   template instantiation is not yet supported
 
 // error: struct `repro::Nullable<repro::Interval>` could not be bound
 //   template instantiation is not yet supported

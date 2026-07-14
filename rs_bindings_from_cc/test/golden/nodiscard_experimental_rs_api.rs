@@ -6,17 +6,17 @@
 // //rs_bindings_from_cc/test/golden:nodiscard_experimental_cc
 
 #![rustfmt::skip]
-#![feature(custom_inner_attributes, negative_impls)]
+#![feature(cfi_encoding, custom_inner_attributes, negative_impls)]
 #![allow(stable_features)]
 #![allow(improper_ctypes)]
 #![allow(nonstandard_style)]
-#![deny(rust_2024_compatibility)]
 #![allow(unused)]
 #![allow(deprecated)]
+#![allow(unknown_lints, suspicious_runtime_symbol_definitions)]
 #![deny(warnings)]
-
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
 #[must_use]
+#[cfi_encoding = "9NoDiscard"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=:: NoDiscard
 pub struct NoDiscard {
@@ -43,6 +43,7 @@ impl Default for NoDiscard {
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
 #[must_use = "You really should use this"]
+#[cfi_encoding = "20NoDiscardWithMessage"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=:: NoDiscardWithMessage
 pub struct NoDiscardWithMessage {
@@ -73,6 +74,7 @@ impl Default for NoDiscardWithMessage {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
 #[must_use]
+#[cfi_encoding = "13NoDiscardEnum"]
 ///CRUBIT_ANNOTATE: cpp_type=:: NoDiscardEnum
 pub struct NoDiscardEnum(::ffi_11::c_uint);
 impl NoDiscardEnum {
@@ -92,6 +94,7 @@ impl From<NoDiscardEnum> for ::ffi_11::c_uint {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash, PartialOrd, Ord)]
 #[must_use = "You really should use this"]
+#[cfi_encoding = "24NoDiscardEnumWithMessage"]
 ///CRUBIT_ANNOTATE: cpp_type=:: NoDiscardEnumWithMessage
 pub struct NoDiscardEnumWithMessage(::ffi_11::c_uint);
 impl NoDiscardEnumWithMessage {
@@ -122,6 +125,7 @@ pub fn crubit_nodiscard_message() -> *mut ::ffi_11::c_void {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "13NodiscardCtor"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=:: NodiscardCtor
 pub struct NodiscardCtor {
@@ -156,6 +160,7 @@ impl ::ctor::CtorNew<(::ffi_11::c_int, ::ffi_11::c_int)> for NodiscardCtor {
 }
 
 #[derive(Clone, Copy, ::ctor::MoveAndAssignViaCopy)]
+#[cfi_encoding = "24NodiscardCtorWithMessage"]
 #[repr(C)]
 ///CRUBIT_ANNOTATE: cpp_type=:: NodiscardCtorWithMessage
 pub struct NodiscardCtorWithMessage {
